@@ -35,9 +35,9 @@ spec:
           spec:
             description: EphemeralClusterSpec defines the desired state of EphemeralCluster
             properties:
-              foo:
-                description: Foo is an example field of EphemeralCluster. Edit ephemeralcluster_types.go
-                  to remove/update
+              components:
+                type: string
+              ttl:
                 type: string
             type: object
           status:

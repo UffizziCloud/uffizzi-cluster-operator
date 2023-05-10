@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,7 +51,7 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
-
+	fmt.Println("This is the new operator")
 	return ctrl.Result{}, nil
 }
 

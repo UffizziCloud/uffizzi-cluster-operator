@@ -28,8 +28,8 @@ type EphemeralClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of EphemeralCluster. Edit ephemeralcluster_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Components string `json:"components,omitempty"`
+	TTL        string `json:"ttl,omitempty"`
 }
 
 // EphemeralClusterStatus defines the observed state of EphemeralCluster
