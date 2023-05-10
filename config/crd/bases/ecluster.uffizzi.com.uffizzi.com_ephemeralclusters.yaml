@@ -13,6 +13,8 @@ spec:
     listKind: EphemeralClusterList
     plural: ephemeralclusters
     singular: ephemeralcluster
+    shortNames:
+      - ecluster
   scope: Namespaced
   versions:
   - name: v1alpha1

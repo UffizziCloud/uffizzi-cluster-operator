@@ -28,7 +28,8 @@ import (
 	"strings"
 
 	eclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
-	helmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
+	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
+	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 )
 
 // EphemeralClusterReconciler reconciles a EphemeralCluster object
@@ -38,7 +39,10 @@ type EphemeralClusterReconciler struct {
 }
 
 const (
-	ecluster_name_suffix = "eclus-"
+	ECLUSTER_NAME_SUFFIX   = "eclus-"
+	LOFT_HELM_REPO         = "loft"
+	VCLUSTER_CHART         = "vcluster"
+	VCLUSTER_CHART_VERSION = "0.15.0"
 )
 
 //+kubebuilder:rbac:groups=uffizzi.com,resources=ephemeralclusters,verbs=get;list;watch;create;update;patch;delete
@@ -55,7 +59,23 @@ const (
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
+
+	loftHelmRepo := &fluxsourcev1.HelmRepository{
+		ObjectMeta: ctrl.ObjectMeta{
+			Name:      LOFT_HELM_REPO,
+			Namespace: req.Namespace,
+		},
+		Spec: fluxsourcev1.HelmRepositorySpec{
+			URL: "https://charts.loft.sh",
+		},
+	}
+
+	err := r.Create(ctx, loftHelmRepo)
+	// check if error is because the HelmRepository already exists
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		logger.Info("Error while creating HelmRepository", "", err)
+	}
 
 	// For each EphemeralCluster custom resource, check if there is a HelmRelease
 	// List all the HelmRelease custom resources and check if there are any with
@@ -65,39 +85,39 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// with the name eclus-<EpemeralCluster.Name>-<random-string>
 
 	eClusterList := &eclusteruffizzicomv1alpha1.EphemeralClusterList{}
-	err := r.List(ctx, eClusterList)
+	err = r.List(ctx, eClusterList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	helmReleaseList := &helmv2beta1.HelmReleaseList{}
+	helmReleaseList := &fluxhelmv2beta1.HelmReleaseList{}
 	err = r.List(ctx, helmReleaseList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	for _, eCluster := range eClusterList.Items {
-		correspondingHelmReleaseNameSuffix := ecluster_name_suffix + eCluster.Name
+		correspondingHelmReleaseNameSuffix := ECLUSTER_NAME_SUFFIX + eCluster.Name
 
 		// Check if there is a HelmRelease with the corresponding name
 		// If there isn't, then create a new HelmRelease
 		if !helmReleaseExists(correspondingHelmReleaseNameSuffix, helmReleaseList) {
 			helmReleaseName := correspondingHelmReleaseNameSuffix + "-" + randString(5)
 			// Create a new HelmRelease
-			newHelmRelease := &helmv2beta1.HelmRelease{
+			newHelmRelease := &fluxhelmv2beta1.HelmRelease{
 				ObjectMeta: ctrl.ObjectMeta{
 					Name:      helmReleaseName,
-					Namespace: eCluster.Namespace,
+					Namespace: helmReleaseName,
 				},
-				Spec: helmv2beta1.HelmReleaseSpec{
-					Chart: helmv2beta1.HelmChartTemplate{
-						Spec: helmv2beta1.HelmChartTemplateSpec{
-							Chart:   "stable/redis",
-							Version: "10.6.0",
-							SourceRef: helmv2beta1.CrossNamespaceObjectReference{
+				Spec: fluxhelmv2beta1.HelmReleaseSpec{
+					Chart: fluxhelmv2beta1.HelmChartTemplate{
+						Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
+							Chart:   VCLUSTER_CHART,
+							Version: VCLUSTER_CHART_VERSION,
+							SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
 								Kind:      "HelmRepository",
-								Name:      "stable",
-								Namespace: "flux-system",
+								Name:      LOFT_HELM_REPO,
+								Namespace: eCluster.Namespace,
 							},
 						},
 					},
@@ -117,7 +137,7 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func helmReleaseExists(name string, helmReleaseList *helmv2beta1.HelmReleaseList) bool {
+func helmReleaseExists(name string, helmReleaseList *fluxhelmv2beta1.HelmReleaseList) bool {
 	for _, helmRelease := range helmReleaseList.Items {
 		if strings.Contains(helmRelease.Name, name) {
 			return true
@@ -140,6 +160,7 @@ func (r *EphemeralClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&eclusteruffizzicomv1alpha1.EphemeralCluster{}).
 		// Watch HelmRelease resources
-		Watches(&source.Kind{Type: &helmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &fluxhelmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &fluxsourcev1.HelmRepository{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
