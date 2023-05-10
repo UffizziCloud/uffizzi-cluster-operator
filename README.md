@@ -2,9 +2,11 @@
 
 A Kubernetes operator for creating ephemeral clusters. 
 
-- [x] Create a VCluster
-- [x] Install Helm and Source Controller in the VCluster
-- [ ] Helm Chart in the VCluster by specifying it in the EphemeralCluster CRD
+- [x] Create a VCluster.
+- [x] Install Helm and Source Controller in the VCluster.
+- [ ] Get the VCluster KubeConfig and create a HelmRelease in the VCluster from charts specified in the EphemeralCluster CRD.
+- [ ] Expose Ingress for the VCluster.
+- [ ] Suspend the VCluster if it is not being used for a certain period of time.
 
 ## Requirements
 We need the Helm Controller and Source Controller which are components of flux cd. Use the following command to install 
