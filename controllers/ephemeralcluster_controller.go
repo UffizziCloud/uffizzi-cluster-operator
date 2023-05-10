@@ -45,11 +45,12 @@ type EphemeralClusterReconciler struct {
 }
 
 // Helm values for the vcluster chart
-type HelmValuesInit struct {
-	Manifests string `json:"manifests"`
+type VClusterHelmValuesInit struct {
+	Manifests string                                 `json:"manifests"`
+	Helm      []eclusteruffizzicomv1alpha1.HelmChart `json:"helm"`
 }
-type HelmValues struct {
-	Init HelmValuesInit `json:"init"`
+type VClusterHelmValues struct {
+	Init VClusterHelmValuesInit `json:"init"`
 }
 
 const (
@@ -80,22 +81,6 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		fmt.Printf("Error running flux install command: %v\n", err)
 		return ctrl.Result{}, err
 	}
-
-	vclusterHelmValues := HelmValues{
-		Init: HelmValuesInit{
-			Manifests: fluxYAML,
-		},
-	}
-
-	// marshal HelmValues struct to JSON
-	helmValuesRaw, err := json.Marshal(vclusterHelmValues)
-	if err != nil {
-		fmt.Printf("Error marshaling JSON: %v\n", err)
-		return ctrl.Result{}, err
-	}
-
-	// Create the apiextensionsv1.JSON instance with the raw data
-	helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
 
 	// For each EphemeralCluster custom resource, check if there is a HelmRelease
 	// List all the HelmRelease custom resources and check if there are any with
@@ -141,6 +126,26 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			if err != nil && !strings.Contains(err.Error(), "already exists") {
 				logger.Info("Error while creating HelmRepository", "", err)
 			}
+
+			vclusterHelmValues := VClusterHelmValues{
+				Init: VClusterHelmValuesInit{
+					Manifests: fluxYAML,
+				},
+			}
+
+			if len(eCluster.Spec.Helm) > 0 {
+				vclusterHelmValues.Init.Helm = eCluster.Spec.Helm
+			}
+
+			// marshal HelmValues struct to JSON
+			helmValuesRaw, err := json.Marshal(vclusterHelmValues)
+			if err != nil {
+				fmt.Printf("Error marshaling JSON: %v\n", err)
+				return ctrl.Result{}, err
+			}
+
+			// Create the apiextensionsv1.JSON instance with the raw data
+			helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
 
 			// Create a new HelmRelease
 			newHelmRelease := &fluxhelmv2beta1.HelmRelease{

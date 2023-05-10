@@ -5,3 +5,12 @@ metadata:
 spec:
   ttl: 1h
   components: 'helm'
+  helm:
+  - chart:
+      name: testkube
+      repo: https://kubeshop.github.io/helm-charts
+    values: |-
+      installCRDs: true
+    release:
+      name: testkube
+      namespace: testkube

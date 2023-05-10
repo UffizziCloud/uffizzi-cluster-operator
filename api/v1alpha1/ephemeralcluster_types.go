@@ -23,13 +23,31 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type HelmReleaseInfo struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+type HelmChartInfo struct {
+	Name    string `json:"name"`
+	Repo    string `json:"repo"`
+	Version string `json:"version,omitempty"`
+}
+
+type HelmChart struct {
+	Chart   HelmChartInfo   `json:"chart"`
+	Values  string          `json:"values,omitempty"`
+	Release HelmReleaseInfo `json:"release"`
+}
+
 // EphemeralClusterSpec defines the desired state of EphemeralCluster
 type EphemeralClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Components string `json:"components,omitempty"`
-	TTL        string `json:"ttl,omitempty"`
+	Components string      `json:"components,omitempty"`
+	TTL        string      `json:"ttl,omitempty"`
+	Helm       []HelmChart `json:"helm,omitempty"`
 }
 
 // EphemeralClusterStatus defines the observed state of EphemeralCluster

@@ -37,6 +37,38 @@ spec:
             properties:
               components:
                 type: string
+              helm:
+                items:
+                  properties:
+                    chart:
+                      properties:
+                        name:
+                          type: string
+                        repo:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - name
+                      - repo
+                      type: object
+                    release:
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    values:
+                      type: string
+                  required:
+                  - chart
+                  - release
+                  type: object
+                type: array
               ttl:
                 type: string
             type: object
