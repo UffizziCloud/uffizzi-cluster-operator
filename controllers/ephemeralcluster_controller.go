@@ -18,14 +18,17 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/runtime"
+	"math/rand"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
 
 	eclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
+	helmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 )
 
 // EphemeralClusterReconciler reconciles a EphemeralCluster object
@@ -33,6 +36,10 @@ type EphemeralClusterReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+const (
+	ecluster_name_suffix = "eclus-"
+)
 
 //+kubebuilder:rbac:groups=uffizzi.com,resources=ephemeralclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=uffizzi.com,resources=ephemeralclusters/status,verbs=get;update;patch
@@ -50,14 +57,89 @@ type EphemeralClusterReconciler struct {
 func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
-	fmt.Println("This is the new operator")
+	// For each EphemeralCluster custom resource, check if there is a HelmRelease
+	// List all the HelmRelease custom resources and check if there are any with
+	// a name that matches the following format:
+	// eclus-<EpemeralCluster.Name>-<random-string>
+	// if there aren't any, then create a new HelmRelease custom resource
+	// with the name eclus-<EpemeralCluster.Name>-<random-string>
+
+	eClusterList := &eclusteruffizzicomv1alpha1.EphemeralClusterList{}
+	err := r.List(ctx, eClusterList)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	helmReleaseList := &helmv2beta1.HelmReleaseList{}
+	err = r.List(ctx, helmReleaseList)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	for _, eCluster := range eClusterList.Items {
+		correspondingHelmReleaseNameSuffix := ecluster_name_suffix + eCluster.Name
+
+		// Check if there is a HelmRelease with the corresponding name
+		// If there isn't, then create a new HelmRelease
+		if !helmReleaseExists(correspondingHelmReleaseNameSuffix, helmReleaseList) {
+			helmReleaseName := correspondingHelmReleaseNameSuffix + "-" + randString(5)
+			// Create a new HelmRelease
+			newHelmRelease := &helmv2beta1.HelmRelease{
+				ObjectMeta: ctrl.ObjectMeta{
+					Name:      helmReleaseName,
+					Namespace: eCluster.Namespace,
+				},
+				Spec: helmv2beta1.HelmReleaseSpec{
+					Chart: helmv2beta1.HelmChartTemplate{
+						Spec: helmv2beta1.HelmChartTemplateSpec{
+							Chart:   "stable/redis",
+							Version: "10.6.0",
+							SourceRef: helmv2beta1.CrossNamespaceObjectReference{
+								Kind:      "HelmRepository",
+								Name:      "stable",
+								Namespace: "flux-system",
+							},
+						},
+					},
+					ReleaseName: helmReleaseName,
+					Values:      nil,
+				},
+			}
+
+			err = r.Create(ctx, newHelmRelease)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func helmReleaseExists(name string, helmReleaseList *helmv2beta1.HelmReleaseList) bool {
+	for _, helmRelease := range helmReleaseList.Items {
+		if strings.Contains(helmRelease.Name, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func randString(n int) string {
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *EphemeralClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&eclusteruffizzicomv1alpha1.EphemeralCluster{}).
+		// Watch HelmRelease resources
+		Watches(&source.Kind{Type: &helmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }

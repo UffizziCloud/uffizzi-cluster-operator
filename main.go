@@ -33,6 +33,7 @@ import (
 
 	eclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
 	"github.com/UffizziCloud/ephemeral-cluster-operator/controllers"
+	helmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -45,6 +46,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(eclusteruffizzicomv1alpha1.AddToScheme(scheme))
+
+	utilruntime.Must(helmv2beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
