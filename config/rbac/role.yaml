@@ -1,0 +1,33 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - uffizzi.com
+  resources:
+  - ephemeralclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - uffizzi.com
+  resources:
+  - ephemeralclusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - uffizzi.com
+  resources:
+  - ephemeralclusters/status
+  verbs:
+  - get
+  - patch
+  - update
