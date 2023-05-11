@@ -5,14 +5,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
-  name: UffizziClusters.uffizzi.com
+  name: uffizziclusters.uffizzi.com
 spec:
   group: uffizzi.com
   names:
     kind: UffizziCluster
     listKind: UffizziClusterList
-    plural: UffizziClusters
-    singular: UffizziCluster
+    plural: uffizziclusters
+    singular: uffizzicluster
   scope: Namespaced
   versions:
   - name: v1alpha1
