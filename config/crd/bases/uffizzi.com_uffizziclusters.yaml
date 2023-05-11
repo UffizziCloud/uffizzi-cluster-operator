@@ -15,7 +15,11 @@ spec:
     singular: uffizzicluster
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.ready
+      name: Ready
+      type: bool
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: UffizziCluster is the Schema for the UffizziClusters API

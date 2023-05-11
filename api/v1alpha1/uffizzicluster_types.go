@@ -59,6 +59,7 @@ type UffizziClusterStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Ready",type=bool,JSONPath=`.status.ready`
 
 // UffizziCluster is the Schema for the UffizziClusters API
 type UffizziCluster struct {

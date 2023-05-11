@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"math/rand"
 	"os/exec"
@@ -58,6 +59,7 @@ const (
 	LOFT_HELM_REPO         = "loft"
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.0"
+	LOFT_CHART_REPO_URL    = "https://charts.loft.sh"
 )
 
 //+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters,verbs=get;list;watch;create;update;patch;delete
@@ -76,119 +78,119 @@ const (
 func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
+	// Get the YAML required to create Flux's helm and source controllers
+	// in the VCluster
 	fluxYAML, err := getFluxInstallOutput()
 	if err != nil {
 		fmt.Printf("Error running flux install command: %v\n", err)
 		return ctrl.Result{}, err
 	}
 
-	// For each UffizziCluster custom resource, check if there is a HelmRelease
-	// List all the HelmRelease custom resources and check if there are any with
-	// a name that matches the following format:
-	// eclus-<EpemeralCluster.Name>-<random-string>
-	// if there aren't any, then create a new HelmRelease custom resource
-	// with the name eclus-<EpemeralCluster.Name>-<random-string>
-
-	uClusterList := &uclusteruffizzicomv1alpha1.UffizziClusterList{}
-	err = r.List(ctx, uClusterList)
-	if err != nil {
-		return ctrl.Result{}, err
+	// Fetch the UffizziCluster instance
+	uCluster := &uclusteruffizzicomv1alpha1.UffizziCluster{}
+	if err := r.Get(ctx, req.NamespacedName, uCluster); err != nil {
+		// Handle error
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Check if there is a corresponding HelmRelease which already exists
+	// if not create one
 	helmReleaseList := &fluxhelmv2beta1.HelmReleaseList{}
 	err = r.List(ctx, helmReleaseList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	for _, uCluster := range uClusterList.Items {
-		helmReleaseNameSuffix := ucluster_NAME_SUFFIX + uCluster.Name
+	helmReleaseName := ucluster_NAME_SUFFIX + uCluster.Name
 
-		// Check if there is a HelmRelease with the corresponding name
-		// If there isn't, then create a new HelmRelease
-		if !helmReleaseExists(helmReleaseNameSuffix, helmReleaseList) {
-			// Set release name
-			helmReleaseName := helmReleaseNameSuffix + "-" + randString(5)
-
-			// Create HelmRepository in the same namespace as the HelmRelease
-			loftHelmRepo := &fluxsourcev1.HelmRepository{
-				ObjectMeta: ctrl.ObjectMeta{
-					Name:      LOFT_HELM_REPO,
-					Namespace: uCluster.Namespace,
-				},
-				Spec: fluxsourcev1.HelmRepositorySpec{
-					URL: "https://charts.loft.sh",
-				},
+	// Check if there is a HelmRelease with the corresponding name
+	// If there isn't, then create a new HelmRelease
+	if helmRelease, exists := helmReleaseExists(helmReleaseName, helmReleaseList); exists {
+		// Update the EphemeralCluster status based on the HelmRelease status
+		for _, condition := range helmRelease.Status.Conditions {
+			if condition.Type == "Ready" {
+				uCluster.Status.Ready = condition.Status == metav1.ConditionTrue
+				if err := r.Status().Update(ctx, uCluster); err != nil {
+					return ctrl.Result{}, err
+				}
+				break
 			}
+		}
+	} else {
+		// Create HelmRepository in the same namespace as the HelmRelease
+		loftHelmRepo := &fluxsourcev1.HelmRepository{
+			ObjectMeta: ctrl.ObjectMeta{
+				Name:      LOFT_HELM_REPO,
+				Namespace: uCluster.Namespace,
+			},
+			Spec: fluxsourcev1.HelmRepositorySpec{
+				URL: LOFT_CHART_REPO_URL,
+			},
+		}
 
-			err = r.Create(ctx, loftHelmRepo)
-			// check if error is because the HelmRepository already exists
-			if err != nil && !strings.Contains(err.Error(), "already exists") {
-				logger.Info("Error while creating HelmRepository", "", err)
-			}
+		err = r.Create(ctx, loftHelmRepo)
+		// check if error is because the HelmRepository already exists
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
+			logger.Info("Error while creating HelmRepository", "", err)
+		}
 
-			uClusterHelmValues := VClusterHelmValues{
-				Init: VClusterHelmValuesInit{
-					Manifests: fluxYAML,
-				},
-			}
+		uClusterHelmValues := VClusterHelmValues{
+			Init: VClusterHelmValuesInit{
+				Manifests: fluxYAML,
+			},
+		}
 
-			if len(uCluster.Spec.Helm) > 0 {
-				uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
-			}
+		if len(uCluster.Spec.Helm) > 0 {
+			uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
+		}
 
-			// marshal HelmValues struct to JSON
-			helmValuesRaw, err := json.Marshal(uClusterHelmValues)
-			if err != nil {
-				fmt.Printf("Error marshaling JSON: %v\n", err)
-				return ctrl.Result{}, err
-			}
+		// marshal HelmValues struct to JSON
+		helmValuesRaw, err := json.Marshal(uClusterHelmValues)
+		if err != nil {
+			fmt.Printf("Error marshaling JSON: %v\n", err)
+			return ctrl.Result{}, err
+		}
 
-			// Create the apiextensionsv1.JSON instance with the raw data
-			helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
+		// Create the apiextensionsv1.JSON instance with the raw data
+		helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
 
-			// Create a new HelmRelease
-			newHelmRelease := &fluxhelmv2beta1.HelmRelease{
-				ObjectMeta: ctrl.ObjectMeta{
-					Name:      helmReleaseName,
-					Namespace: uCluster.Namespace,
-				},
-				Spec: fluxhelmv2beta1.HelmReleaseSpec{
-					Chart: fluxhelmv2beta1.HelmChartTemplate{
-						Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
-							Chart:   VCLUSTER_CHART,
-							Version: VCLUSTER_CHART_VERSION,
-							SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
-								Kind:      "HelmRepository",
-								Name:      LOFT_HELM_REPO,
-								Namespace: uCluster.Namespace,
-							},
+		// Create a new HelmRelease
+		newHelmRelease := &fluxhelmv2beta1.HelmRelease{
+			ObjectMeta: ctrl.ObjectMeta{
+				Name:      helmReleaseName,
+				Namespace: uCluster.Namespace,
+			},
+			Spec: fluxhelmv2beta1.HelmReleaseSpec{
+				Chart: fluxhelmv2beta1.HelmChartTemplate{
+					Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
+						Chart:   VCLUSTER_CHART,
+						Version: VCLUSTER_CHART_VERSION,
+						SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
+							Kind:      "HelmRepository",
+							Name:      LOFT_HELM_REPO,
+							Namespace: uCluster.Namespace,
 						},
 					},
-					ReleaseName: helmReleaseName,
-					Values:      &helmValuesJSONObj,
 				},
-			}
+				ReleaseName: helmReleaseName,
+				Values:      &helmValuesJSONObj,
+			},
+		}
 
-			// TODO: implement alternative to SetControllerReference where the owner reference is set
-			// in the annotations of the HelmReleases.
-			//
-			// Set the owner reference for the HelmRelease object
-			if err := controllerutil.SetControllerReference(&uCluster, newHelmRelease, r.Scheme); err != nil {
-				return ctrl.Result{}, err
-			}
+		if err = controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
 
-			err = r.Create(ctx, newHelmRelease)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
+		err = r.Create(ctx, newHelmRelease)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 
-			// reference the HelmRelease in the status
-			uCluster.Status.HelmReleaseName = helmReleaseName
-			if err := r.Status().Update(ctx, &uCluster); err != nil {
-				// Handle error
-				return ctrl.Result{}, err
-			}
+		// reference the HelmRelease in the status
+		uCluster.Status.HelmReleaseRef = helmReleaseName
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			// Handle error
+			return ctrl.Result{}, err
 		}
 
 	}
@@ -196,13 +198,13 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func helmReleaseExists(name string, helmReleaseList *fluxhelmv2beta1.HelmReleaseList) bool {
+func helmReleaseExists(name string, helmReleaseList *fluxhelmv2beta1.HelmReleaseList) (*fluxhelmv2beta1.HelmRelease, bool) {
 	for _, helmRelease := range helmReleaseList.Items {
 		if strings.Contains(helmRelease.Name, name) {
-			return true
+			return &helmRelease, true
 		}
 	}
-	return false
+	return nil, false
 }
 
 func randString(n int) string {
