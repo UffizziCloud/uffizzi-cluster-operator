@@ -40,8 +40,8 @@ type HelmChart struct {
 	Release HelmReleaseInfo `json:"release"`
 }
 
-// EphemeralClusterSpec defines the desired state of EphemeralCluster
-type EphemeralClusterSpec struct {
+// UffizziClusterSpec defines the desired state of UffizziCluster
+type UffizziClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -50,8 +50,8 @@ type EphemeralClusterSpec struct {
 	Helm       []HelmChart `json:"helm,omitempty"`
 }
 
-// EphemeralClusterStatus defines the observed state of EphemeralCluster
-type EphemeralClusterStatus struct {
+// UffizziClusterStatus defines the observed state of UffizziCluster
+type UffizziClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -59,24 +59,24 @@ type EphemeralClusterStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// EphemeralCluster is the Schema for the ephemeralclusters API
-type EphemeralCluster struct {
+// UffizziCluster is the Schema for the UffizziClusters API
+type UffizziCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   EphemeralClusterSpec   `json:"spec,omitempty"`
-	Status EphemeralClusterStatus `json:"status,omitempty"`
+	Spec   UffizziClusterSpec   `json:"spec,omitempty"`
+	Status UffizziClusterStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// EphemeralClusterList contains a list of EphemeralCluster
-type EphemeralClusterList struct {
+// UffizziClusterList contains a list of UffizziCluster
+type UffizziClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []EphemeralCluster `json:"items"`
+	Items           []UffizziCluster `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&EphemeralCluster{}, &EphemeralClusterList{})
+	SchemeBuilder.Register(&UffizziCluster{}, &UffizziClusterList{})
 }

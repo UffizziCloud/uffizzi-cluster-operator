@@ -4,7 +4,7 @@ A Kubernetes operator for creating ephemeral clusters.
 
 - [x] Create a VCluster.
 - [x] Install Helm and Source Controller in the VCluster.
-- [x] Create Helm charts when mentioned in the EphemeralCluster CRD.
+- [x] Create Helm charts when mentioned in the UffizziCluster CRD.
 - [ ] Expose Ingress for the VCluster.
 - [ ] Expose a service which gives commandline access to the VCluster environment. 
 - [ ] Suspend the VCluster if it is not being used for a certain period of time.
@@ -18,7 +18,7 @@ flux install --namespace=flux-system --components="source-controller,helm-contro
 
 ## Development
 
-To install the CRD for EphemeralCluster and run the operator locally, use the following command:
+To install the CRD for UffizziCluster and run the operator locally, use the following command:
 
 ```azure
 make install && make run
@@ -29,10 +29,10 @@ to inject in the HelmRelease values.
 
 ## Usage
 
-To create a sample EphemeralCluster, use the following command:
+To create a sample UffizziCluster, use the following command:
 
 ```
-kubectl apply -f examples/ecluster.yml
+kubectl apply -f examples/ucluster.yml
 ```
 
 The VCluster will be created with the Helm and Source Controllers installed as well.
@@ -40,5 +40,5 @@ The VCluster will be created with the Helm and Source Controllers installed as w
 ## Cleanup
 
 ```
-kubectl delete ephemeralcluster,helmrelease,helmrepository --all && make uninstall
+kubectl delete UffizziCluster,helmrelease,helmrepository --all && make uninstall
 ```

@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	eclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
+	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
 	"github.com/UffizziCloud/ephemeral-cluster-operator/controllers"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -46,7 +46,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(eclusteruffizzicomv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(uclusteruffizzicomv1alpha1.AddToScheme(scheme))
 
 	utilruntime.Must(fluxhelmv2beta1.AddToScheme(scheme))
 
@@ -95,11 +95,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.EphemeralClusterReconciler{
+	if err = (&controllers.UffizziClusterReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "EphemeralCluster")
+		setupLog.Error(err, "unable to create controller", "controller", "UffizziCluster")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

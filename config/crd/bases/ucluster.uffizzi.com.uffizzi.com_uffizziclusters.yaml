@@ -5,22 +5,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
-  name: ephemeralclusters.uffizzi.com
+  name: UffizziClusters.uffizzi.com
 spec:
   group: uffizzi.com
   names:
-    kind: EphemeralCluster
-    listKind: EphemeralClusterList
-    plural: ephemeralclusters
-    singular: ephemeralcluster
+    kind: UffizziCluster
+    listKind: UffizziClusterList
+    plural: UffizziClusters
+    singular: UffizziCluster
     shortNames:
-      - ecluster
+      - ucluster
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: EphemeralCluster is the Schema for the ephemeralclusters API
+        description: UffizziCluster is the Schema for the UffizziClusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -35,15 +35,15 @@ spec:
           metadata:
             type: object
           spec:
-            description: EphemeralClusterSpec defines the desired state of EphemeralCluster
+            description: UffizziClusterSpec defines the desired state of UffizziCluster
             properties:
               foo:
-                description: Foo is an example field of EphemeralCluster. Edit ephemeralcluster_types.go
+                description: Foo is an example field of UffizziCluster. Edit UffizziCluster_types.go
                   to remove/update
                 type: string
             type: object
           status:
-            description: EphemeralClusterStatus defines the observed state of EphemeralCluster
+            description: UffizziClusterStatus defines the observed state of UffizziCluster
             type: object
         type: object
     served: true

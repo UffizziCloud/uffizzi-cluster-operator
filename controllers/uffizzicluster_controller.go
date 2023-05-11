@@ -33,13 +33,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
 
-	eclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
+	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 )
 
-// EphemeralClusterReconciler reconciles a EphemeralCluster object
-type EphemeralClusterReconciler struct {
+// UffizziClusterReconciler reconciles a UffizziCluster object
+type UffizziClusterReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -47,33 +47,33 @@ type EphemeralClusterReconciler struct {
 // Helm values for the vcluster chart
 type VClusterHelmValuesInit struct {
 	Manifests string                                 `json:"manifests"`
-	Helm      []eclusteruffizzicomv1alpha1.HelmChart `json:"helm"`
+	Helm      []uclusteruffizzicomv1alpha1.HelmChart `json:"helm"`
 }
 type VClusterHelmValues struct {
 	Init VClusterHelmValuesInit `json:"init"`
 }
 
 const (
-	ECLUSTER_NAME_SUFFIX   = "eclus-"
+	ucluster_NAME_SUFFIX   = "eclus-"
 	LOFT_HELM_REPO         = "loft"
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.0"
 )
 
-//+kubebuilder:rbac:groups=uffizzi.com,resources=ephemeralclusters,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=uffizzi.com,resources=ephemeralclusters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=uffizzi.com,resources=ephemeralclusters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the EphemeralCluster object against the actual cluster state, and then
+// the UffizziCluster object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	fluxYAML, err := getFluxInstallOutput()
@@ -82,15 +82,15 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	// For each EphemeralCluster custom resource, check if there is a HelmRelease
+	// For each UffizziCluster custom resource, check if there is a HelmRelease
 	// List all the HelmRelease custom resources and check if there are any with
 	// a name that matches the following format:
 	// eclus-<EpemeralCluster.Name>-<random-string>
 	// if there aren't any, then create a new HelmRelease custom resource
 	// with the name eclus-<EpemeralCluster.Name>-<random-string>
 
-	eClusterList := &eclusteruffizzicomv1alpha1.EphemeralClusterList{}
-	err = r.List(ctx, eClusterList)
+	uclusterList := &uclusteruffizzicomv1alpha1.UffizziClusterList{}
+	err = r.List(ctx, uclusterList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -101,8 +101,8 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	for _, eCluster := range eClusterList.Items {
-		helmReleaseNameSuffix := ECLUSTER_NAME_SUFFIX + eCluster.Name
+	for _, ucluster := range uclusterList.Items {
+		helmReleaseNameSuffix := ucluster_NAME_SUFFIX + ucluster.Name
 
 		// Check if there is a HelmRelease with the corresponding name
 		// If there isn't, then create a new HelmRelease
@@ -114,7 +114,7 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			loftHelmRepo := &fluxsourcev1.HelmRepository{
 				ObjectMeta: ctrl.ObjectMeta{
 					Name:      LOFT_HELM_REPO,
-					Namespace: eCluster.Namespace,
+					Namespace: ucluster.Namespace,
 				},
 				Spec: fluxsourcev1.HelmRepositorySpec{
 					URL: "https://charts.loft.sh",
@@ -133,8 +133,8 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				},
 			}
 
-			if len(eCluster.Spec.Helm) > 0 {
-				vclusterHelmValues.Init.Helm = eCluster.Spec.Helm
+			if len(ucluster.Spec.Helm) > 0 {
+				vclusterHelmValues.Init.Helm = ucluster.Spec.Helm
 			}
 
 			// marshal HelmValues struct to JSON
@@ -151,7 +151,7 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			newHelmRelease := &fluxhelmv2beta1.HelmRelease{
 				ObjectMeta: ctrl.ObjectMeta{
 					Name:      helmReleaseName,
-					Namespace: eCluster.Namespace,
+					Namespace: ucluster.Namespace,
 				},
 				Spec: fluxhelmv2beta1.HelmReleaseSpec{
 					Chart: fluxhelmv2beta1.HelmChartTemplate{
@@ -161,7 +161,7 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 							SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
 								Kind:      "HelmRepository",
 								Name:      LOFT_HELM_REPO,
-								Namespace: eCluster.Namespace,
+								Namespace: ucluster.Namespace,
 							},
 						},
 					},
@@ -174,7 +174,7 @@ func (r *EphemeralClusterReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			// in the annotations of the HelmReleases.
 			//
 			// Set the owner reference for the HelmRelease object
-			if err := controllerutil.SetControllerReference(&eCluster, newHelmRelease, r.Scheme); err != nil {
+			if err := controllerutil.SetControllerReference(&ucluster, newHelmRelease, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
 
@@ -219,9 +219,9 @@ func getFluxInstallOutput() (string, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *EphemeralClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eclusteruffizzicomv1alpha1.EphemeralCluster{}).
+		For(&uclusteruffizzicomv1alpha1.UffizziCluster{}).
 		// Watch HelmRelease resources
 		Watches(&source.Kind{Type: &fluxhelmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
 		Watches(&source.Kind{Type: &fluxsourcev1.HelmRepository{}}, &handler.EnqueueRequestForObject{}).

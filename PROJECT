@@ -16,8 +16,8 @@ resources:
     namespaced: true
   controller: true
   domain: uffizzi.com
-  group: ecluster.uffizzi.com
-  kind: EphemeralCluster
+  group: ucluster.uffizzi.com
+  kind: UffizziCluster
   path: github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

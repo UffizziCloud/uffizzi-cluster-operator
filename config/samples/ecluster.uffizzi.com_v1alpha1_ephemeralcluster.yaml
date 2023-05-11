@@ -1,12 +1,12 @@
 apiVersion: uffizzi.com/v1alpha1
-kind: EphemeralCluster
+kind: UffizziCluster
 metadata:
   labels:
-    app.kubernetes.io/name: ephemeralcluster
-    app.kubernetes.io/instance: ephemeralcluster-sample
+    app.kubernetes.io/name: UffizziCluster
+    app.kubernetes.io/instance: UffizziCluster-sample
     app.kubernetes.io/part-of: ephemeral-cluster-operator
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: ephemeral-cluster-operator
-  name: ephemeralcluster-sample
+  name: UffizziCluster-sample
 spec:
   # TODO(user): Add fields here
