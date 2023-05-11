@@ -89,8 +89,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// if there aren't any, then create a new HelmRelease custom resource
 	// with the name eclus-<EpemeralCluster.Name>-<random-string>
 
-	uclusterList := &uclusteruffizzicomv1alpha1.UffizziClusterList{}
-	err = r.List(ctx, uclusterList)
+	uClusterList := &uclusteruffizzicomv1alpha1.UffizziClusterList{}
+	err = r.List(ctx, uClusterList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -101,8 +101,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	for _, ucluster := range uclusterList.Items {
-		helmReleaseNameSuffix := ucluster_NAME_SUFFIX + ucluster.Name
+	for _, uCluster := range uClusterList.Items {
+		helmReleaseNameSuffix := ucluster_NAME_SUFFIX + uCluster.Name
 
 		// Check if there is a HelmRelease with the corresponding name
 		// If there isn't, then create a new HelmRelease
@@ -114,7 +114,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			loftHelmRepo := &fluxsourcev1.HelmRepository{
 				ObjectMeta: ctrl.ObjectMeta{
 					Name:      LOFT_HELM_REPO,
-					Namespace: ucluster.Namespace,
+					Namespace: uCluster.Namespace,
 				},
 				Spec: fluxsourcev1.HelmRepositorySpec{
 					URL: "https://charts.loft.sh",
@@ -127,18 +127,18 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				logger.Info("Error while creating HelmRepository", "", err)
 			}
 
-			vclusterHelmValues := VClusterHelmValues{
+			uClusterHelmValues := VClusterHelmValues{
 				Init: VClusterHelmValuesInit{
 					Manifests: fluxYAML,
 				},
 			}
 
-			if len(ucluster.Spec.Helm) > 0 {
-				vclusterHelmValues.Init.Helm = ucluster.Spec.Helm
+			if len(uCluster.Spec.Helm) > 0 {
+				uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
 			}
 
 			// marshal HelmValues struct to JSON
-			helmValuesRaw, err := json.Marshal(vclusterHelmValues)
+			helmValuesRaw, err := json.Marshal(uClusterHelmValues)
 			if err != nil {
 				fmt.Printf("Error marshaling JSON: %v\n", err)
 				return ctrl.Result{}, err
@@ -151,7 +151,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			newHelmRelease := &fluxhelmv2beta1.HelmRelease{
 				ObjectMeta: ctrl.ObjectMeta{
 					Name:      helmReleaseName,
-					Namespace: ucluster.Namespace,
+					Namespace: uCluster.Namespace,
 				},
 				Spec: fluxhelmv2beta1.HelmReleaseSpec{
 					Chart: fluxhelmv2beta1.HelmChartTemplate{
@@ -161,7 +161,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 							SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
 								Kind:      "HelmRepository",
 								Name:      LOFT_HELM_REPO,
-								Namespace: ucluster.Namespace,
+								Namespace: uCluster.Namespace,
 							},
 						},
 					},
@@ -174,12 +174,19 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// in the annotations of the HelmReleases.
 			//
 			// Set the owner reference for the HelmRelease object
-			if err := controllerutil.SetControllerReference(&ucluster, newHelmRelease, r.Scheme); err != nil {
+			if err := controllerutil.SetControllerReference(&uCluster, newHelmRelease, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
 
 			err = r.Create(ctx, newHelmRelease)
 			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			// reference the HelmRelease in the status
+			uCluster.Status.HelmReleaseName = helmReleaseName
+			if err := r.Status().Update(ctx, &uCluster); err != nil {
+				// Handle error
 				return ctrl.Result{}, err
 			}
 		}

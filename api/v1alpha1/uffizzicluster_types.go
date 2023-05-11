@@ -52,8 +52,9 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Ready            bool   `json:"ready,omitempty"`
+	HelmReleaseName  string `json:"helmReleaseName,omitempty"`
+	KubeConfigSecret string `json:"kubeConfigSecret,omitempty"`
 }
 
 //+kubebuilder:object:root=true

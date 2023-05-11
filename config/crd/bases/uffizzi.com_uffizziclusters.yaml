@@ -74,6 +74,13 @@ spec:
             type: object
           status:
             description: UffizziClusterStatus defines the observed state of UffizziCluster
+            properties:
+              helmReleaseName:
+                type: string
+              kubeConfigSecret:
+                type: string
+              ready:
+                type: boolean
             type: object
         type: object
     served: true
