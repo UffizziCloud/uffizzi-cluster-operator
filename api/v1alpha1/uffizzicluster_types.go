@@ -52,9 +52,9 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready            bool   `json:"ready,omitempty"`
-	HelmReleaseName  string `json:"helmReleaseName,omitempty"`
-	KubeConfigSecret string `json:"kubeConfigSecret,omitempty"`
+	Ready               bool   `json:"ready,omitempty"`
+	HelmReleaseRef      string `json:"helmReleaseRef,omitempty"`
+	KubeConfigSecretRef string `json:"kubeConfigSecretRef,omitempty"`
 }
 
 //+kubebuilder:object:root=true

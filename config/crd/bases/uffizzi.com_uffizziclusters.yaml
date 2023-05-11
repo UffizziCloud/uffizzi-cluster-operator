@@ -75,9 +75,9 @@ spec:
           status:
             description: UffizziClusterStatus defines the observed state of UffizziCluster
             properties:
-              helmReleaseName:
+              helmReleaseRef:
                 type: string
-              kubeConfigSecret:
+              kubeConfigSecretRef:
                 type: string
               ready:
                 type: boolean
