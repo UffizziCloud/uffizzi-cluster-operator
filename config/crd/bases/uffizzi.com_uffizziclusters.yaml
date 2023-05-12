@@ -18,7 +18,7 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .status.ready
       name: Ready
-      type: bool
+      type: boolean
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -84,9 +84,33 @@ spec:
               kubeConfig:
                 description: VClusterKubeConfig is the KubeConfig SecretReference
                   of the related VCluster
+                properties:
+                  secretRef:
+                    description: SecretKeyReference contains enough information to
+                      locate the referenced Kubernetes Secret object in the same namespace.
+                      Optionally a key can be specified. Use this type instead of
+                      core/v1 SecretKeySelector when the Key is optional and the Optional
+                      field is not applicable.
+                    properties:
+                      key:
+                        description: Key in the Secret, when not specified an implementation-specific
+                          default key is used.
+                        type: string
+                      name:
+                        description: Name of the Secret.
+                        type: string
+                    required:
+                    - name
+                    type: object
+                required:
+                - secretRef
                 type: object
               ready:
                 type: boolean
+            required:
+            - helmReleaseRef
+            - kubeConfig
+            - ready
             type: object
         type: object
     served: true

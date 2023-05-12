@@ -50,9 +50,9 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready               bool   `json:"ready"`
-	HelmReleaseRef      string `json:"helmReleaseRef"`
-	KubeConfig VClusterKubeConfig `json:"kubeConfig"`
+	Ready          bool               `json:"ready"`
+	HelmReleaseRef string             `json:"helmReleaseRef"`
+	KubeConfig     VClusterKubeConfig `json:"kubeConfig"`
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
@@ -62,7 +62,7 @@ type VClusterKubeConfig struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Ready",type=bool,JSONPath=`.status.ready`
+//+kubebuilder:printcolumn:name="Ready",type=boolean,JSONPath=`.status.ready`
 
 // UffizziCluster is the Schema for the UffizziClusters API
 type UffizziCluster struct {

@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/fluxcd/pkg/apis/meta"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
+	"time"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/ephemeral-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
@@ -54,7 +56,7 @@ type VClusterHelmValues struct {
 }
 
 const (
-	ucluster_NAME_SUFFIX   = "eclus-"
+	UCLUSTER_NAME_SUFFIX   = "uc-"
 	LOFT_HELM_REPO         = "loft"
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.0"
@@ -100,110 +102,118 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	helmReleaseName := ucluster_NAME_SUFFIX + uCluster.Name
+	helmReleaseName := UCLUSTER_NAME_SUFFIX + uCluster.Name
 
 	// Check if there is a HelmRelease with the corresponding name
 	// If there isn't, then create a new HelmRelease
 	if helmRelease, exists := helmReleaseExists(helmReleaseName, helmReleaseList); exists {
+		logger.Info("HelmRelease exists", "HelmRelease", helmRelease.Name)
 		// Update the EphemeralCluster status based on the HelmRelease status
 		for _, condition := range helmRelease.Status.Conditions {
 			if condition.Type == "Ready" {
-				uCluster.Status.Ready = condition.Status == metav1.ConditionTrue
-				if err := r.Status().Update(ctx, uCluster); err != nil {
-					return ctrl.Result{}, err
+				if condition.Status == metav1.ConditionTrue {
+					uCluster.Status.Ready = true
+					if err := r.Status().Update(ctx, uCluster); err != nil {
+						logger.Error(err, "Failed to update UffizziCluster status")
+						return ctrl.Result{}, err
+					}
+				} else {
+					logger.Info("UffizziCluster not ready yet", "HelmRelease", helmRelease.Name)
+					// Requeue the request to check the status of the HelmRelease
+					return ctrl.Result{RequeueAfter: time.Second * 2}, nil
 				}
+				logger.Info("UffizziCluster in Ready state", "UffizziCluster", uCluster.Name)
 				break
 			}
 		}
 
-		uCluster.Status.KubeConfig.SecretRef = helmRelease.Spec.KubeConfig.SecretRef
-		if err := r.Status().Update(ctx, uCluster); err != nil {
-			return ctrl.Result{}, err
-		}
-
-	} else {
-		// Create HelmRepository in the same namespace as the HelmRelease
-		loftHelmRepo := &fluxsourcev1.HelmRepository{
-			ObjectMeta: ctrl.ObjectMeta{
-				Name:      LOFT_HELM_REPO,
-				Namespace: uCluster.Namespace,
-			},
-			Spec: fluxsourcev1.HelmRepositorySpec{
-				URL: LOFT_CHART_REPO_URL,
-			},
-		}
-
-		err = r.Create(ctx, loftHelmRepo)
-		// check if error is because the HelmRepository already exists
-		if err != nil && !strings.Contains(err.Error(), "already exists") {
-			logger.Info("Error while creating HelmRepository", "", err)
-		}
-
-		uClusterHelmValues := VClusterHelmValues{
-			Init: VClusterHelmValuesInit{
-				Manifests: fluxYAML,
-			},
-		}
-
-		if len(uCluster.Spec.Helm) > 0 {
-			uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
-		}
-
-		// marshal HelmValues struct to JSON
-		helmValuesRaw, err := json.Marshal(uClusterHelmValues)
-		if err != nil {
-			fmt.Printf("Error marshaling JSON: %v\n", err)
-			return ctrl.Result{}, err
-		}
-
-		// Create the apiextensionsv1.JSON instance with the raw data
-		helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
-
-		// Create a new HelmRelease
-		newHelmRelease := &fluxhelmv2beta1.HelmRelease{
-			ObjectMeta: ctrl.ObjectMeta{
-				Name:      helmReleaseName,
-				Namespace: uCluster.Namespace,
-			},
-			Spec: fluxhelmv2beta1.HelmReleaseSpec{
-				Chart: fluxhelmv2beta1.HelmChartTemplate{
-					Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
-						Chart:   VCLUSTER_CHART,
-						Version: VCLUSTER_CHART_VERSION,
-						SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
-							Kind:      "HelmRepository",
-							Name:      LOFT_HELM_REPO,
-							Namespace: uCluster.Namespace,
-						},
-					},
-				},
-				ReleaseName: helmReleaseName,
-				Values:      &helmValuesJSONObj,
-			},
-		}
-
-		if err = controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		err = r.Create(ctx, newHelmRelease)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		// reference the HelmRelease in the status
-		uCluster.Status.HelmReleaseRef = helmReleaseName
-
-
-
-		if err := r.Status().Update(ctx, uCluster); err != nil {
-			// Handle error
-			return ctrl.Result{}, err
-		}
-
+		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	// Create HelmRepository in the same namespace as the HelmRelease
+	loftHelmRepo := &fluxsourcev1.HelmRepository{
+		ObjectMeta: ctrl.ObjectMeta{
+			Name:      LOFT_HELM_REPO,
+			Namespace: uCluster.Namespace,
+		},
+		Spec: fluxsourcev1.HelmRepositorySpec{
+			URL: LOFT_CHART_REPO_URL,
+		},
+	}
+
+	err = r.Create(ctx, loftHelmRepo)
+	// check if error is because the HelmRepository already exists
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		logger.Error(err, "Failed to create HelmRepository")
+	}
+
+	uClusterHelmValues := VClusterHelmValues{
+		Init: VClusterHelmValuesInit{
+			Manifests: fluxYAML,
+		},
+	}
+
+	if len(uCluster.Spec.Helm) > 0 {
+		uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
+	}
+
+	// marshal HelmValues struct to JSON
+	helmValuesRaw, err := json.Marshal(uClusterHelmValues)
+	if err != nil {
+		logger.Error(err, "Failed to marshal HelmValues struct")
+		return ctrl.Result{}, err
+	}
+
+	// Create the apiextensionsv1.JSON instance with the raw data
+	helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
+
+	// Create a new HelmRelease
+	newHelmRelease := &fluxhelmv2beta1.HelmRelease{
+		ObjectMeta: ctrl.ObjectMeta{
+			Name:      helmReleaseName,
+			Namespace: uCluster.Namespace,
+		},
+		Spec: fluxhelmv2beta1.HelmReleaseSpec{
+			Chart: fluxhelmv2beta1.HelmChartTemplate{
+				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
+					Chart:   VCLUSTER_CHART,
+					Version: VCLUSTER_CHART_VERSION,
+					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
+						Kind:      "HelmRepository",
+						Name:      LOFT_HELM_REPO,
+						Namespace: uCluster.Namespace,
+					},
+				},
+			},
+			ReleaseName: helmReleaseName,
+			Values:      &helmValuesJSONObj,
+		},
+	}
+
+	if err = controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
+		logger.Error(err, "Failed to set controller reference")
+		return ctrl.Result{}, err
+	}
+
+	err = r.Create(ctx, newHelmRelease)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// reference the HelmRelease in the status
+	uCluster.Status.HelmReleaseRef = helmReleaseName
+	uCluster.Status.KubeConfig.SecretRef = meta.SecretKeyReference{
+		Name: "vc-" + helmReleaseName,
+	}
+
+	if err := r.Status().Update(ctx, uCluster); err != nil {
+		logger.Error(err, "Failed to update UffizziCluster status")
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Created HelmRelease", "HelmRelease", newHelmRelease.Name)
+	// Requeue the request to check the status of the HelmRelease
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func helmReleaseExists(name string, helmReleaseList *fluxhelmv2beta1.HelmReleaseList) (*fluxhelmv2beta1.HelmRelease, bool) {
@@ -230,8 +240,9 @@ func getFluxInstallOutput() (string, error) {
 func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&uclusteruffizzicomv1alpha1.UffizziCluster{}).
-		// Watch HelmRelease resources
+		// Watch HelmRelease reconciled by the Helm Controller
 		Watches(&source.Kind{Type: &fluxhelmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
+		// Watch HelmRepository reconciled by the Source Controller
 		Watches(&source.Kind{Type: &fluxsourcev1.HelmRepository{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
