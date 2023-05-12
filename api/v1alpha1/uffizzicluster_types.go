@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/fluxcd/pkg/apis/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,9 +43,6 @@ type HelmChart struct {
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	Components string      `json:"components,omitempty"`
 	TTL        string      `json:"ttl,omitempty"`
 	Helm       []HelmChart `json:"helm,omitempty"`
@@ -52,9 +50,14 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready               bool   `json:"ready,omitempty"`
-	HelmReleaseRef      string `json:"helmReleaseRef,omitempty"`
-	KubeConfigSecretRef string `json:"kubeConfigSecretRef,omitempty"`
+	Ready               bool   `json:"ready"`
+	HelmReleaseRef      string `json:"helmReleaseRef"`
+	KubeConfig VClusterKubeConfig `json:"kubeConfig"`
+}
+
+// VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
+type VClusterKubeConfig struct {
+	SecretRef meta.SecretKeyReference `json:"secretRef"`
 }
 
 //+kubebuilder:object:root=true

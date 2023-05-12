@@ -24,7 +24,6 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"math/rand"
 	"os/exec"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -116,6 +115,12 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				break
 			}
 		}
+
+		uCluster.Status.KubeConfig.SecretRef = helmRelease.Spec.KubeConfig.SecretRef
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			return ctrl.Result{}, err
+		}
+
 	} else {
 		// Create HelmRepository in the same namespace as the HelmRelease
 		loftHelmRepo := &fluxsourcev1.HelmRepository{
@@ -188,6 +193,9 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		// reference the HelmRelease in the status
 		uCluster.Status.HelmReleaseRef = helmReleaseName
+
+
+
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			// Handle error
 			return ctrl.Result{}, err
@@ -205,15 +213,6 @@ func helmReleaseExists(name string, helmReleaseList *fluxhelmv2beta1.HelmRelease
 		}
 	}
 	return nil, false
-}
-
-func randString(n int) string {
-	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz")
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
 }
 
 func getFluxInstallOutput() (string, error) {

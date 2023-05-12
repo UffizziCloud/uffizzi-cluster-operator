@@ -81,8 +81,10 @@ spec:
             properties:
               helmReleaseRef:
                 type: string
-              kubeConfigSecretRef:
-                type: string
+              kubeConfig:
+                description: VClusterKubeConfig is the KubeConfig SecretReference
+                  of the related VCluster
+                type: object
               ready:
                 type: boolean
             type: object
