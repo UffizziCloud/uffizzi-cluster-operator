@@ -73,6 +73,8 @@ spec:
                   - release
                   type: object
                 type: array
+              ingress:
+                type: string
               ttl:
                 type: string
             type: object

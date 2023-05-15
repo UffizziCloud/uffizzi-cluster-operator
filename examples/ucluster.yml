@@ -3,9 +3,16 @@ apiVersion: uffizzi.com/v1alpha1
 metadata:
   name: sample
 spec:
+  ingress: "nginx"
   ttl: 1h
   components: 'helm'
   helm:
+  - chart:
+      name: kubernetes-dashboard
+      repo: https://kubernetes.github.io/dashboard/
+    release:
+      name: kubernetes-dashboard
+      namespace: kubernetes-dashboard
   - chart:
       name: testkube
       repo: https://kubeshop.github.io/helm-charts

@@ -20,8 +20,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
+	"github.com/pkg/errors"
+	networkingv1 "k8s.io/api/networking/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
+	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
 	"time"
 
@@ -46,7 +47,7 @@ type UffizziClusterReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// Helm values for the vcluster chart
+// VClusterHelmValuesInit - Helm values for the vcluster chart
 type VClusterHelmValuesInit struct {
 	Manifests string                                 `json:"manifests"`
 	Helm      []uclusteruffizzicomv1alpha1.HelmChart `json:"helm"`
@@ -79,14 +80,6 @@ const (
 func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// Get the YAML required to create Flux's helm and source controllers
-	// in the VCluster
-	fluxYAML, err := getFluxInstallOutput()
-	if err != nil {
-		fmt.Printf("Error running flux install command: %v\n", err)
-		return ctrl.Result{}, err
-	}
-
 	// Fetch the UffizziCluster instance
 	uCluster := &uclusteruffizzicomv1alpha1.UffizziCluster{}
 	if err := r.Get(ctx, req.NamespacedName, uCluster); err != nil {
@@ -97,7 +90,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Check if there is a corresponding HelmRelease which already exists
 	// if not create one
 	helmReleaseList := &fluxhelmv2beta1.HelmReleaseList{}
-	err = r.List(ctx, helmReleaseList)
+	err := r.List(ctx, helmReleaseList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -130,21 +123,98 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	// Create HelmRepository in the same namespace as the HelmRelease
-	loftHelmRepo := &fluxsourcev1.HelmRepository{
-		ObjectMeta: ctrl.ObjectMeta{
-			Name:      LOFT_HELM_REPO,
-			Namespace: uCluster.Namespace,
-		},
-		Spec: fluxsourcev1.HelmRepositorySpec{
-			URL: LOFT_CHART_REPO_URL,
-		},
-	}
-
-	err = r.Create(ctx, loftHelmRepo)
+	err = r.createHelmRepo(ctx, LOFT_HELM_REPO, uCluster.Namespace, LOFT_CHART_REPO_URL)
 	// check if error is because the HelmRepository already exists
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		logger.Error(err, "Failed to create HelmRepository")
+	}
+
+	newHelmRelease, err := r.createVClusterHelmRelease(ctx, uCluster, helmReleaseName)
+	if err != nil {
+		logger.Error(err, "Failed to create HelmRelease")
+		return ctrl.Result{}, err
+	}
+
+	var nginxIngressClass = "nginx"
+
+	if uCluster.Spec.Ingress == "nginx" {
+		ingress := &networkingv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      helmReleaseName + "-ingress",
+				Namespace: uCluster.Namespace,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
+					"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
+					"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
+				},
+			},
+			Spec: networkingv1.IngressSpec{
+				IngressClassName: &nginxIngressClass,
+				Rules: []networkingv1.IngressRule{
+					{
+						Host: uCluster.Name + "-vcluster.deleteme2023.uffizzi.cloud",
+						IngressRuleValue: networkingv1.IngressRuleValue{
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{
+									{
+										Path: "/",
+										PathType: func() *networkingv1.PathType {
+											pt := networkingv1.PathTypeImplementationSpecific
+											return &pt
+										}(),
+										Backend: networkingv1.IngressBackend{
+											Service: &networkingv1.IngressServiceBackend{
+												Name: uCluster.Name,
+												Port: networkingv1.ServiceBackendPort{
+													Number: 443,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// create the nginx ingress
+		if err := r.Create(ctx, ingress); err != nil {
+			if !strings.Contains(err.Error(), "already exists") {
+				// If the Ingress already exists, update it
+				if err := r.Update(ctx, ingress); err != nil {
+					logger.Error(err, "Failed to update Ingress")
+					return ctrl.Result{}, err
+				}
+			} else {
+				logger.Error(err, "Failed to create Ingress")
+				return ctrl.Result{}, err
+			}
+		}
+	}
+
+	// reference the HelmRelease in the status
+	uCluster.Status.HelmReleaseRef = helmReleaseName
+	uCluster.Status.KubeConfig.SecretRef = meta.SecretKeyReference{
+		Name: "vc-" + helmReleaseName,
+	}
+
+	if err := r.Status().Update(ctx, uCluster); err != nil {
+		logger.Error(err, "Failed to update UffizziCluster status")
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Created HelmRelease", "HelmRelease", newHelmRelease.Name)
+	// Requeue the request to check the status of the HelmRelease
+	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster, helmReleaseName string) (*fluxhelmv2beta1.HelmRelease, error) {
+
+	fluxYAML, err := getFluxInstallOutput()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get flux install output")
 	}
 
 	uClusterHelmValues := VClusterHelmValues{
@@ -160,8 +230,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// marshal HelmValues struct to JSON
 	helmValuesRaw, err := json.Marshal(uClusterHelmValues)
 	if err != nil {
-		logger.Error(err, "Failed to marshal HelmValues struct")
-		return ctrl.Result{}, err
+		return nil, errors.Wrap(err, "failed to marshal HelmValues struct to JSON")
 	}
 
 	// Create the apiextensionsv1.JSON instance with the raw data
@@ -190,30 +259,32 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		},
 	}
 
-	if err = controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
-		logger.Error(err, "Failed to set controller reference")
-		return ctrl.Result{}, err
+	if err := controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
+		return nil, errors.Wrap(err, "failed to set controller reference")
 	}
 
 	err = r.Create(ctx, newHelmRelease)
 	if err != nil {
-		return ctrl.Result{}, err
+		return nil, errors.Wrap(err, "failed to create HelmRelease")
 	}
 
-	// reference the HelmRelease in the status
-	uCluster.Status.HelmReleaseRef = helmReleaseName
-	uCluster.Status.KubeConfig.SecretRef = meta.SecretKeyReference{
-		Name: "vc-" + helmReleaseName,
+	return newHelmRelease, nil
+}
+
+func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, namespace, url string) error {
+	// Create HelmRepository in the same namespace as the HelmRelease
+	loftHelmRepo := &fluxsourcev1.HelmRepository{
+		ObjectMeta: ctrl.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: fluxsourcev1.HelmRepositorySpec{
+			URL: url,
+		},
 	}
 
-	if err := r.Status().Update(ctx, uCluster); err != nil {
-		logger.Error(err, "Failed to update UffizziCluster status")
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("Created HelmRelease", "HelmRelease", newHelmRelease.Name)
-	// Requeue the request to check the status of the HelmRelease
-	return ctrl.Result{Requeue: true}, nil
+	err := r.Create(ctx, loftHelmRepo)
+	return err
 }
 
 func helmReleaseExists(name string, helmReleaseList *fluxhelmv2beta1.HelmReleaseList) (*fluxhelmv2beta1.HelmRelease, bool) {
@@ -241,8 +312,8 @@ func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&uclusteruffizzicomv1alpha1.UffizziCluster{}).
 		// Watch HelmRelease reconciled by the Helm Controller
-		Watches(&source.Kind{Type: &fluxhelmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&controllerruntimesource.Kind{Type: &fluxhelmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
 		// Watch HelmRepository reconciled by the Source Controller
-		Watches(&source.Kind{Type: &fluxsourcev1.HelmRepository{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&controllerruntimesource.Kind{Type: &fluxsourcev1.HelmRepository{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }

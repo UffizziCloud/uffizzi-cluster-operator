@@ -43,6 +43,7 @@ type HelmChart struct {
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
+	Ingress    string      `json:"ingress,omitempty"`
 	Components string      `json:"components,omitempty"`
 	TTL        string      `json:"ttl,omitempty"`
 	Helm       []HelmChart `json:"helm,omitempty"`
