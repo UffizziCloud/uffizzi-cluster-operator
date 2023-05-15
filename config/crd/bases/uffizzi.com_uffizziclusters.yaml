@@ -74,7 +74,12 @@ spec:
                   type: object
                 type: array
               ingress:
-                type: string
+                properties:
+                  class:
+                    type: string
+                  host:
+                    type: string
+                type: object
               ttl:
                 type: string
             type: object

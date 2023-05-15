@@ -47,13 +47,70 @@ type UffizziClusterReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// VClusterHelmValuesInit - Helm values for the vcluster chart
-type VClusterHelmValuesInit struct {
+// VClusterInit - resources which are created during the init phase of the vcluster
+type VClusterInit struct {
 	Manifests string                                 `json:"manifests"`
 	Helm      []uclusteruffizzicomv1alpha1.HelmChart `json:"helm"`
 }
-type VClusterHelmValues struct {
-	Init VClusterHelmValuesInit `json:"init"`
+
+// VClusterSyncer - parameters to create the syncer with
+// https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
+type VClusterSyncer struct {
+	ExtraArgs []string `json:"extraArgs"`
+}
+
+// VClusterIngress - parameters to create the ingress with
+type VClusterIngress struct {
+	Enabled bool `json:"enabled"`
+}
+
+type VClusterResourceQuota struct {
+	Quota VClusterResourceQuotaDefiniton `json:"quota"`
+}
+
+type VClusterResourceQuotaDefiniton struct {
+	ServicesNodePorts int `json:"services.nodeports"`
+}
+
+type VCluster struct {
+	Init            VClusterInit            `json:"init"`
+	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
+	Ingress         VClusterIngress         `json:"ingress,omitempty"`
+	FsGroup         int64                   `json:"fsgroup"`
+	Isolation       VClusterIsolation       `json:"isolation"`
+	NodeSelector    VClusterNodeSelector    `json:"nodeSelector"`
+	SecurityContext VClusterSecurityContext `json:"securityContext"`
+	Tolerations     []VClusterToleration    `json:"tolerations"`
+}
+
+// VClusterIsolation - parameters to define the isolation of the cluster
+type VClusterIsolation struct {
+	Enabled             bool                  `json:"enabled"`
+	PodSecurityStandard string                `json:"podSecurityStandard"`
+	ResourceQuota       VClusterResourceQuota `json:"resourceQuota"`
+}
+
+// VClusterNodeSelector - parameters to define the node selector of the cluster
+type VClusterNodeSelector struct {
+	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime"`
+}
+
+type VClusterSecurityContextCapabilities struct {
+	Drop []string `json:"drop"`
+}
+
+// VClusterSecurityContext - parameters to define the security context of the cluster
+type VClusterSecurityContext struct {
+	Capabilities           VClusterSecurityContextCapabilities `json:"capabilities"`
+	ReadOnlyRootFilesystem bool                                `json:"readOnlyRootFilesystem"`
+	RunAsNonRoot           bool                                `json:"runAsNonRoot"`
+	RunAsUser              int64                               `json:"runAsUser"`
+}
+
+type VClusterToleration struct {
+	Effect   string `json:"effect"`
+	Key      string `json:"key"`
+	Operator string `json:"operator"`
 }
 
 const (
@@ -62,6 +119,7 @@ const (
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.0"
 	LOFT_CHART_REPO_URL    = "https://charts.loft.sh"
+	INGRESS_CLASS_NGINX    = "nginx"
 )
 
 //+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters,verbs=get;list;watch;create;update;patch;delete
@@ -97,8 +155,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	helmReleaseName := UCLUSTER_NAME_SUFFIX + uCluster.Name
 
-	// Check if there is a HelmRelease with the corresponding name
-	// If there isn't, then create a new HelmRelease
+	// If there is a VCluster HelmRelease created for this UffizziCluster
+	// then update the status of the UffizziCluster based on the status of the HelmRelease
 	if helmRelease, exists := helmReleaseExists(helmReleaseName, helmReleaseList); exists {
 		logger.Info("HelmRelease exists", "HelmRelease", helmRelease.Name)
 		// Update the EphemeralCluster status based on the HelmRelease status
@@ -119,7 +177,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				break
 			}
 		}
-
 		return ctrl.Result{}, err
 	}
 
@@ -135,9 +192,10 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	var nginxIngressClass = "nginx"
-
-	if uCluster.Spec.Ingress == "nginx" {
+	var (
+		nginxIngressClass = INGRESS_CLASS_NGINX
+	)
+	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
 		ingress := &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      helmReleaseName + "-ingress",
@@ -152,7 +210,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				IngressClassName: &nginxIngressClass,
 				Rules: []networkingv1.IngressRule{
 					{
-						Host: uCluster.Name + "-vcluster.deleteme2023.uffizzi.cloud",
+						Host: getUClusterIngressHost(uCluster),
 						IngressRuleValue: networkingv1.IngressRuleValue{
 							HTTP: &networkingv1.HTTPIngressRuleValue{
 								Paths: []networkingv1.HTTPIngressPath{
@@ -164,7 +222,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 										}(),
 										Backend: networkingv1.IngressBackend{
 											Service: &networkingv1.IngressServiceBackend{
-												Name: uCluster.Name,
+												Name: helmReleaseName,
 												Port: networkingv1.ServiceBackendPort{
 													Number: 443,
 												},
@@ -177,6 +235,11 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					},
 				},
 			},
+		}
+
+		if err := controllerutil.SetControllerReference(uCluster, ingress, r.Scheme); err != nil {
+			logger.Error(err, "Failed to create Ingress")
+			return ctrl.Result{}, err
 		}
 
 		// create the nginx ingress
@@ -217,10 +280,57 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		return nil, errors.Wrap(err, "failed to get flux install output")
 	}
 
-	uClusterHelmValues := VClusterHelmValues{
-		Init: VClusterHelmValuesInit{
+	var (
+		TLSSanArgValue              = getUClusterIngressHost(uCluster)
+		OutKubeConfigServerArgValue = "https://" + TLSSanArgValue
+		//KubeConfigSecretName        = "vc-" + helmReleaseName
+	)
+
+	uClusterHelmValues := VCluster{
+		Init: VClusterInit{
 			Manifests: fluxYAML,
 		},
+		FsGroup: 12345,
+		Isolation: VClusterIsolation{
+			Enabled:             true,
+			PodSecurityStandard: "baseline",
+			ResourceQuota: VClusterResourceQuota{
+				Quota: VClusterResourceQuotaDefiniton{
+					ServicesNodePorts: 5,
+				},
+			},
+		},
+		NodeSelector: VClusterNodeSelector{
+			SandboxGKEIORuntime: "gvisor",
+		},
+		SecurityContext: VClusterSecurityContext{
+			Capabilities: VClusterSecurityContextCapabilities{
+				Drop: []string{"all"},
+			},
+		},
+		Tolerations: []VClusterToleration{
+			{
+				Key:      "sandbox.gke.io/runtime",
+				Effect:   "NoSchedule",
+				Operator: "Exists",
+			},
+		},
+		Syncer: VClusterSyncer{
+			ExtraArgs: []string{
+				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
+				"--node-selector=sandbox.gke.io/runtime=gvisor",
+				"--enforce-node-selector",
+			},
+		},
+	}
+
+	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
+		uClusterHelmValues.Ingress.Enabled = true
+		uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
+			"--tls-san="+TLSSanArgValue,
+			"--out-kube-config-server="+OutKubeConfigServerArgValue,
+			//"--out-kube-config-secret="+KubeConfigSecretName,
+		)
 	}
 
 	if len(uCluster.Spec.Helm) > 0 {
@@ -269,6 +379,10 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 	}
 
 	return newHelmRelease, nil
+}
+
+func getUClusterIngressHost(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
+	return uCluster.Name + "-ucluster." + uCluster.Spec.Ingress.Host
 }
 
 func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, namespace, url string) error {

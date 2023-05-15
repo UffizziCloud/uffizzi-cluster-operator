@@ -3,7 +3,9 @@ apiVersion: uffizzi.com/v1alpha1
 metadata:
   name: sample
 spec:
-  ingress: "nginx"
+  ingress:
+    class: "nginx"
+    host: deleteme2023.uffizzi.cloud
   ttl: 1h
   components: 'helm'
   helm:

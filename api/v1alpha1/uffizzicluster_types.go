@@ -41,12 +41,17 @@ type HelmChart struct {
 	Release HelmReleaseInfo `json:"release"`
 }
 
+type UffizziClusterIngress struct {
+	Host  string `json:"host,omitempty"`
+	Class string `json:"class,omitempty"`
+}
+
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
-	Ingress    string      `json:"ingress,omitempty"`
-	Components string      `json:"components,omitempty"`
-	TTL        string      `json:"ttl,omitempty"`
-	Helm       []HelmChart `json:"helm,omitempty"`
+	Ingress    UffizziClusterIngress `json:"ingress,omitempty"`
+	Components string                `json:"components,omitempty"`
+	TTL        string                `json:"ttl,omitempty"`
+	Helm       []HelmChart           `json:"helm,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
