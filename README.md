@@ -17,6 +17,8 @@ them (if you are using GKE).
 flux install --namespace=flux-system --components="source-controller,helm-controller" --toleration-keys="sandbox.gke.io/runtime"
 ```
 
+The NGINX Ingress controller also need to be installed in the said cluster with SSL Passthrough enabled (disabled by default) https://kubernetes.github.io/ingress-nginx/user-guide/tls/#ssl-passthrough.
+
 ## Development
 
 To install the CRD for UffizziCluster and run the operator locally, use the following command:
