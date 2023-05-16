@@ -19,6 +19,9 @@ spec:
     - jsonPath: .status.ready
       name: Ready
       type: boolean
+    - jsonPath: .status.host
+      name: Host
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -79,6 +82,25 @@ spec:
                     type: string
                   host:
                     type: string
+                  services:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        path:
+                          type: string
+                        port:
+                          format: int32
+                          type: integer
+                      required:
+                      - name
+                      - namespace
+                      - path
+                      - port
+                      type: object
+                    type: array
                 type: object
               ttl:
                 type: string
@@ -87,6 +109,8 @@ spec:
             description: UffizziClusterStatus defines the observed state of UffizziCluster
             properties:
               helmReleaseRef:
+                type: string
+              host:
                 type: string
               kubeConfig:
                 description: VClusterKubeConfig is the KubeConfig SecretReference
@@ -116,6 +140,7 @@ spec:
                 type: boolean
             required:
             - helmReleaseRef
+            - host
             - kubeConfig
             - ready
             type: object

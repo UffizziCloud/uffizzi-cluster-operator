@@ -47,6 +47,18 @@ type UffizziClusterReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+type VCluster struct {
+	Init            VClusterInit            `json:"init,omitempty"`
+	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
+	Ingress         VClusterIngress         `json:"ingress,omitempty"`
+	FsGroup         int64                   `json:"fsgroup,omitempty"`
+	Isolation       VClusterIsolation       `json:"isolation,omitempty"`
+	NodeSelector    VClusterNodeSelector    `json:"nodeSelector,omitempty"`
+	SecurityContext VClusterSecurityContext `json:"securityContext,omitempty"`
+	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
+	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
+}
+
 // VClusterInit - resources which are created during the init phase of the vcluster
 type VClusterInit struct {
 	Manifests string                                 `json:"manifests"`
@@ -72,15 +84,13 @@ type VClusterResourceQuotaDefiniton struct {
 	ServicesNodePorts int `json:"services.nodeports"`
 }
 
-type VCluster struct {
-	Init            VClusterInit            `json:"init"`
-	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
-	Ingress         VClusterIngress         `json:"ingress,omitempty"`
-	FsGroup         int64                   `json:"fsgroup"`
-	Isolation       VClusterIsolation       `json:"isolation"`
-	NodeSelector    VClusterNodeSelector    `json:"nodeSelector"`
-	SecurityContext VClusterSecurityContext `json:"securityContext"`
-	Tolerations     []VClusterToleration    `json:"tolerations"`
+type VClusterMapServicesFromVirtual struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+type VClusterMapServices struct {
+	FromVirtual []VClusterMapServicesFromVirtual `json:"fromVirtual"`
 }
 
 // VClusterIsolation - parameters to define the isolation of the cluster
@@ -192,11 +202,9 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	var (
-		nginxIngressClass = INGRESS_CLASS_NGINX
-	)
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
-		ingress := &networkingv1.Ingress{
+		nginxIngressClass := INGRESS_CLASS_NGINX
+		clusterIngress := &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      helmReleaseName + "-ingress",
 				Namespace: uCluster.Namespace,
@@ -237,22 +245,88 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			},
 		}
 
-		if err := controllerutil.SetControllerReference(uCluster, ingress, r.Scheme); err != nil {
-			logger.Error(err, "Failed to create Ingress")
+		servicesIngress := &networkingv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      helmReleaseName + "-services-ingress",
+				Namespace: uCluster.Namespace,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
+					//"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
+					//"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
+				},
+			},
+			Spec: networkingv1.IngressSpec{
+				IngressClassName: &nginxIngressClass,
+				Rules: []networkingv1.IngressRule{
+					{
+						Host: getUClusterServicesIngressHost(uCluster),
+						IngressRuleValue: networkingv1.IngressRuleValue{
+							HTTP: &networkingv1.HTTPIngressRuleValue{
+								Paths: []networkingv1.HTTPIngressPath{},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		if err := controllerutil.SetControllerReference(uCluster, clusterIngress, r.Scheme); err != nil {
+			logger.Error(err, "Failed to create Cluster Ingress")
 			return ctrl.Result{}, err
 		}
 
 		// create the nginx ingress
-		if err := r.Create(ctx, ingress); err != nil {
-			if !strings.Contains(err.Error(), "already exists") {
+		if err := r.Create(ctx, clusterIngress); err != nil {
+			if strings.Contains(err.Error(), "already exists") {
 				// If the Ingress already exists, update it
-				if err := r.Update(ctx, ingress); err != nil {
-					logger.Error(err, "Failed to update Ingress")
+				if err := r.Update(ctx, clusterIngress); err != nil {
+					logger.Error(err, "Failed to update Cluster Ingress")
 					return ctrl.Result{}, err
 				}
 			} else {
-				logger.Error(err, "Failed to create Ingress")
+				logger.Error(err, "Failed to create Cluster Ingress")
 				return ctrl.Result{}, err
+			}
+		}
+
+		if uCluster.Spec.Ingress.Services != nil {
+			// for every service in the ingress spec
+			// create a path for the ingress
+			for _, service := range uCluster.Spec.Ingress.Services {
+				servicesIngress.Spec.Rules[0].IngressRuleValue.HTTP.Paths = append(
+					servicesIngress.Spec.Rules[0].IngressRuleValue.HTTP.Paths, networkingv1.HTTPIngressPath{
+						Path: service.Path,
+						PathType: func() *networkingv1.PathType {
+							pt := networkingv1.PathTypeImplementationSpecific
+							return &pt
+						}(),
+						Backend: networkingv1.IngressBackend{
+							Service: &networkingv1.IngressServiceBackend{
+								Name: helmReleaseName + "-" + service.Name,
+								Port: networkingv1.ServiceBackendPort{
+									Number: service.Port,
+								},
+							},
+						},
+					})
+			}
+
+			if err := controllerutil.SetControllerReference(uCluster, servicesIngress, r.Scheme); err != nil {
+				logger.Error(err, "Failed to create Services Ingress")
+				return ctrl.Result{}, err
+			}
+
+			if err := r.Create(ctx, servicesIngress); err != nil {
+				if strings.Contains(err.Error(), "already exists") {
+					// If the Ingress already exists, update it
+					if err := r.Update(ctx, servicesIngress); err != nil {
+						logger.Error(err, "Failed to update Services Ingress")
+						return ctrl.Result{}, err
+					}
+				} else {
+					logger.Error(err, "Failed to create Services Ingress")
+					return ctrl.Result{}, err
+				}
 			}
 		}
 	}
@@ -262,6 +336,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	uCluster.Status.KubeConfig.SecretRef = meta.SecretKeyReference{
 		Name: "vc-" + helmReleaseName,
 	}
+	uCluster.Status.Host = getUClusterIngressHost(uCluster)
 
 	if err := r.Status().Update(ctx, uCluster); err != nil {
 		logger.Error(err, "Failed to update UffizziCluster status")
@@ -331,6 +406,15 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			"--out-kube-config-server="+OutKubeConfigServerArgValue,
 			//"--out-kube-config-secret="+KubeConfigSecretName,
 		)
+
+		if uCluster.Spec.Ingress.Services != nil {
+			for _, service := range uCluster.Spec.Ingress.Services {
+				uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
+					From: service.Namespace + "/" + service.Name,
+					To:   helmReleaseName + "-" + service.Name,
+				})
+			}
+		}
 	}
 
 	if len(uCluster.Spec.Helm) > 0 {
@@ -383,6 +467,10 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 
 func getUClusterIngressHost(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
 	return uCluster.Name + "-ucluster." + uCluster.Spec.Ingress.Host
+}
+
+func getUClusterServicesIngressHost(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
+	return uCluster.Name + "-ucluster-services." + uCluster.Spec.Ingress.Host
 }
 
 func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, namespace, url string) error {

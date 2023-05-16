@@ -6,6 +6,15 @@ spec:
   ingress:
     class: "nginx"
     host: deleteme2023.uffizzi.cloud
+    services:
+    - name: kubernetes-dashboard
+      namespace: kubernetes-dashboard
+      path: /
+      port: 443
+    - name: testkube-dashboard
+      namespace: testkube
+      path: /testkube/
+      port: 8080
   ttl: 1h
   components: 'helm'
   helm:

@@ -41,9 +41,17 @@ type HelmChart struct {
 	Release HelmReleaseInfo `json:"release"`
 }
 
+type ExposedVClusterService struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Path      string `json:"path"`
+	Port      int32  `json:"port"`
+}
+
 type UffizziClusterIngress struct {
-	Host  string `json:"host,omitempty"`
-	Class string `json:"class,omitempty"`
+	Host     string                   `json:"host,omitempty"`
+	Class    string                   `json:"class,omitempty"`
+	Services []ExposedVClusterService `json:"services,omitempty"`
 }
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
@@ -59,6 +67,7 @@ type UffizziClusterStatus struct {
 	Ready          bool               `json:"ready"`
 	HelmReleaseRef string             `json:"helmReleaseRef"`
 	KubeConfig     VClusterKubeConfig `json:"kubeConfig"`
+	Host           string             `json:"host"`
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
@@ -69,6 +78,7 @@ type VClusterKubeConfig struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Ready",type=boolean,JSONPath=`.status.ready`
+//+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
 
 // UffizziCluster is the Schema for the UffizziClusters API
 type UffizziCluster struct {
