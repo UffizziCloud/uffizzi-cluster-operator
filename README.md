@@ -1,4 +1,4 @@
-# Ephemeral Cluster Operator
+# Uffizzi Cluster Operator
 
 A Kubernetes operator for creating ephemeral clusters. 
 
