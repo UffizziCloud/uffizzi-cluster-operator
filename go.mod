@@ -1,4 +1,4 @@
-module github.com/UffizziCloud/ephemeral-cluster-operator
+module github.com/UffizziCloud/uffizzi-cluster-operator
 
 go 1.19
 

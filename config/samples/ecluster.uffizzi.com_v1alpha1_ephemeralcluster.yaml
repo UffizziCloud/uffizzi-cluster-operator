@@ -4,9 +4,9 @@ metadata:
   labels:
     app.kubernetes.io/name: UffizziCluster
     app.kubernetes.io/instance: UffizziCluster-sample
-    app.kubernetes.io/part-of: ephemeral-cluster-operator
+    app.kubernetes.io/part-of: uffizzi-cluster-operator
     app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: ephemeral-cluster-operator
+    app.kubernetes.io/created-by: uffizzi-cluster-operator
   name: UffizziCluster-sample
 spec:
   # TODO(user): Add fields here

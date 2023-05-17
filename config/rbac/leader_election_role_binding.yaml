@@ -5,8 +5,8 @@ metadata:
     app.kubernetes.io/name: rolebinding
     app.kubernetes.io/instance: leader-election-rolebinding
     app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: ephemeral-cluster-operator
-    app.kubernetes.io/part-of: ephemeral-cluster-operator
+    app.kubernetes.io/created-by: uffizzi-cluster-operator
+    app.kubernetes.io/part-of: uffizzi-cluster-operator
     app.kubernetes.io/managed-by: kustomize
   name: leader-election-rolebinding
 roleRef:

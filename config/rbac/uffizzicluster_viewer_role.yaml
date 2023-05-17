@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/name: clusterrole
     app.kubernetes.io/instance: UffizziCluster-viewer-role
     app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: ephemeral-cluster-operator
-    app.kubernetes.io/part-of: ephemeral-cluster-operator
+    app.kubernetes.io/created-by: uffizzi-cluster-operator
+    app.kubernetes.io/part-of: uffizzi-cluster-operator
     app.kubernetes.io/managed-by: kustomize
   name: UffizziCluster-viewer-role
 rules:

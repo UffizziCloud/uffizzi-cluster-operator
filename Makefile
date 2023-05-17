@@ -28,8 +28,8 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# uffizzi.com/ephemeral-cluster-operator-bundle:$VERSION and uffizzi.com/ephemeral-cluster-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= uffizzi.com/ephemeral-cluster-operator
+# uffizzi.com/uffizzi-cluster-operator-bundle:$VERSION and uffizzi.com/uffizzi-cluster-operator-catalog:$VERSION.
+IMAGE_TAG_BASE ?= uffizzi.com/uffizzi-cluster-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
