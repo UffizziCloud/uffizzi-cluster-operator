@@ -44,8 +44,13 @@ type HelmChart struct {
 type ExposedVClusterService struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
-	Path      string `json:"path"`
 	Port      int32  `json:"port"`
+}
+
+type ExposedVClusterServiceStatus struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Host      string `json:"host"`
 }
 
 type UffizziClusterIngress struct {
@@ -64,10 +69,11 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready          bool               `json:"ready"`
-	HelmReleaseRef string             `json:"helmReleaseRef"`
-	KubeConfig     VClusterKubeConfig `json:"kubeConfig"`
-	Host           string             `json:"host"`
+	Ready           bool                           `json:"ready"`
+	HelmReleaseRef  string                         `json:"helmReleaseRef"`
+	KubeConfig      VClusterKubeConfig             `json:"kubeConfig"`
+	Host            string                         `json:"host"`
+	ExposedServices []ExposedVClusterServiceStatus `json:"exposedServices"`
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster

@@ -89,15 +89,12 @@ spec:
                           type: string
                         namespace:
                           type: string
-                        path:
-                          type: string
                         port:
                           format: int32
                           type: integer
                       required:
                       - name
                       - namespace
-                      - path
                       - port
                       type: object
                     type: array
@@ -108,6 +105,21 @@ spec:
           status:
             description: UffizziClusterStatus defines the observed state of UffizziCluster
             properties:
+              exposedServices:
+                items:
+                  properties:
+                    host:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - host
+                  - name
+                  - namespace
+                  type: object
+                type: array
               helmReleaseRef:
                 type: string
               host:
@@ -139,6 +151,7 @@ spec:
               ready:
                 type: boolean
             required:
+            - exposedServices
             - helmReleaseRef
             - host
             - kubeConfig
