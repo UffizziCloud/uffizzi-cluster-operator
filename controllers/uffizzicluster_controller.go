@@ -309,6 +309,26 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					},
 				}
 
+				// Check the options for the service and add nginx annotations as necessary
+				if service.Options != nil {
+					if service.Options.ForceSSLRedirect {
+						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"] = "true"
+					}
+					if service.Options.SSLRedirect {
+						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"] = "true"
+					}
+					if service.Options.EnableCORS {
+						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/enable-cors"] = "true"
+					}
+					if service.Options.CORSAllowMethods != nil {
+						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/cors-allow-methods"] = *service.Options.CORSAllowMethods
+					}
+					if service.Options.CORSAllowCredentials {
+						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/cors-allow-credentials"] = "true"
+					}
+
+				}
+
 				// Let the ingresses be owned by UffizziCluster
 				if err := controllerutil.SetControllerReference(uCluster, vclusterInternalServiceIngress, r.Scheme); err != nil {
 					logger.Error(err, "Failed to set ownerReference for Ingress for internal service "+service.Name+" in namespace "+service.Namespace)

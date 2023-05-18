@@ -10,9 +10,6 @@ spec:
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
       port: 443
-    - name: testkube-dashboard
-      namespace: testkube
-      port: 8080
   ttl: 1h
   components: 'helm'
   helm:
@@ -26,7 +23,7 @@ spec:
       name: testkube
       repo: https://kubeshop.github.io/helm-charts
     values: |-
-      installCRDs: true
+      installCRD: true
     release:
       name: testkube
       namespace: testkube

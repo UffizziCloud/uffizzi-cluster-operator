@@ -1,6 +1,6 @@
 # Uffizzi Cluster Operator
 
-A Kubernetes operator for creating ephemeral clusters. 
+A Kubernetes operator for creating fully managed virtual clusters. 
 
 - [x] Create a VCluster.
 - [x] Install Helm and Source Controller in the VCluster.
@@ -14,7 +14,7 @@ A Kubernetes operator for creating ephemeral clusters.
 ## Requirements
 We need the Helm Controller and Source Controller which are components of flux cd. Use the following command to install 
 them (if you are using GKE).
-```azure
+```bash
 flux install --namespace=flux-system --components="source-controller,helm-controller" --toleration-keys="sandbox.gke.io/runtime"
 ```
 
@@ -24,7 +24,7 @@ The NGINX Ingress controller also need to be installed in the said cluster with 
 
 To install the CRD for UffizziCluster and run the operator locally, use the following command:
 
-```azure
+```bash
 make install && make run
 ```
 
@@ -35,7 +35,7 @@ to inject in the HelmRelease values.
 
 To create a sample UffizziCluster, use the following command:
 
-```
+```bash
 kubectl apply -f examples/ucluster.yml
 ```
 
@@ -43,6 +43,6 @@ The VCluster will be created with the Helm and Source Controllers installed as w
 
 ## Cleanup
 
-```
+```bash
 kubectl delete UffizziCluster,helmrelease,helmrepository --all && make uninstall
 ```

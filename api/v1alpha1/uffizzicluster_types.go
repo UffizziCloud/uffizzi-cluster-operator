@@ -42,9 +42,23 @@ type HelmChart struct {
 }
 
 type ExposedVClusterService struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-	Port      int32  `json:"port"`
+	Name      string                         `json:"name"`
+	Namespace string                         `json:"namespace"`
+	Port      int32                          `json:"port"`
+	Options   *ExposedVClusterServiceOptions `json:"options,omitempty"`
+}
+
+type ExposedVClusterServiceOptions struct {
+	// force-ssl-redirect: "false"
+	//      ssl-redirect: "false"
+	//      enable-cors: "true"
+	//      cors-allow-methods: "GET"
+	//      cors-allow-credentials: "false"
+	ForceSSLRedirect     bool    `json:"force-ssl-redirect,omitempty"`
+	SSLRedirect          bool    `json:"ssl-redirect,omitempty"`
+	EnableCORS           bool    `json:"enable-cors,omitempty"`
+	CORSAllowMethods     *string `json:"cors-allow-methods,omitempty"`
+	CORSAllowCredentials bool    `json:"cors-allow-credentials,omitempty"`
 }
 
 type ExposedVClusterServiceStatus struct {
