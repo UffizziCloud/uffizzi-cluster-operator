@@ -5,8 +5,9 @@ A Kubernetes operator for creating ephemeral clusters.
 - [x] Create a VCluster.
 - [x] Install Helm and Source Controller in the VCluster.
 - [x] Create Helm charts when mentioned in the UffizziCluster CRD.
-- [x] Expose Ingress for the VCluster.
-- [ ] Expose Ingreess which point to applications in the VCluster.
+- [x] Expose Ingress for the VCluster to connect via the `vcluster connect <name> --server=<vcluster-ingress>` command.
+- [x] Expose Services from within the VCluster.
+- [ ] Enable authentication for the Ingresses.
 - [ ] Expose Ingress which gives commandline access to the VCluster environment (run vcluster connect in a terminal and give webterminal access ?)
 - [ ] Suspend the VCluster if it is not being used for a certain period of time.
 
