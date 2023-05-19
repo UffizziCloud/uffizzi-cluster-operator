@@ -11,7 +11,8 @@ spec:
       namespace: kubernetes-dashboard
       port: 443
   ttl: 1h
-  components: 'helm'
+  # adding 'helm' as a component will install the Helm and Source controller from Flux in the virutal cluster
+  # components: 'helm'
   helm:
   - chart:
       name: kubernetes-dashboard

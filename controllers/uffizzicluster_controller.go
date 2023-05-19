@@ -389,9 +389,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 	)
 
 	uClusterHelmValues := VCluster{
-		Init: VClusterInit{
-			Manifests: fluxYAML,
-		},
+		Init: VClusterInit{},
 		FsGroup: 12345,
 		Isolation: VClusterIsolation{
 			Enabled:             true,
@@ -424,6 +422,14 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 				"--enforce-node-selector",
 			},
 		},
+	}
+
+	if registeredComponents := strings.Split(uCluster.Spec.Components, ","); len(registeredComponents) > 0 {
+		for _, component := range registeredComponents {
+			if component == "helm" {
+				uClusterHelmValues.Init.Manifests = fluxYAML
+			}
+		}
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
