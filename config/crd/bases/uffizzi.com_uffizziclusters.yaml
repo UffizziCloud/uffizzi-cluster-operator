@@ -85,26 +85,16 @@ spec:
                   services:
                     items:
                       properties:
+                        certManagerTLSEnabled:
+                          type: boolean
+                        ingressAnnotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         name:
                           type: string
                         namespace:
                           type: string
-                        options:
-                          properties:
-                            cors-allow-credentials:
-                              type: boolean
-                            cors-allow-methods:
-                              type: string
-                            enable-cors:
-                              type: boolean
-                            force-ssl-redirect:
-                              description: 'force-ssl-redirect: "false" ssl-redirect:
-                                "false" enable-cors: "true" cors-allow-methods: "GET"
-                                cors-allow-credentials: "false"'
-                              type: boolean
-                            ssl-redirect:
-                              type: boolean
-                          type: object
                         port:
                           format: int32
                           type: integer

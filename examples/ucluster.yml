@@ -10,6 +10,31 @@ spec:
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
       port: 443
+      ingressAnnotations:
+        nginx.ingress.kubernetes.io/auth-url: "https://auth.uc.deleteme2023.uffizzi.cloud/oauth2/auth"
+        nginx.ingress.kubernetes.io/auth-signin: "https://auth.uc.deleteme2023.uffizzi.cloud/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        ingress.kubernetes.io/force-ssl-redirect: "true"
+        ingress.kubernetes.io/proxy-body-size: "1024m"
+        nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
+        nginx.ingress.kubernetes.io/secure-backends: "true"
+        cert-manager.io/cluster-issuer: "my-uffizzi-letsencrypt"
+      certManagerTLSEnabled: true
+    - name: springboot-starterkit-svc
+      namespace: springboot
+      port: 80
+      ingressAnnotations:
+        nginx.ingress.kubernetes.io/auth-url: "https://auth.uc.deleteme2023.uffizzi.cloud/oauth2/auth"
+        nginx.ingress.kubernetes.io/auth-signin: "https://auth.uc.deleteme2023.uffizzi.cloud/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        ingress.kubernetes.io/force-ssl-redirect: "true"
+        ingress.kubernetes.io/proxy-body-size: "1024m"
+        nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
+        nginx.ingress.kubernetes.io/secure-backends: "true"
+        cert-manager.io/cluster-issuer: "my-uffizzi-letsencrypt"
+      certManagerTLSEnabled: true
   ttl: 1h
   # adding 'helm' as a component will install the Helm and Source controller from Flux in the virutal cluster
   # components: 'helm'
@@ -21,10 +46,9 @@ spec:
       name: kubernetes-dashboard
       namespace: kubernetes-dashboard
   - chart:
-      name: testkube
-      repo: https://kubeshop.github.io/helm-charts
-    values: |-
-      installCRD: true
+      name: springboot
+      repo: https://josephrodriguez.github.io/springboot-helm-charts
     release:
-      name: testkube
-      namespace: testkube
+      name: springboot-starterkit-svc
+      namespace: springboot
+

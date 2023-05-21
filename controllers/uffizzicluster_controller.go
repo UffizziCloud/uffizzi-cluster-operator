@@ -213,7 +213,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				Annotations: map[string]string{
 					"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
 					"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
-					"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
+					"cert-manager.io/cluster-issuer":               "my-uffizzi-letsencrypt",
 				},
 			},
 			Spec: networkingv1.IngressSpec{
@@ -269,14 +269,14 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if uCluster.Spec.Ingress.Services != nil {
 			// Create the ingress for each service that is specified in the UffizziCluster services config
 			for _, service := range uCluster.Spec.Ingress.Services {
-				internalServiceHost := getUClusterInternalServiceIngressHost(uCluster, &service)
+				internalServiceHost := getUClusterInternalServiceIngressHost(uCluster)
+				//path := fmt.Sprintf("/%s/%s", service.Namespace, service.Name)
+				path := "/"
 				vclusterInternalServiceIngress := &networkingv1.Ingress{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("%s-%s-%s-ingress", service.Name, service.Namespace, helmReleaseName),
-						Namespace: uCluster.Namespace,
-						Annotations: map[string]string{
-							"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
-						},
+						Name:        fmt.Sprintf("%s-x-%s-x-%s", service.Name, service.Namespace, helmReleaseName),
+						Namespace:   uCluster.Namespace,
+						Annotations: map[string]string{},
 					},
 					Spec: networkingv1.IngressSpec{
 						IngressClassName: &nginxIngressClass,
@@ -287,7 +287,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 									HTTP: &networkingv1.HTTPIngressRuleValue{
 										Paths: []networkingv1.HTTPIngressPath{
 											{
-												Path: "/",
+												Path: path,
 												PathType: func() *networkingv1.PathType {
 													pt := networkingv1.PathTypeImplementationSpecific
 													return &pt
@@ -309,24 +309,20 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					},
 				}
 
-				// Check the options for the service and add nginx annotations as necessary
-				if service.Options != nil {
-					if service.Options.ForceSSLRedirect {
-						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"] = "true"
+				// Add annotations defined for the service. overrides existing annotations
+				if len(service.IngressAnnotations) > 0 {
+					for k, v := range service.IngressAnnotations {
+						vclusterInternalServiceIngress.Annotations[k] = v
 					}
-					if service.Options.SSLRedirect {
-						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"] = "true"
-					}
-					if service.Options.EnableCORS {
-						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/enable-cors"] = "true"
-					}
-					if service.Options.CORSAllowMethods != nil {
-						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/cors-allow-methods"] = *service.Options.CORSAllowMethods
-					}
-					if service.Options.CORSAllowCredentials {
-						vclusterInternalServiceIngress.Annotations["nginx.ingress.kubernetes.io/cors-allow-credentials"] = "true"
-					}
+				}
 
+				if service.CertManagerTLSEnabled {
+					vclusterInternalServiceIngress.Spec.TLS = []networkingv1.IngressTLS{
+						{
+							Hosts:      []string{internalServiceHost},
+							SecretName: fmt.Sprintf("%s-x-%s-x-%s-x-tls", service.Name, service.Namespace, helmReleaseName),
+						},
+					}
 				}
 
 				// Let the ingresses be owned by UffizziCluster
@@ -389,7 +385,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 	)
 
 	uClusterHelmValues := VCluster{
-		Init: VClusterInit{},
+		Init:    VClusterInit{},
 		FsGroup: 12345,
 		Isolation: VClusterIsolation{
 			Enabled:             true,
@@ -483,6 +479,9 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			},
 			ReleaseName: helmReleaseName,
 			Values:      &helmValuesJSONObj,
+			Upgrade: &fluxhelmv2beta1.Upgrade{
+				Force: true,
+			},
 		},
 	}
 
@@ -499,12 +498,12 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 }
 
 func getUClusterIngressHost(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
-	return uCluster.Name + "-ucluster." + uCluster.Spec.Ingress.Host
+	return uCluster.Name + ".uc." + uCluster.Spec.Ingress.Host
 }
 
-func getUClusterInternalServiceIngressHost(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster, service *uclusteruffizzicomv1alpha1.ExposedVClusterService) string {
+func getUClusterInternalServiceIngressHost(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
 	randomString := rand.String(5)
-	vclusterInternalServiceHostExtension := fmt.Sprintf("%s-uc-svc.%s", randomString, uCluster.Spec.Ingress.Host)
+	vclusterInternalServiceHostExtension := fmt.Sprintf("%s-svc.uc.%s", randomString, uCluster.Spec.Ingress.Host)
 	return vclusterInternalServiceHostExtension
 }
 
