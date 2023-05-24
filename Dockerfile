@@ -27,6 +27,10 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o ma
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
+
+# Install flux
+RUN curl -s https://fluxcd.io/install.sh | sudo bash
+
 COPY --from=builder /workspace/manager .
 USER 65532:65532
 
