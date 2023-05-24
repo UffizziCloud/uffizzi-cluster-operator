@@ -3,6 +3,10 @@ FROM golang:1.19 as builder
 ARG TARGETOS
 ARG TARGETARCH
 
+# Install flux
+RUN curl -s https://fluxcd.io/install.sh | bash
+
+# Do the rest
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
@@ -28,10 +32,8 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o ma
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 
-# Install flux
-RUN curl -s https://fluxcd.io/install.sh | sudo bash
-
 COPY --from=builder /workspace/manager .
+COPY --from=builder /usr/local/bin/flux /usr/local/bin/flux
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
