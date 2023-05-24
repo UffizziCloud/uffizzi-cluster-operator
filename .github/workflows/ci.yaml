@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo ${GITHUB_REF#refs/tags/})
+
+    - name: Build and push
+      run: |
+        make docker-build docker-push
+      env:
+        VERSION: ${{ steps.get_version.outputs.VERSION }}
+
+  release:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: "Build Changelog"
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@v3
+        with:
+          configuration: ".github/workflows/changelog_builder/config.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@6034af24fba4e5a8e975aaa6056554efe4c794d0
+        with:
+          body: ${{steps.github_release.outputs.changelog}}
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-b') || contains(github.ref, '-a') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
