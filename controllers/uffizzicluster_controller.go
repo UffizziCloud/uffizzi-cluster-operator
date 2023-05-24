@@ -138,6 +138,25 @@ const (
 //+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters/finalizers,verbs=update
 
+// add the helm controller rbac
+//+kubebuilder:rbac:groups=helm.fluxcd.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=helm.fluxcd.io,resources=helmreleases/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=helm.fluxcd.io,resources=helmreleases/finalizers,verbs=update
+
+// add the source controller rbac
+//+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories/finalizers,verbs=update
+
+// add the ingress rbac
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+
+// add services rbac
+//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+
+// add secret rbac
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
@@ -213,6 +232,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				Annotations: map[string]string{
 					"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
 					"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
+					"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
 					"cert-manager.io/cluster-issuer":               "my-uffizzi-letsencrypt",
 				},
 			},
@@ -479,10 +499,13 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			},
 			ReleaseName: helmReleaseName,
 			Values:      &helmValuesJSONObj,
-			Upgrade: &fluxhelmv2beta1.Upgrade{
-				Force: true,
-			},
 		},
+	}
+
+	if uCluster.Spec.Upgrade {
+		newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
+			Force: true,
+		}
 	}
 
 	if err := controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
