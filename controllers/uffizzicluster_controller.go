@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/pkg/vcluster"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -47,82 +48,6 @@ import (
 type UffizziClusterReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
-}
-
-type VCluster struct {
-	Init            VClusterInit            `json:"init,omitempty"`
-	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
-	Ingress         VClusterIngress         `json:"ingress,omitempty"`
-	FsGroup         int64                   `json:"fsgroup,omitempty"`
-	Isolation       VClusterIsolation       `json:"isolation,omitempty"`
-	NodeSelector    VClusterNodeSelector    `json:"nodeSelector,omitempty"`
-	SecurityContext VClusterSecurityContext `json:"securityContext,omitempty"`
-	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
-	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
-}
-
-// VClusterInit - resources which are created during the init phase of the vcluster
-type VClusterInit struct {
-	Manifests string                                 `json:"manifests"`
-	Helm      []uclusteruffizzicomv1alpha1.HelmChart `json:"helm"`
-}
-
-// VClusterSyncer - parameters to create the syncer with
-// https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
-type VClusterSyncer struct {
-	ExtraArgs []string `json:"extraArgs"`
-}
-
-// VClusterIngress - parameters to create the ingress with
-type VClusterIngress struct {
-	Enabled bool `json:"enabled"`
-}
-
-type VClusterResourceQuota struct {
-	Quota VClusterResourceQuotaDefiniton `json:"quota"`
-}
-
-type VClusterResourceQuotaDefiniton struct {
-	ServicesNodePorts int `json:"services.nodeports"`
-}
-
-type VClusterMapServicesFromVirtual struct {
-	From string `json:"from"`
-	To   string `json:"to"`
-}
-
-type VClusterMapServices struct {
-	FromVirtual []VClusterMapServicesFromVirtual `json:"fromVirtual"`
-}
-
-// VClusterIsolation - parameters to define the isolation of the cluster
-type VClusterIsolation struct {
-	Enabled             bool                  `json:"enabled"`
-	PodSecurityStandard string                `json:"podSecurityStandard"`
-	ResourceQuota       VClusterResourceQuota `json:"resourceQuota"`
-}
-
-// VClusterNodeSelector - parameters to define the node selector of the cluster
-type VClusterNodeSelector struct {
-	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime"`
-}
-
-type VClusterSecurityContextCapabilities struct {
-	Drop []string `json:"drop"`
-}
-
-// VClusterSecurityContext - parameters to define the security context of the cluster
-type VClusterSecurityContext struct {
-	Capabilities           VClusterSecurityContextCapabilities `json:"capabilities"`
-	ReadOnlyRootFilesystem bool                                `json:"readOnlyRootFilesystem"`
-	RunAsNonRoot           bool                                `json:"runAsNonRoot"`
-	RunAsUser              int64                               `json:"runAsUser"`
-}
-
-type VClusterToleration struct {
-	Effect   string `json:"effect"`
-	Key      string `json:"key"`
-	Operator string `json:"operator"`
 }
 
 const (
@@ -404,34 +329,34 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		OutKubeConfigServerArgValue = "https://" + TLSSanArgValue
 	)
 
-	uClusterHelmValues := VCluster{
-		Init:    VClusterInit{},
+	uClusterHelmValues := vcluster.VCluster{
+		Init:    vcluster.VClusterInit{},
 		FsGroup: 12345,
-		Isolation: VClusterIsolation{
+		Isolation: vcluster.VClusterIsolation{
 			Enabled:             true,
 			PodSecurityStandard: "baseline",
-			ResourceQuota: VClusterResourceQuota{
-				Quota: VClusterResourceQuotaDefiniton{
+			ResourceQuota: vcluster.VClusterResourceQuota{
+				Quota: vcluster.VClusterResourceQuotaDefiniton{
 					ServicesNodePorts: 5,
 				},
 			},
 		},
-		NodeSelector: VClusterNodeSelector{
+		NodeSelector: vcluster.VClusterNodeSelector{
 			SandboxGKEIORuntime: "gvisor",
 		},
-		SecurityContext: VClusterSecurityContext{
-			Capabilities: VClusterSecurityContextCapabilities{
+		SecurityContext: vcluster.VClusterSecurityContext{
+			Capabilities: vcluster.VClusterSecurityContextCapabilities{
 				Drop: []string{"all"},
 			},
 		},
-		Tolerations: []VClusterToleration{
+		Tolerations: []vcluster.VClusterToleration{
 			{
 				Key:      "sandbox.gke.io/runtime",
 				Effect:   "NoSchedule",
 				Operator: "Exists",
 			},
 		},
-		Syncer: VClusterSyncer{
+		Syncer: vcluster.VClusterSyncer{
 			ExtraArgs: []string{
 				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
 				"--node-selector=sandbox.gke.io/runtime=gvisor",
@@ -458,7 +383,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 
 		if uCluster.Spec.Ingress.Services != nil {
 			for _, service := range uCluster.Spec.Ingress.Services {
-				uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
+				uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, vcluster.VClusterMapServicesFromVirtual{
 					From: service.Namespace + "/" + service.Name,
 					To:   helmReleaseName + "-" + service.Name,
 				})
