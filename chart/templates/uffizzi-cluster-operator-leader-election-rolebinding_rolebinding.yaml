@@ -1,0 +1,21 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: uffizzi-cluster-operator
+    app.kubernetes.io/instance: leader-election-rolebinding
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: rolebinding
+    app.kubernetes.io/part-of: uffizzi-cluster-operator
+  name: uffizzi-cluster-operator-leader-election-rolebinding
+  namespace: uffizzi-cluster-operator-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: uffizzi-cluster-operator-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: uffizzi-cluster-operator-controller-manager
+  namespace: uffizzi-cluster-operator-system

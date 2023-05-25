@@ -44,7 +44,6 @@ func TestBuildVClusterIngress(t *testing.T) {
 	}
 }
 
-
 func TestBuildVClusterInternalServiceIngress(t *testing.T) {
 	// Test inputs
 	helmReleaseName := "test-release"
@@ -86,7 +85,6 @@ func TestBuildVClusterInternalServiceIngress(t *testing.T) {
 		}
 	}
 }
-
 
 func TestBuildVClusterIngressHost(t *testing.T) {
 	// Test inputs
@@ -136,6 +134,3 @@ func TestBuildVClusterInternalServiceIngressHost(t *testing.T) {
 		t.Errorf("expected %v, got %v", expectedHost, host)
 	}
 }
-
-
-
