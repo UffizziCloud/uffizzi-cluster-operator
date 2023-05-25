@@ -1,4 +1,4 @@
-package vcluster
+package controllers
 
 import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 
