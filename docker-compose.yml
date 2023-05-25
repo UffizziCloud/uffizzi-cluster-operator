@@ -1,0 +1,14 @@
+version: "3.7"
+
+services:
+  toolbox:
+    build: ./infrastructure/toolbox
+    volumes:
+      - .:/app:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.ssh:/root/.ssh
+
+networks:
+  default:
+    external:
+      name: uffizzi_default_network

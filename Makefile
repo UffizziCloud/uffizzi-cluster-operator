@@ -264,3 +264,8 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+setup_gke_kube:
+	gcloud auth activate-service-account --key-file ${SERVICE_ACCOUNT_KEY}
+	gcloud config set project ${GCP_PROJECT_ID}
+	gcloud container clusters get-credentials ${CLUSTER_NAME} --region ${GCP_REGION}
