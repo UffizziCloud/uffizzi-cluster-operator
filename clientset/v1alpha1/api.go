@@ -7,7 +7,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func NewForConfig(c *rest.Config) (*uffizziClusterClient, error) {
+type V1Alpha1Clientset struct {
+	restClient rest.Interface
+}
+
+func NewForConfig(c *rest.Config) (*V1Alpha1Clientset, error) {
 	config := *c
 	config.ContentConfig.GroupVersion = &schema.GroupVersion{Group: v1alpha1.GroupName, Version: v1alpha1.GroupVersion}
 	config.APIPath = "/apis"
@@ -19,11 +23,11 @@ func NewForConfig(c *rest.Config) (*uffizziClusterClient, error) {
 		return nil, err
 	}
 
-	return &uffizziClusterClient{restClient: client}, nil
+	return &V1Alpha1Clientset{restClient: client}, nil
 }
 
-func (c *uffizziClusterClient) UffizziClusterV1(namespace string) UffizziClusterInterface {
-	return &uffizziClusterClient{
+func (c *V1Alpha1Clientset) UffizziClusterV1(namespace string) UffizziClusterInterface {
+	return &UffizziClusterClient{
 		restClient: c.restClient,
 		ns:         namespace,
 	}
