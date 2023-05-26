@@ -1,15 +1,10 @@
----
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: ClusterRole
 metadata:
-  labels:
+  labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: kube-rbac-proxy
-    app.kubernetes.io/created-by: uffizzi-cluster-operator
-    app.kubernetes.io/instance: proxy-role
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/part-of: uffizzi-cluster-operator
-  name: uffizzi-cluster-operator-proxy-role
+    app.kubernetes.io/part-of: uffizzi
+  name: {{ include "common.names.fullname" . }}-proxy-role
 rules:
 - apiGroups:
   - authentication.k8s.io

@@ -1,9 +1,10 @@
----
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
-  name: uffizzi-cluster-operator-manager-role
+  labels: {{ include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: uffizzi
+  name: {{ include "common.names.fullname" . }}-manager-role
 rules:
 - apiGroups:
   - ""

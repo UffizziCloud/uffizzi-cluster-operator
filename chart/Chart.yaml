@@ -21,9 +21,7 @@ version: 0.0.5
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "1.16.0"
-
-kubeVersion: ">= 1.21.0-0" # https://issuetracker.google.com/issues/77503699
+appVersion: "0.0.4"
 
 dependencies:
   - name: common

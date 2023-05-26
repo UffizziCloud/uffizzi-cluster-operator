@@ -1,5 +1,5 @@
-# Default values for ..
+# Default values for uffizzi-cluster-operator
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-namespace: uffizzi-cluster-operator-system
+#namespace: uffizzi-cluster-operator-system

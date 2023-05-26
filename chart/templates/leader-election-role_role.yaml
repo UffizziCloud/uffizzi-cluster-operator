@@ -1,16 +1,11 @@
----
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: Role
 metadata:
-  labels:
+  labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: uffizzi-cluster-operator
-    app.kubernetes.io/instance: leader-election-role
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: role
-    app.kubernetes.io/part-of: uffizzi-cluster-operator
-  name: uffizzi-cluster-operator-leader-election-role
-  namespace: uffizzi-cluster-operator-system
+    app.kubernetes.io/part-of: uffizzi
+  name: {{ include "common.names.fullname" . }}-leader-election-role
+  namespace: {{ .Release.Namespace | quote }}
 rules:
 - apiGroups:
   - ""
