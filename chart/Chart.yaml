@@ -15,10 +15,53 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.0.4
+version: 0.0.5
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "1.16.0"
+
+kubeVersion: ">= 1.21.0-0" # https://issuetracker.google.com/issues/77503699
+
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 2.x.x
+
+maintainers:
+  - name: Vibhav Bobade
+    email: vibhav.bobade@uffizzi.com
+    url: https://github.com/waveywaves
+  - name: Uffizzi
+    email: info@uffizzi.com
+    url: https://uffizzi.com
+  - name: Adam Vollrath
+    email: adam.vollrath@uffizzi.com
+    url: https://github.com/axisofentropy
+
+icon: https://app.uffizzi.com/favicon.png
+deprecated: false
+annotations:
+  # https://artifacthub.io/docs/topics/annotations/helm/
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/category: integration-delivery
+  # artifacthub.io/license: Apache-2.0
+keywords:
+  - devops
+  - uffizzi
+  - continuous-previews
+  - ephemeral
+  - environments
+  - pull-request
+  - merge-request
+  - on-demand
+  - ci
+  - cd
+  - cp
+home: https://uffizzi.com/
+sources:
+  - https://github.com/UffizziCloud/uffizzi-cluster-operator
