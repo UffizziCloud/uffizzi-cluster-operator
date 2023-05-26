@@ -85,6 +85,7 @@ type VClusterKubeConfig struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:resource:shortName=uc;ucluster
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Ready",type=boolean,JSONPath=`.status.ready`
 //+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`

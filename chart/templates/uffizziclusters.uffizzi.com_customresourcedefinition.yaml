@@ -31,14 +31,10 @@ spec:
         description: UffizziCluster is the Schema for the UffizziClusters API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -136,19 +132,13 @@ spec:
               host:
                 type: string
               kubeConfig:
-                description: VClusterKubeConfig is the KubeConfig SecretReference
-                  of the related VCluster
+                description: VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
                 properties:
                   secretRef:
-                    description: SecretKeyReference contains enough information to
-                      locate the referenced Kubernetes Secret object in the same namespace.
-                      Optionally a key can be specified. Use this type instead of
-                      core/v1 SecretKeySelector when the Key is optional and the Optional
-                      field is not applicable.
+                    description: SecretKeyReference contains enough information to locate the referenced Kubernetes Secret object in the same namespace. Optionally a key can be specified. Use this type instead of core/v1 SecretKeySelector when the Key is optional and the Optional field is not applicable.
                     properties:
                       key:
-                        description: Key in the Secret, when not specified an implementation-specific
-                          default key is used.
+                        description: Key in the Secret, when not specified an implementation-specific default key is used.
                         type: string
                       name:
                         description: Name of the Secret.

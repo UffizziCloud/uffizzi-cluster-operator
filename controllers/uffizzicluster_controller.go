@@ -56,14 +56,14 @@ const (
 	INGRESS_CLASS_NGINX    = "nginx"
 )
 
-//+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=uffizzi.com,resources=UffizziClusters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters/finalizers,verbs=update
 
 // add the helm controller rbac
-//+kubebuilder:rbac:groups=helm.fluxcd.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=helm.fluxcd.io,resources=helmreleases/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=helm.fluxcd.io,resources=helmreleases/finalizers,verbs=update
+//+kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases/finalizers,verbs=update
 
 // add the source controller rbac
 //+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories,verbs=get;list;watch;create;update;patch;delete
