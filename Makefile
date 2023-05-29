@@ -170,10 +170,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 .PHONY: build-helm-chart
 build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	@echo "Splitting Kustomize output to multiple YAML files..."
-	rm -rf ./chart/templates/*
-	$(KUSTOMIZE) build config/default | ./hack/helm_chart.sh
+	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 
 ##@ Build Dependencies
 
