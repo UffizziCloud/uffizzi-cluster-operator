@@ -2,4 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-#namespace: uffizzi-cluster-operator-system
+image:
+  repository: docker.io/uffizzi/uffizzi-cluster-operator
+  tag: v0.0.4

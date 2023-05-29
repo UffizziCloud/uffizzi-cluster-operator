@@ -64,7 +64,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: docker.io/uffizzi/uffizzi-cluster-operator:v0.0.4
+        image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         livenessProbe:
           httpGet:
             path: /healthz
