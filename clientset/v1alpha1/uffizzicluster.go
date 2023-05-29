@@ -12,12 +12,17 @@ import (
 type UffizziClusterInterface interface {
 	List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error)
 	Get(name string, options metav1.GetOptions) (*v1alpha1.UffizziCluster, error)
-	Create(*v1alpha1.UffizziCluster) (*v1alpha1.UffizziCluster, error)
+	Create(UffizziClusterProps) (*v1alpha1.UffizziCluster, error)
 }
 
 type UffizziClusterClient struct {
 	restClient rest.Interface
 	ns         string
+}
+
+type UffizziClusterProps struct {
+	Name string
+	Spec v1alpha1.UffizziClusterSpec
 }
 
 func (c *UffizziClusterClient) List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error) {
@@ -47,13 +52,24 @@ func (c *UffizziClusterClient) Get(name string, opts metav1.GetOptions) (*v1alph
 	return &result, err
 }
 
-func (c *UffizziClusterClient) Create(uffizziCluster *v1alpha1.UffizziCluster) (*v1alpha1.UffizziCluster, error) {
+func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alpha1.UffizziCluster, error) {
+	uffizziCluster := v1alpha1.UffizziCluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "UffizziCluster",
+			APIVersion: "uffizzi.com/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterProps.Name,
+		},
+		Spec: clusterProps.Spec,
+	}
+
 	result := v1alpha1.UffizziCluster{}
 	err := c.restClient.
 		Post().
 		Namespace(c.ns).
 		Resource("UffizziClusters").
-		Body(uffizziCluster).
+		Body(&uffizziCluster).
 		Do(context.TODO()).
 		Into(&result)
 
