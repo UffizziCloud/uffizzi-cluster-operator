@@ -57,7 +57,7 @@ to inject in the HelmRelease values.
 To create a sample UffizziCluster, use the following command:
 
 ```bash
-kubectl apply -f examples/ucluster.yml
+kubectl apply -f examples/basic-ucluster.yml
 ```
 
 The VCluster will be created with the Helm and Source Controllers installed as well.

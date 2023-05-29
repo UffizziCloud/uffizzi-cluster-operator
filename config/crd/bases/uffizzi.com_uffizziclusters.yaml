@@ -156,17 +156,9 @@ spec:
                     required:
                     - name
                     type: object
-                required:
-                - secretRef
                 type: object
               ready:
                 type: boolean
-            required:
-            - exposedServices
-            - helmReleaseRef
-            - host
-            - kubeConfig
-            - ready
             type: object
         type: object
     served: true

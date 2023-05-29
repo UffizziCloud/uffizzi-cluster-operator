@@ -72,16 +72,16 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready           bool                           `json:"ready"`
-	HelmReleaseRef  *string                        `json:"helmReleaseRef"`
-	KubeConfig      VClusterKubeConfig             `json:"kubeConfig"`
-	Host            *string                        `json:"host"`
-	ExposedServices []ExposedVClusterServiceStatus `json:"exposedServices"`
+	Ready           bool                           `json:"ready,omitempty"`
+	HelmReleaseRef  *string                        `json:"helmReleaseRef,omitempty"`
+	KubeConfig      VClusterKubeConfig             `json:"kubeConfig,omitempty"`
+	Host            *string                        `json:"host,omitempty"`
+	ExposedServices []ExposedVClusterServiceStatus `json:"exposedServices,omitempty"`
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
 type VClusterKubeConfig struct {
-	SecretRef *meta.SecretKeyReference `json:"secretRef"`
+	SecretRef *meta.SecretKeyReference `json:"secretRef,omitempty"`
 }
 
 //+kubebuilder:object:root=true
