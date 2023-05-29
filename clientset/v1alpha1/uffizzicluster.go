@@ -13,6 +13,7 @@ type UffizziClusterInterface interface {
 	List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error)
 	Get(name string, options metav1.GetOptions) (*v1alpha1.UffizziCluster, error)
 	Create(UffizziClusterProps) (*v1alpha1.UffizziCluster, error)
+	Delete(name string) error
 }
 
 type UffizziClusterClient struct {
@@ -74,4 +75,17 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		Into(&result)
 
 	return &result, err
+}
+
+func (c *UffizziClusterClient) Delete(name string) error {
+	result := v1alpha1.UffizziCluster{}
+	err := c.restClient.
+		Delete().
+		Namespace(c.ns).
+		Resource("UffizziClusters").
+		Name(name).
+		Do(context.TODO()).
+		Into(&result)
+
+	return err
 }
