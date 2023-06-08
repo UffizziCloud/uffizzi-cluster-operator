@@ -26,3 +26,7 @@ Dockerfile.cross
 *~
 
 infrastructure/credentials/
+
+# Dependency Helm Charts
+chart/charts/*
+**/charts/*.tgz
