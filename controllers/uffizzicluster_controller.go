@@ -19,6 +19,9 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -30,8 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
-	"time"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
