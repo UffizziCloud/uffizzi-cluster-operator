@@ -32,7 +32,7 @@ Install Keycloak with the Ingress.
 kubectl create -f config/helmreleases/dex.yaml
 ```
 
-Then configure it based on Then configure it based on https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/oauth_provider/#keycloak-oidc-auth-provider
+Then configure it based on https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/oauth_provider/#keycloak-oidc-auth-provider
 
 
 ### OAuth2 Proxy
@@ -49,7 +49,7 @@ To install the CRD for UffizziCluster and run the operator locally, use the foll
 make install && make run
 ```
 
-You also need to have the fluxcd binary installed on your system which the operator uses to get the yaml
+You also need to have the `fluxcd` binary installed on your system which the operator uses to get the yaml
 to inject in the HelmRelease values.
 
 ## Usage
