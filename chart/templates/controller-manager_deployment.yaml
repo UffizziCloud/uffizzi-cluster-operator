@@ -4,7 +4,7 @@ metadata:
   labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: manager
     app.kubernetes.io/part-of: uffizzi
-  name: {{ include "common.names.fullname" . }}-controller-manager
+  name: {{ include "common.names.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
 spec:
   replicas: 1
