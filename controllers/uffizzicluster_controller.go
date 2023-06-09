@@ -48,7 +48,7 @@ type UffizziClusterReconciler struct {
 }
 
 const (
-	UCLUSTER_NAME_SUFFIX   = "uc-"
+	UCLUSTER_NAME_PREFIX   = "uc-"
 	LOFT_HELM_REPO         = "loft"
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.0"
@@ -250,7 +250,7 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 }
 
 func BuildVClusterHelmReleaseName(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
-	helmReleaseName := UCLUSTER_NAME_SUFFIX + uCluster.Name
+	helmReleaseName := UCLUSTER_NAME_PREFIX + uCluster.Name
 	return helmReleaseName
 }
 
