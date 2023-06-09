@@ -25,7 +25,6 @@ flux:
   imageReflectorController:
     enabled: false
 
-# To install nginx-ingress and cert-manager charts
-# along with the rest apply the following tags (disabled by default)
-#tags:
-#  - ingress-nginx
+cert-manager: # dependency
+  enabled: true
+  installCRDs: true
