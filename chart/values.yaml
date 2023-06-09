@@ -5,3 +5,26 @@
 image:
   repository: docker.io/uffizzi/uffizzi-cluster-operator
   tag: v0.0.5
+
+# `flux` dependency values
+flux:
+  helmController:
+    enabled: true
+    metrics:
+      enabled: false
+  sourceController:
+    enabled: true
+    metrics:
+      enabled: false
+  kustomizeController:
+    enabled: false
+  notificationController:
+    enabled: false
+  imageAutomationController:
+    enabled: false
+  imageReflectorController:
+    enabled: false
+
+cert-manager: # dependency
+  enabled: true
+  installCRDs: true
