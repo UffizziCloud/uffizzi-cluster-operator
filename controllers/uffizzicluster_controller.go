@@ -312,6 +312,10 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
 	}
 
+	if uCluster.Spec.Manifests != nil {
+		uClusterHelmValues.Init.Manifests = *uCluster.Spec.Manifests
+	}
+
 	// marshal HelmValues struct to JSON
 	helmValuesRaw, err := json.Marshal(uClusterHelmValues)
 	if err != nil {
