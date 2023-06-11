@@ -77,3 +77,8 @@ type VClusterToleration struct {
 	Key      string `json:"key"`
 	Operator string `json:"operator"`
 }
+
+func BuildVClusterHelmReleaseName(uCluster *v1alpha1.UffizziCluster) string {
+	helmReleaseName := UCLUSTER_NAME_PREFIX + uCluster.Name
+	return helmReleaseName
+}
