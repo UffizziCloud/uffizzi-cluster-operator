@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/fluxcd/pkg/apis/meta"
@@ -25,7 +24,6 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"os/exec"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -251,10 +249,6 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 
 func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
-	fluxYAML, err := getFluxInstallOutput()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get flux install output")
-	}
 	var (
 		TLSSanArgValue              = BuildVClusterIngressHost(uCluster)
 		OutKubeConfigServerArgValue = "https://" + TLSSanArgValue
@@ -294,14 +288,6 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 				"--enforce-node-selector",
 			},
 		},
-	}
-
-	if registeredComponents := strings.Split(uCluster.Spec.Components, ","); len(registeredComponents) > 0 {
-		for _, component := range registeredComponents {
-			if component == "helm" {
-				uClusterHelmValues.Init.Manifests = fluxYAML
-			}
-		}
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
@@ -390,17 +376,6 @@ func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, nam
 
 	err := r.Create(ctx, loftHelmRepo)
 	return err
-}
-
-func getFluxInstallOutput() (string, error) {
-	cmd := exec.Command("flux", "install", "--namespace=flux-system", "--components=source-controller,helm-controller", "--toleration-keys=sandbox.gke.io/runtime", "--export")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		return "", err
-	}
-	return out.String(), nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

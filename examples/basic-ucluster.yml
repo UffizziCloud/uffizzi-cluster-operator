@@ -23,8 +23,6 @@ spec:
         cert-manager.io/cluster-issuer: "my-uffizzi-letsencrypt"
       certManagerTLSEnabled: true
   ttl: 1h
-#   adding 'helm' as a component will install the Helm and Source controller from Flux in the virutal cluster
-  components: 'helm'
   helm:
   - chart:
       name: kubernetes-dashboard
