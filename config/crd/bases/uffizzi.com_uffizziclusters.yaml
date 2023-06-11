@@ -45,8 +45,6 @@ spec:
           spec:
             description: UffizziClusterSpec defines the desired state of UffizziCluster
             properties:
-              components:
-                type: string
               helm:
                 items:
                   properties:
@@ -108,6 +106,8 @@ spec:
                       type: object
                     type: array
                 type: object
+              manifests:
+                type: string
               ttl:
                 type: string
               upgrade:
