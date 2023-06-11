@@ -249,11 +249,6 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 	return status, nil
 }
 
-func BuildVClusterHelmReleaseName(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
-	helmReleaseName := UCLUSTER_NAME_PREFIX + uCluster.Name
-	return helmReleaseName
-}
-
 func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	fluxYAML, err := getFluxInstallOutput()
