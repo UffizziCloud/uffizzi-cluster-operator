@@ -63,11 +63,10 @@ type UffizziClusterIngress struct {
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
-	Ingress    UffizziClusterIngress `json:"ingress,omitempty"`
-	Components string                `json:"components,omitempty"`
-	TTL        string                `json:"ttl,omitempty"`
-	Helm       []HelmChart           `json:"helm,omitempty"`
-	Upgrade    bool                  `json:"upgrade,omitempty"`
+	Ingress UffizziClusterIngress `json:"ingress,omitempty"`
+	TTL     string                `json:"ttl,omitempty"`
+	Helm    []HelmChart           `json:"helm,omitempty"`
+	Upgrade bool                  `json:"upgrade,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
