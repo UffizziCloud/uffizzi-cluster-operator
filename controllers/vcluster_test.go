@@ -17,9 +17,10 @@ limitations under the License.
 package controllers
 
 import (
+	"testing"
+
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestBuildVClusterHelmReleaseName(t *testing.T) {
