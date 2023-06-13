@@ -1,12 +1,12 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: demo1
+  name: helm-basic
 spec:
-#  upgrade: true
   ingress:
     class: "nginx"
     host: deleteme2023.uffizzi.cloud
+    certManagerTLSEnabled: true
     services:
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
@@ -21,7 +21,6 @@ spec:
         nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
         nginx.ingress.kubernetes.io/secure-backends: "true"
         cert-manager.io/cluster-issuer: "my-uffizzi-letsencrypt"
-      certManagerTLSEnabled: true
   ttl: 1h
   helm:
   - chart:

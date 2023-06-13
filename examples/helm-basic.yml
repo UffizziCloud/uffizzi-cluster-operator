@@ -1,0 +1,26 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  name: helm-basic-1
+spec:
+  helm:
+  - chart:
+      name: kubernetes-dashboard
+      repo: https://kubernetes.github.io/dashboard/
+    release:
+      name: kubernetes-dashboard
+      namespace: kubernetes-dashboard
+    values: |
+      extraArgs:
+        - --enable-skip-login
+        - --enable-insecure-login
+        - --system-banner="This is a Uffizzi Virtual Cluster"
+      rbac:
+        create: true
+        clusterReadOnlyRole: true
+  - chart:
+      name: jenkins
+      repo: https://charts.jenkins.io
+    release:
+      name: jenkins
+      namespace: default
