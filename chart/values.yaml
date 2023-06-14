@@ -4,7 +4,7 @@
 
 image:
   repository: docker.io/uffizzi/uffizzi-cluster-operator
-  tag: v0.0.5
+  tag: v0.0.6
 
 # `flux` dependency values
 flux:
@@ -25,7 +25,11 @@ flux:
   imageReflectorController:
     enabled: false
 
+cert-manager: # dependency
+  enabled: true
+  installCRDs: true
+
 # To install nginx-ingress and cert-manager charts
-# along with the rest apply the following tags (disabled by default)
+# along with the rest apply the following tags (enabled by default)
 #tags:
 #  - ingress-nginx
