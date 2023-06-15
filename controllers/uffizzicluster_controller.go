@@ -289,6 +289,11 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 				"--enforce-node-selector",
 			},
 		},
+		Sync: VClusterSync{
+			Ingress: VClusterSyncIngress{
+				Enabled: true,
+			},
+		},
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
