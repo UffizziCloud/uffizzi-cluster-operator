@@ -46,7 +46,6 @@ func (c *UffizziClusterClient) Get(name string, opts metav1.GetOptions) (*v1alph
 		Namespace(c.ns).
 		Resource("UffizziClusters").
 		Name(name).
-		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(context.TODO()).
 		Into(&result)
 
