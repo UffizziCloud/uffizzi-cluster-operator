@@ -5,6 +5,7 @@ import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 type VCluster struct {
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
+	Sync            VClusterSync            `json:"sync,omitempty"`
 	Ingress         VClusterIngress         `json:"ingress,omitempty"`
 	FsGroup         int64                   `json:"fsgroup,omitempty"`
 	Isolation       VClusterIsolation       `json:"isolation,omitempty"`
@@ -24,6 +25,14 @@ type VClusterInit struct {
 // https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
 type VClusterSyncer struct {
 	ExtraArgs []string `json:"extraArgs"`
+}
+
+type VClusterSync struct {
+	Ingress VClusterSyncIngress `json:"ingress,omitempty"`
+}
+
+type VClusterSyncIngress struct {
+	Enabled bool `json:"enabled"`
 }
 
 // VClusterIngress - parameters to create the ingress with
