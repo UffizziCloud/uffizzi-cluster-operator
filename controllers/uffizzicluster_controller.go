@@ -290,7 +290,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			},
 		},
 		Sync: VClusterSync{
-			Ingress: VClusterSyncIngress{
+			Ingresses: VClusterSyncIngresses{
 				Enabled: true,
 			},
 		},

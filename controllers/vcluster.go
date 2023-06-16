@@ -28,10 +28,10 @@ type VClusterSyncer struct {
 }
 
 type VClusterSync struct {
-	Ingress VClusterSyncIngress `json:"ingress,omitempty"`
+	Ingresses VClusterSyncIngresses `json:"ingresses,omitempty"`
 }
 
-type VClusterSyncIngress struct {
+type VClusterSyncIngresses struct {
 	Enabled bool `json:"enabled"`
 }
 
