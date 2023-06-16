@@ -50,7 +50,7 @@ const (
 	UCLUSTER_NAME_PREFIX   = "uc-"
 	LOFT_HELM_REPO         = "loft"
 	VCLUSTER_CHART         = "vcluster"
-	VCLUSTER_CHART_VERSION = "0.15.0"
+	VCLUSTER_CHART_VERSION = "0.15.2"
 	LOFT_CHART_REPO_URL    = "https://charts.loft.sh"
 	INGRESS_CLASS_NGINX    = "nginx"
 )
