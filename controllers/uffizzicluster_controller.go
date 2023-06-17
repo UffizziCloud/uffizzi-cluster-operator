@@ -104,6 +104,30 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Set default values for the status if it is not already set
+	if uCluster.Status.Ready == nil {
+		var (
+			ready           = false
+			helmReleaseRef  = ""
+			exposedServices = []uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{}
+			host            = ""
+			kubeConfig      = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
+				SecretRef: &meta.SecretKeyReference{},
+			}
+		)
+		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
+			Ready:           &ready,
+			HelmReleaseRef:  &helmReleaseRef,
+			ExposedServices: exposedServices,
+			Host:            &host,
+			KubeConfig:      kubeConfig,
+		}
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			logger.Error(err, "Failed to update the default UffizziCluster status")
+			return ctrl.Result{}, err
+		}
+	}
+
 	// Check if there is already exists a VCluster HelmRelease for this UCluster, if not create one
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	helmRelease := &fluxhelmv2beta1.HelmRelease{}
@@ -168,8 +192,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		for _, condition := range helmRelease.Status.Conditions {
 			if condition.Type == "Ready" {
 				if condition.Status == metav1.ConditionTrue {
-					if uCluster.Status.Ready == false {
-						uCluster.Status.Ready = true
+					if *uCluster.Status.Ready == false {
+						*uCluster.Status.Ready = true
 						if err := r.Status().Update(ctx, uCluster); err != nil {
 							logger.Error(err, "Failed to update UffizziCluster status")
 							return ctrl.Result{}, err

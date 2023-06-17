@@ -72,7 +72,7 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready           bool                           `json:"ready,omitempty"`
+	Ready           *bool                          `json:"ready,omitempty"`
 	HelmReleaseRef  *string                        `json:"helmReleaseRef,omitempty"`
 	KubeConfig      VClusterKubeConfig             `json:"kubeConfig,omitempty"`
 	Host            *string                        `json:"host,omitempty"`
