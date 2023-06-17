@@ -72,7 +72,7 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Conditions      []metav1.Condition             `json:"conditions"`
+	Conditions      []metav1.Condition             `json:"conditions,omitempty"`
 	HelmReleaseRef  *string                        `json:"helmReleaseRef,omitempty"`
 	KubeConfig      VClusterKubeConfig             `json:"kubeConfig,omitempty"`
 	Host            *string                        `json:"host,omitempty"`
