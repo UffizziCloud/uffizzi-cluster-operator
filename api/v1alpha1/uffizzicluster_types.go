@@ -72,7 +72,7 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Ready           *bool                          `json:"ready,omitempty"`
+	Conditions      []metav1.Condition             `json:"conditions"`
 	HelmReleaseRef  *string                        `json:"helmReleaseRef,omitempty"`
 	KubeConfig      VClusterKubeConfig             `json:"kubeConfig,omitempty"`
 	Host            *string                        `json:"host,omitempty"`
@@ -87,7 +87,7 @@ type VClusterKubeConfig struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:shortName=uc;ucluster
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Ready",type=boolean,JSONPath=`.status.ready`
+//+kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=='Ready')].status`
 //+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
 
 // UffizziCluster is the Schema for the UffizziClusters API
