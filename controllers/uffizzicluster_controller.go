@@ -105,9 +105,11 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Set default values for the status if it is not already set
-	if uCluster.Status.Ready == nil {
+	if len(uCluster.Status.Conditions) == 0 {
 		var (
-			ready           = false
+			intialConditions = []metav1.Condition{
+				buildReadyCondition(false),
+			}
 			helmReleaseRef  = ""
 			exposedServices = []uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{}
 			host            = ""
@@ -116,7 +118,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		)
 		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
-			Ready:           &ready,
+			Conditions:      intialConditions,
 			HelmReleaseRef:  &helmReleaseRef,
 			ExposedServices: exposedServices,
 			Host:            &host,
@@ -192,8 +194,10 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		for _, condition := range helmRelease.Status.Conditions {
 			if condition.Type == "Ready" {
 				if condition.Status == metav1.ConditionTrue {
-					if *uCluster.Status.Ready == false {
-						*uCluster.Status.Ready = true
+					if uCluster.Status.Conditions[0].Reason == "NotReady" {
+						uCluster.Status.Conditions = []metav1.Condition{
+							buildReadyCondition(true),
+						}
 						if err := r.Status().Update(ctx, uCluster); err != nil {
 							logger.Error(err, "Failed to update UffizziCluster status")
 							return ctrl.Result{}, err
