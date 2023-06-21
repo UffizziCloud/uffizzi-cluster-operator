@@ -170,6 +170,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 .PHONY: build-helm-chart
 build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/crd > chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
 	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 
 ##@ Build Dependencies
