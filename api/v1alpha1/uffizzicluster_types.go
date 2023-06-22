@@ -55,10 +55,19 @@ type ExposedVClusterServiceStatus struct {
 	Host      string `json:"host"`
 }
 
+type VClusterIngressSpec struct {
+	IngressAnnotations    map[string]string `json:"ingressAnnotations,omitempty"`
+	CertManagerTLSEnabled bool              `json:"certManagerTLSEnabled,omitempty"`
+}
+
+// UffiClusterIngress defines the ingress capabilities of the cluster,
+// the basic host can be setup for all
 type UffizziClusterIngress struct {
-	Host     string                   `json:"host,omitempty"`
-	Class    string                   `json:"class,omitempty"`
-	Services []ExposedVClusterService `json:"services,omitempty"`
+	Host              string                   `json:"host,omitempty"`
+	Class             string                   `json:"class,omitempty"`
+	SyncFromManifests bool                     `json:"syncFromManifests,omitempty"`
+	Cluster           VClusterIngressSpec      `json:"cluster,omitempty"`
+	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
 // UffizziClusterSpec defines the desired state of UffizziCluster

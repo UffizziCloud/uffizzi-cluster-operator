@@ -10,22 +10,18 @@ import (
 
 func BuildVClusterIngress(helmReleaseName string, uCluster *v1alpha1.UffizziCluster) *v1.Ingress {
 	nginxIngressClass := INGRESS_CLASS_NGINX
-	return &v1.Ingress{
+	uclusterIngressHost := BuildVClusterIngressHost(uCluster)
+	ingress := &v1.Ingress{
 		ObjectMeta: v12.ObjectMeta{
-			Name:      helmReleaseName + "-ingress",
-			Namespace: uCluster.Namespace,
-			Annotations: map[string]string{
-				"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
-				"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
-				"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
-				"cert-manager.io/cluster-issuer":               "my-uffizzi-letsencrypt",
-			},
+			Name:        helmReleaseName + "-ingress",
+			Namespace:   uCluster.Namespace,
+			Annotations: map[string]string{},
 		},
 		Spec: v1.IngressSpec{
 			IngressClassName: &nginxIngressClass,
 			Rules: []v1.IngressRule{
 				{
-					Host: BuildVClusterIngressHost(uCluster),
+					Host: uclusterIngressHost,
 					IngressRuleValue: v1.IngressRuleValue{
 						HTTP: &v1.HTTPIngressRuleValue{
 							Paths: []v1.HTTPIngressPath{
@@ -51,6 +47,25 @@ func BuildVClusterIngress(helmReleaseName string, uCluster *v1alpha1.UffizziClus
 			},
 		},
 	}
+
+	// Add annotations defined for the service. overrides existing annotations
+	clusterIngressSpec := uCluster.Spec.Ingress.Cluster
+	if len(clusterIngressSpec.IngressAnnotations) > 0 {
+		for k, v := range clusterIngressSpec.IngressAnnotations {
+			ingress.Annotations[k] = v
+		}
+	}
+
+	if clusterIngressSpec.CertManagerTLSEnabled {
+		ingress.Spec.TLS = []v1.IngressTLS{
+			{
+				Hosts:      []string{uclusterIngressHost},
+				SecretName: fmt.Sprintf("%s-tls", helmReleaseName),
+			},
+		}
+	}
+
+	return ingress
 }
 
 func BuildVClusterInternalServiceIngress(service v1alpha1.ExposedVClusterService, uCluster *v1alpha1.UffizziCluster, helmReleaseName string) *v1.Ingress {

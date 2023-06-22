@@ -4,5 +4,13 @@ metadata:
   name: ingress-basic
 spec:
   ingress:
+    syncFromManifests: false
     class: "nginx"
     host: deleteme2023.uffizzi.cloud
+    cluster:
+      ingressAnnotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+        cert-manager.io/cluster-issuer: "my-uffizzi-letsencrypt"
+      certManagerTLSEnabled: true
