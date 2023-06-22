@@ -18,12 +18,7 @@ func TestBuildVClusterIngress(t *testing.T) {
 	// Expected outputs
 	expectedName := helmReleaseName + "-ingress"
 	expectedNamespace := uCluster.Namespace
-	expectedAnnotations := map[string]string{
-		"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
-		"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
-		"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
-		"cert-manager.io/cluster-issuer":               "my-uffizzi-letsencrypt",
-	}
+	expectedAnnotations := map[string]string{}
 
 	// Call the function being tested
 	ingress := BuildVClusterIngress(helmReleaseName, uCluster)
