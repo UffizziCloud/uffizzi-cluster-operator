@@ -1,0 +1,47 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  name: manifest-service-ingress
+  namespace: june-22-2023
+spec:
+  ingress:
+    class: "nginx"
+    host: deleteme2023.uffizzi.cloud
+    cluster:
+      ingressAnnotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    services:
+    - name: web-service
+      namespace: default
+      port: 8080
+      ingressAnnotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        ingress.kubernetes.io/force-ssl-redirect: "true"
+  manifests: |
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: web-app
+      namespace: default
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: web-service
+      namespace: default
+    spec:
+      selector:
+        app.kubernetes.io/name: web-app
+      ports:
+        - protocol: TCP
+          port: 8080
+          targetPort: 80
