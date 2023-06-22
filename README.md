@@ -28,18 +28,18 @@ The NGINX Ingress controller also need to be installed in the said cluster with 
 
 Install Keycloak with the Ingress.
 
-```bash
+<!-- ```bash
 kubectl create -f config/helmreleases/dex.yaml
-```
+``` -->
 
 Then configure it based on https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/oauth_provider/#keycloak-oidc-auth-provider
 
 
-### OAuth2 Proxy
+<!-- ### OAuth2 Proxy
 
 ```bash
 kubectl create -f config/helmreleases/oauth2proxy.yaml
-```
+``` -->
 
 ## Development
 
@@ -57,7 +57,7 @@ to inject in the HelmRelease values.
 To create a sample UffizziCluster, use the following command:
 
 ```bash
-kubectl apply -f examples/basic-ucluster.yml
+kubectl apply -f examples/helm-basic.yml
 ```
 
 The VCluster will be created with the Helm and Source Controllers installed as well.
