@@ -25,14 +25,14 @@ flux:
   imageReflectorController:
     enabled: false
 
-cert-manager: # dependency
-  enabled: true
-  installCRDs: true
-
-ingress-nginx:
-  controller:
-    extraArgs:
-      enable-ssl-passthrough: true
+#cert-manager: # dependency
+#  enabled: true
+#  installCRDs: true
+#
+#ingress-nginx:
+#  controller:
+#    extraArgs:
+#      enable-ssl-passthrough: true
 
 # To install nginx-ingress and cert-manager charts
 # along with the rest apply the following tags (enabled by default)
