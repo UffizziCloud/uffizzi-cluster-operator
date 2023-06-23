@@ -1,0 +1,60 @@
+apiVersion: v1
+entries:
+  uffizzi-cluster-operator:
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: v0.0.14
+    created: "2023-06-23T16:44:08.725520447Z"
+    dependencies:
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    - name: flux
+      repository: https://charts.bitnami.com/bitnami
+      version: 0.3.x
+    - name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      tags:
+      - ingress-nginx
+      version: 4.x.x
+    - name: cert-manager
+      repository: https://charts.jetstack.io
+      tags:
+      - ingress-nginx
+      version: 1.x.x
+    description: A Helm chart for deploying the Uffizzi Cluster Operator
+    digest: 17b866049559eecae56656ce6a6d9059f54459f1077186f2ae591f75c2f5c2ac
+    home: https://uffizzi.com/
+    icon: https://app.uffizzi.com/favicon.png
+    keywords:
+    - devops
+    - uffizzi
+    - continuous-previews
+    - ephemeral
+    - environments
+    - pull-request
+    - merge-request
+    - on-demand
+    - ci
+    - cd
+    - cp
+    maintainers:
+    - email: vibhav.bobade@uffizzi.com
+      name: Vibhav Bobade
+      url: https://github.com/waveywaves
+    - email: info@uffizzi.com
+      name: Uffizzi
+      url: https://uffizzi.com
+    - email: adam.vollrath@uffizzi.com
+      name: Adam Vollrath
+      url: https://github.com/axisofentropy
+    name: uffizzi-cluster-operator
+    sources:
+    - https://github.com/UffizziCloud/uffizzi-cluster-operator
+    type: application
+    urls:
+    - https://github.com/UffizziCloud/uffizzi-cluster-operator/releases/download/uffizzi-cluster-operator-0.0.7/uffizzi-cluster-operator-0.0.7.tgz
+    version: 0.0.7
+generated: "2023-06-23T16:44:08.725529447Z"
