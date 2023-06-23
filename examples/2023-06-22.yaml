@@ -1,12 +1,12 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: manifest-service-ingress
-  namespace: june-22-2023
+  name: june-22-2023-too
+  namespace: june-22-2023-too
 spec:
   ingress:
     class: "nginx"
-    host: deleteme2023.uffizzi.cloud
+    host: deleteme-2023q2.app.qa-gke.uffizzi.com
     cluster:
       ingressAnnotations:
         nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
@@ -17,7 +17,6 @@ spec:
       namespace: default
       port: 8080
       ingressAnnotations:
-        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
         nginx.ingress.kubernetes.io/ssl-redirect: "true"
         ingress.kubernetes.io/force-ssl-redirect: "true"
   manifests: |
