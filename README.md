@@ -24,9 +24,9 @@ flux install --namespace=flux-system --components="source-controller,helm-contro
 
 The NGINX Ingress controller also need to be installed in the said cluster with SSL Passthrough enabled (disabled by default) https://kubernetes.github.io/ingress-nginx/user-guide/tls/#ssl-passthrough.
 
-### Keycloak
+<!-- ### Keycloak
 
-Install Keycloak with the Ingress.
+Install Keycloak with the Ingress. -->
 
 <!-- ```bash
 kubectl create -f config/helmreleases/dex.yaml
