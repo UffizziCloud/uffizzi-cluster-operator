@@ -13,9 +13,13 @@ func BuildVClusterIngress(helmReleaseName string, uCluster *v1alpha1.UffizziClus
 	uclusterIngressHost := BuildVClusterIngressHost(uCluster)
 	ingress := &v1.Ingress{
 		ObjectMeta: v12.ObjectMeta{
-			Name:        helmReleaseName + "-ingress",
-			Namespace:   uCluster.Namespace,
-			Annotations: map[string]string{},
+			Name:      helmReleaseName + "-ingress",
+			Namespace: uCluster.Namespace,
+			Annotations: map[string]string{
+				"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
+				"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
+				"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
+			},
 		},
 		Spec: v1.IngressSpec{
 			IngressClassName: &nginxIngressClass,
@@ -74,9 +78,12 @@ func BuildVClusterInternalServiceIngress(service v1alpha1.ExposedVClusterService
 	internalServiceHost := BuildVClusterInternalServiceIngressHost(uCluster)
 	ingress := &v1.Ingress{
 		ObjectMeta: v12.ObjectMeta{
-			Name:        fmt.Sprintf("%s-x-%s-x-%s", service.Name, service.Namespace, helmReleaseName),
-			Namespace:   uCluster.Namespace,
-			Annotations: map[string]string{},
+			Name:      fmt.Sprintf("%s-x-%s-x-%s", service.Name, service.Namespace, helmReleaseName),
+			Namespace: uCluster.Namespace,
+			Annotations: map[string]string{
+				"nginx.ingress.kubernetes.io/ssl-redirect": "true",
+				"ingress.kubernetes.io/force-ssl-redirect": "true",
+			},
 		},
 		Spec: v1.IngressSpec{
 			IngressClassName: &nginxIngressClass,
