@@ -319,13 +319,13 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		},
 		Sync: VClusterSync{
 			Ingresses: VClusterSyncIngresses{
-				Enabled: false,
+				Enabled: true,
 			},
 		},
 	}
 
-	if uCluster.Spec.Ingress.SyncFromManifests {
-		uClusterHelmValues.Sync.Ingresses.Enabled = true
+	if uCluster.Spec.Ingress.SyncFromManifests != uClusterHelmValues.Sync.Ingresses.Enabled {
+		uClusterHelmValues.Sync.Ingresses.Enabled = uCluster.Spec.Ingress.SyncFromManifests
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
