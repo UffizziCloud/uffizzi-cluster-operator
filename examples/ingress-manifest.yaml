@@ -196,12 +196,11 @@ spec:
         app: result
       name: result
     spec:
-      type: NodePort
+      type: ClusterIP
       ports:
       - name: "result-service"
         port: 6001
         targetPort: 80
-        nodePort: 31001
       selector:
         app: result
     ---
@@ -212,11 +211,10 @@ spec:
         app: vote
       name: vote
     spec:
-      type: NodePort
+      type: ClusterIP
       ports:
       - name: "vote-service"
         port: 6000
         targetPort: 80
-        nodePort: 31000
       selector:
         app: vote
