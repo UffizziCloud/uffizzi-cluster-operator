@@ -188,7 +188,15 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	} else {
 		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
-		uCluster.Status.Conditions = helmRelease.Status.Conditions
+		uClusterConditions := []metav1.Condition{}
+		for _, c := range helmRelease.Status.Conditions {
+			helmMessage := "[HelmRelease] " + c.Message
+			uClusterCondition := c
+			uClusterCondition.Message = helmMessage
+			uClusterConditions = append(uClusterConditions, uClusterCondition)
+		}
+
+		uCluster.Status.Conditions = uClusterConditions
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{}, err
