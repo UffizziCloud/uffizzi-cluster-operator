@@ -137,7 +137,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Namespace: uCluster.Namespace,
 		Name:      helmReleaseName,
 	}
-	if err := r.Get(ctx, helmReleaseNamespacedName, helmRelease); err != nil && k8serrors.IsNotFound(err) {
+	err = r.Get(ctx, helmReleaseNamespacedName, helmRelease)
+	if err != nil && k8serrors.IsNotFound(err) {
 		// helm release does not exist so let's create one
 		newHelmRelease, err := r.createVClusterHelmRelease(ctx, uCluster)
 		if err != nil {
@@ -425,8 +426,15 @@ func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&uclusteruffizzicomv1alpha1.UffizziCluster{}).
 		// Watch HelmRelease reconciled by the Helm Controller
-		Watches(&controllerruntimesource.Kind{Type: &fluxhelmv2beta1.HelmRelease{}}, &handler.EnqueueRequestForObject{}).
+		Watches(
+			&controllerruntimesource.Kind{Type: &fluxhelmv2beta1.HelmRelease{}},
+			&handler.EnqueueRequestForOwner{
+				IsController: true,
+				OwnerType:    &uclusteruffizzicomv1alpha1.UffizziCluster{},
+			}).
 		// Watch HelmRepository reconciled by the Source Controller
-		Watches(&controllerruntimesource.Kind{Type: &fluxsourcev1.HelmRepository{}}, &handler.EnqueueRequestForObject{}).
+		Watches(
+			&controllerruntimesource.Kind{Type: &fluxsourcev1.HelmRepository{}},
+			&handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
