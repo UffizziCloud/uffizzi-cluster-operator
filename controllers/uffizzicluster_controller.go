@@ -19,9 +19,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"strings"
-	"time"
-
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -33,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
@@ -93,8 +91,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// create the loft helm repo if it is not already created
 	err := r.createLoftHelmRepo(ctx, req)
 	// check if error is because the HelmRepository already exists
-	if err != nil && k8serrors.IsAlreadyExists(err) {
-		logger.Info("HelmRepository for Loft already exists")
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		logger.Error(err, "error while creating HelmRepository for Loft")
 	}
 
 	// Fetch the UffizziCluster instance in question
@@ -108,7 +106,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if len(uCluster.Status.Conditions) == 0 {
 		var (
 			intialConditions = []metav1.Condition{
-				buildReadyCondition(false),
+				buildInitializingCondition(),
 			}
 			helmReleaseRef  = ""
 			exposedServices = []uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{}
@@ -189,29 +187,11 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		logger.Error(err, "Failed to create HelmRelease, unknown error")
 		return ctrl.Result{}, err
 	} else {
-		// helm release already exists
-		logger.Info("HelmRelease exists", "HelmRelease", helmRelease.Name)
-		// Update the EphemeralCluster status based on the HelmRelease status
-		for _, condition := range helmRelease.Status.Conditions {
-			if condition.Type == "Ready" {
-				if condition.Status == metav1.ConditionTrue {
-					if uCluster.Status.Conditions[0].Reason == "NotReady" {
-						uCluster.Status.Conditions = []metav1.Condition{
-							buildReadyCondition(true),
-						}
-						if err := r.Status().Update(ctx, uCluster); err != nil {
-							logger.Error(err, "Failed to update UffizziCluster status")
-							return ctrl.Result{}, err
-						}
-					}
-				} else {
-					logger.Info("UffizziCluster not ready yet", "HelmRelease", helmRelease.Name)
-					// Requeue the request to check the status of the HelmRelease
-					return ctrl.Result{RequeueAfter: time.Second * 2}, nil
-				}
-				logger.Info("UffizziCluster in Ready state", "UffizziCluster", uCluster.Name)
-				break
-			}
+		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
+		uCluster.Status.Conditions = helmRelease.Status.Conditions
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			logger.Error(err, "Failed to update UffizziCluster status")
+			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, err
 	}

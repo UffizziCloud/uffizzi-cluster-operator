@@ -4,21 +4,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func buildReadyCondition(ready bool) metav1.Condition {
-	if ready {
-		return metav1.Condition{
-			Type:               "Ready",
-			Status:             metav1.ConditionTrue,
-			Reason:             "Ready",
-			LastTransitionTime: metav1.Now(),
-			Message:            "UffizziCluster is ready",
-		}
-	}
+func buildInitializingCondition() metav1.Condition {
 	return metav1.Condition{
 		Type:               "Ready",
-		Status:             metav1.ConditionFalse,
-		Reason:             "NotReady",
+		Status:             metav1.ConditionUnknown,
+		Reason:             "Initializing",
 		LastTransitionTime: metav1.Now(),
-		Message:            "UffizziCluster is not ready",
+		Message:            "UffizziCluster is being initialized",
 	}
 }
