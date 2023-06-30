@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -88,11 +89,21 @@ const (
 func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// create the loft helm repo if it is not already created
-	err := r.createLoftHelmRepo(ctx, req)
-	// check if error is because the HelmRepository already exists
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		logger.Error(err, "error while creating HelmRepository for Loft")
+	loftHelmRepo := &fluxsourcev1.HelmRepository{}
+	err := r.Get(ctx, types.NamespacedName{
+		Name:      LOFT_HELM_REPO,
+		Namespace: req.Namespace,
+	}, loftHelmRepo)
+
+	// check if error is because the HelmRepository does not exist
+	if err != nil && k8serrors.IsNotFound(err) {
+		// create the loft helm repo if it is not already created
+		logger.Info("HelmRepository for Loft created")
+		err := r.createLoftHelmRepo(ctx, req)
+		// check if error is because the HelmRepository already exists
+		if err != nil && !k8serrors.IsAlreadyExists(err) {
+			logger.Error(err, "error while creating HelmRepository for Loft")
+		}
 	}
 
 	// Fetch the UffizziCluster instance in question
