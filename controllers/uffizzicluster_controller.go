@@ -298,6 +298,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			},
 		},
 		Syncer: VClusterSyncer{
+			KubeConfigContextName: helmReleaseName,
 			ExtraArgs: []string{
 				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
 				"--node-selector=sandbox.gke.io/runtime=gvisor",

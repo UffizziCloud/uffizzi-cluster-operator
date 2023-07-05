@@ -24,7 +24,8 @@ type VClusterInit struct {
 // VClusterSyncer - parameters to create the syncer with
 // https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
 type VClusterSyncer struct {
-	ExtraArgs []string `json:"extraArgs"`
+	KubeConfigContextName string   `json:"kubeConfigContextName"`
+	ExtraArgs             []string `json:"extraArgs"`
 }
 
 type VClusterSync struct {
