@@ -312,8 +312,8 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		},
 	}
 
-	if !uCluster.Spec.Ingress.SyncFromManifests {
-		uClusterHelmValues.Sync.Ingresses.Enabled = false
+	if uCluster.Spec.Ingress.SyncFromManifests != nil {
+		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {

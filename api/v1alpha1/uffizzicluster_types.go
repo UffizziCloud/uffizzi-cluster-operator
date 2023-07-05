@@ -66,7 +66,7 @@ type UffizziClusterIngress struct {
 	Host  string `json:"host,omitempty"`
 	Class string `json:"class,omitempty"`
 	//+kubebuilder:default:=true
-	SyncFromManifests bool                     `json:"syncFromManifests,omitempty"`
+	SyncFromManifests *bool                    `json:"syncFromManifests,omitempty"`
 	Cluster           VClusterIngressSpec      `json:"cluster,omitempty"`
 	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
