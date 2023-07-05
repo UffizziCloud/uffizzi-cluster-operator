@@ -112,6 +112,7 @@ spec:
                       type: object
                     type: array
                   syncFromManifests:
+                    default: true
                     type: boolean
                 type: object
               manifests:
