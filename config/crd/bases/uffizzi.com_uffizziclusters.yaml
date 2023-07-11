@@ -239,6 +239,8 @@ spec:
                     - name
                     type: object
                 type: object
+              lastAppliedConfiguration:
+                type: string
             type: object
         type: object
     served: true
