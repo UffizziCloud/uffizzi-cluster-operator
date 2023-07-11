@@ -368,11 +368,22 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			Ingresses: VClusterSyncIngresses{
 				Enabled: true,
 			},
+			StorageClasses: VClusterSyncStorageClasses{
+				Enabled: true,
+			},
+			PersistentVolumes: VClusterSyncPersistentVolumes{
+				Enabled: true,
+			},
 		},
 	}
 
 	if uCluster.Spec.Ingress.SyncFromManifests != nil {
 		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
+	}
+
+	if uCluster.Spec.Storage.SyncFromManifests != nil {
+		uClusterHelmValues.Sync.PersistentVolumes.Enabled = *uCluster.Spec.Storage.SyncFromManifests
+		uClusterHelmValues.Sync.StorageClasses.Enabled = *uCluster.Spec.Storage.SyncFromManifests
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {

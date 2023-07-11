@@ -117,6 +117,11 @@ spec:
                 type: object
               manifests:
                 type: string
+              storage:
+                properties:
+                  syncFromManifests:
+                    type: boolean
+                type: object
               ttl:
                 type: string
               upgrade:

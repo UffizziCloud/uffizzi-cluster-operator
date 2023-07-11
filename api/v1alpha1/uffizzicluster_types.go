@@ -21,9 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 type HelmReleaseInfo struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
@@ -71,9 +68,14 @@ type UffizziClusterIngress struct {
 	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
+type UffizziClusterStorage struct {
+	SyncFromManifests *bool `json:"syncFromManifests,omitempty"`
+}
+
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
 	Ingress   UffizziClusterIngress `json:"ingress,omitempty"`
+	Storage   UffizziClusterStorage `json:"storage,omitempty"`
 	TTL       string                `json:"ttl,omitempty"`
 	Helm      []HelmChart           `json:"helm,omitempty"`
 	Manifests *string               `json:"manifests,omitempty"`
