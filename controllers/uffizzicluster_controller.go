@@ -53,6 +53,14 @@ const (
 	INGRESS_CLASS_NGINX    = "nginx"
 )
 
+type LIFECYCLE_OP_TYPE string
+
+var (
+	LIFECYCLE_OP_TYPE_CREATE LIFECYCLE_OP_TYPE = "create"
+	LIFECYCLE_OP_TYPE_UPDATE LIFECYCLE_OP_TYPE = "update"
+	LIFECYCLE_OP_TYPE_DELETE LIFECYCLE_OP_TYPE = "delete"
+)
+
 //+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters/finalizers,verbs=update
@@ -86,18 +94,36 @@ const (
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var (
+		lifecycleOpType LIFECYCLE_OP_TYPE
+		currentSpec     string
+		lastAppliedSpec string
+	)
+	// default lifecycle operation
+	lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 	logger := log.FromContext(ctx)
-
-	err := r.createLoftHelmRepo(ctx, req)
-	if err != nil && k8serrors.IsAlreadyExists(err) {
-		logger.Info("HelmRepository for Loft already exists")
-	}
 
 	// Fetch the UffizziCluster instance in question
 	uCluster := &uclusteruffizzicomv1alpha1.UffizziCluster{}
 	if err := r.Get(ctx, req.NamespacedName, uCluster); err != nil {
+		// possibly a delete event
+		if k8serrors.IsNotFound(err) {
+			lifecycleOpType = LIFECYCLE_OP_TYPE_DELETE
+			logger.Info("UffizziCluster deleted", "NamespacedName", req.NamespacedName)
+		} else {
+			logger.Info("Failed to get UffizziCluster", "NamespacedName", req.NamespacedName, "Error", err)
+		}
 		// Handle error
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
+		currentSpecBytes, err := json.Marshal(uCluster.Spec)
+		if err != nil {
+			logger.Error(err, "Failed to marshal current spec")
+			return ctrl.Result{}, err
+		}
+		currentSpec = string(currentSpecBytes)
 	}
 
 	// Set default values for the status if it is not already set
@@ -133,9 +159,11 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Namespace: uCluster.Namespace,
 		Name:      helmReleaseName,
 	}
-	err = r.Get(ctx, helmReleaseNamespacedName, helmRelease)
+
+	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
 		// helm release does not exist so let's create one
+		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 		newHelmRelease, err := r.createVClusterHelmRelease(ctx, uCluster)
 		if err != nil {
 			logger.Error(err, "Failed to create HelmRelease")
@@ -185,6 +213,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		logger.Error(err, "Failed to create HelmRelease, unknown error")
 		return ctrl.Result{}, err
 	} else {
+		lifecycleOpType = LIFECYCLE_OP_TYPE_UPDATE
 		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
 		uClusterConditions := []metav1.Condition{}
 		for _, c := range helmRelease.Status.Conditions {
@@ -199,15 +228,45 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, err
 	}
 
-	// Requeue the request to check the status of the HelmRelease
+	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
+		err := r.createLoftHelmRepo(ctx, req)
+		if err != nil && k8serrors.IsAlreadyExists(err) {
+			logger.Info("Loft Helm Repo for UffizziCluster already exists", "NamespacedName", req.NamespacedName)
+		} else {
+			logger.Info("Loft Helm Repo for UffizziCluster created", "NamespacedName", req.NamespacedName)
+		}
+		uCluster.Status.LastAppliedConfiguration = &currentSpec
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			logger.Error(err, "Failed to update the default UffizziCluster lastAppliedConfig")
+			return ctrl.Result{}, err
+		}
+
+		logger.Info("UffizziCluster lastAppliedConfig has been set")
+	} else if lifecycleOpType == LIFECYCLE_OP_TYPE_DELETE {
+		err := r.deleteLoftHelmRepo(ctx, req)
+		if err != nil && k8serrors.IsNotFound(err) {
+			logger.Info("Loft Helm Repo for UffizziCluster already deleted", "NamespacedName", req.NamespacedName)
+		}
+	}
+
+	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
+		if currentSpec != lastAppliedSpec {
+			logger.Info("UffizziCluster spec has changed, updating HelmRelease")
+		}
+	}
+
+	// Requeue the request to check the status
 	return ctrl.Result{Requeue: true}, nil
 }
 
 func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
 	return r.createHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace, LOFT_CHART_REPO_URL)
+}
+
+func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
+	return r.deleteHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace)
 }
 
 func (r *UffizziClusterReconciler) createVClusterIngress(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*string, error) {
@@ -394,7 +453,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 
 func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, namespace, url string) error {
 	// Create HelmRepository in the same namespace as the HelmRelease
-	loftHelmRepo := &fluxsourcev1.HelmRepository{
+	helmRepo := &fluxsourcev1.HelmRepository{
 		ObjectMeta: ctrl.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -404,7 +463,20 @@ func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, nam
 		},
 	}
 
-	err := r.Create(ctx, loftHelmRepo)
+	err := r.Create(ctx, helmRepo)
+	return err
+}
+
+func (r *UffizziClusterReconciler) deleteHelmRepo(ctx context.Context, name, namespace string) error {
+	// Create HelmRepository in the same namespace as the HelmRelease
+	helmRepo := &fluxsourcev1.HelmRepository{
+		ObjectMeta: ctrl.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	err := r.Delete(ctx, helmRepo)
 	return err
 }
 
@@ -420,8 +492,8 @@ func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				OwnerType:    &uclusteruffizzicomv1alpha1.UffizziCluster{},
 			}).
 		// Watch HelmRepository reconciled by the Source Controller
-		Watches(
-			&controllerruntimesource.Kind{Type: &fluxsourcev1.HelmRepository{}},
-			&handler.EnqueueRequestForObject{}).
+		//Watches(
+		//	&controllerruntimesource.Kind{Type: &fluxsourcev1.HelmRepository{}},
+		//	&handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
