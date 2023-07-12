@@ -30,8 +30,8 @@ type VClusterSyncer struct {
 
 type VClusterSync struct {
 	Ingresses         VClusterSyncIngresses         `json:"ingresses,omitempty"`
-	PersistentVolumes VClusterSyncPersistentVolumes `json:"persistentVolumes,omitempty"`
-	StorageClasses    VClusterSyncStorageClasses    `json:"storageClasses,omitempty"`
+	PersistentVolumes VClusterSyncPersistentVolumes `json:"persistentvolumes,omitempty"`
+	StorageClasses    VClusterSyncStorageClasses    `json:"storageclasses,omitempty"`
 }
 
 type VClusterSyncIngresses struct {
