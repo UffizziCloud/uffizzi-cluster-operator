@@ -29,9 +29,10 @@ type VClusterSyncer struct {
 }
 
 type VClusterSync struct {
-	Ingresses         VClusterSyncIngresses         `json:"ingresses,omitempty"`
-	PersistentVolumes VClusterSyncPersistentVolumes `json:"persistentvolumes,omitempty"`
-	StorageClasses    VClusterSyncStorageClasses    `json:"storageclasses,omitempty"`
+	Ingresses              VClusterSyncIngresses              `json:"ingresses,omitempty"`
+	PersistentVolumes      VClusterSyncPersistentVolumes      `json:"persistentvolumes,omitempty"`
+	PersistentVolumeClaims VClusterSyncPersistentVolumeClaims `json:"persistentvolumeclaims,omitempty"`
+	StorageClasses         VClusterSyncStorageClasses         `json:"storageclasses,omitempty"`
 }
 
 type VClusterSyncIngresses struct {
@@ -39,6 +40,10 @@ type VClusterSyncIngresses struct {
 }
 
 type VClusterSyncPersistentVolumes struct {
+	Enabled bool `json:"enabled"`
+}
+
+type VClusterSyncPersistentVolumeClaims struct {
 	Enabled bool `json:"enabled"`
 }
 

@@ -374,6 +374,9 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			PersistentVolumes: VClusterSyncPersistentVolumes{
 				Enabled: true,
 			},
+			PersistentVolumeClaims: VClusterSyncPersistentVolumeClaims{
+				Enabled: true,
+			},
 		},
 	}
 
@@ -383,6 +386,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 
 	if uCluster.Spec.Storage.SyncFromManifests != nil {
 		uClusterHelmValues.Sync.PersistentVolumes.Enabled = *uCluster.Spec.Storage.SyncFromManifests
+		uClusterHelmValues.Sync.PersistentVolumeClaims.Enabled = *uCluster.Spec.Storage.SyncFromManifests
 		uClusterHelmValues.Sync.StorageClasses.Enabled = *uCluster.Spec.Storage.SyncFromManifests
 	}
 
