@@ -122,18 +122,6 @@ spec:
                 type: object
               manifests:
                 type: string
-              storage:
-                properties:
-                  syncFromManifests:
-                    properties:
-                      persistentVolumeClaims:
-                        type: boolean
-                      persistentVolumes:
-                        type: boolean
-                      storageClasses:
-                        type: boolean
-                    type: object
-                type: object
               ttl:
                 type: string
             type: object

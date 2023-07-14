@@ -381,20 +381,6 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
 	}
 
-	storageSyncManifests := uCluster.Spec.Storage.SyncFromManifests
-
-	if storageSyncManifests != nil {
-		if storageSyncManifests.PersistentVolumeClaims {
-			uClusterHelmValues.Sync.PersistentVolumeClaims.Enabled = storageSyncManifests.PersistentVolumeClaims
-		}
-		if storageSyncManifests.StorageClasses {
-			uClusterHelmValues.Sync.StorageClasses.Enabled = storageSyncManifests.StorageClasses
-		}
-		if storageSyncManifests.PersistentVolumes {
-			uClusterHelmValues.Sync.PersistentVolumes.Enabled = storageSyncManifests.PersistentVolumes
-		}
-	}
-
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
 		uClusterHelmValues.Ingress.Enabled = true
 		uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,

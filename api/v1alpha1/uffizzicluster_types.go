@@ -68,10 +68,6 @@ type UffizziClusterIngress struct {
 	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
-type UffizziClusterStorage struct {
-	SyncFromManifests *UffizziClusterStorageSync `json:"syncFromManifests,omitempty"`
-}
-
 type UffizziClusterStorageSync struct {
 	PersistentVolumes      bool `json:"persistentVolumes,omitempty"`
 	StorageClasses         bool `json:"storageClasses,omitempty"`
@@ -81,7 +77,6 @@ type UffizziClusterStorageSync struct {
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
 	Ingress   UffizziClusterIngress `json:"ingress,omitempty"`
-	Storage   UffizziClusterStorage `json:"storage,omitempty"`
 	TTL       string                `json:"ttl,omitempty"`
 	Helm      []HelmChart           `json:"helm,omitempty"`
 	Manifests *string               `json:"manifests,omitempty"`
