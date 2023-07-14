@@ -384,14 +384,14 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 	storageSyncManifests := uCluster.Spec.Storage.SyncFromManifests
 
 	if storageSyncManifests != nil {
-		if storageSyncManifests.PersistentVolumeClaims != nil {
-			uClusterHelmValues.Sync.PersistentVolumeClaims.Enabled = *storageSyncManifests.PersistentVolumeClaims
+		if storageSyncManifests.PersistentVolumeClaims {
+			uClusterHelmValues.Sync.PersistentVolumeClaims.Enabled = storageSyncManifests.PersistentVolumeClaims
 		}
-		if storageSyncManifests.StorageClasses != nil {
-			uClusterHelmValues.Sync.StorageClasses.Enabled = *storageSyncManifests.StorageClasses
+		if storageSyncManifests.StorageClasses {
+			uClusterHelmValues.Sync.StorageClasses.Enabled = storageSyncManifests.StorageClasses
 		}
-		if storageSyncManifests.PersistentVolumes != nil {
-			uClusterHelmValues.Sync.PersistentVolumes.Enabled = *storageSyncManifests.PersistentVolumes
+		if storageSyncManifests.PersistentVolumes {
+			uClusterHelmValues.Sync.PersistentVolumes.Enabled = storageSyncManifests.PersistentVolumes
 		}
 	}
 

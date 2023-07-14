@@ -73,9 +73,9 @@ type UffizziClusterStorage struct {
 }
 
 type UffizziClusterStorageSync struct {
-	PersistentVolumes      *bool `json:"persistentVolumes,omitempty"`
-	StorageClasses         *bool `json:"storageClasses,omitempty"`
-	PersistentVolumeClaims *bool `json:"persistentVolumeClaims,omitempty"`
+	PersistentVolumes      bool `json:"persistentVolumes,omitempty"`
+	StorageClasses         bool `json:"storageClasses,omitempty"`
+	PersistentVolumeClaims bool `json:"persistentVolumeClaims,omitempty"`
 }
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
