@@ -30,16 +30,11 @@ type VClusterSyncer struct {
 
 type VClusterSync struct {
 	Ingresses              VClusterSyncIngresses              `json:"ingresses,omitempty"`
-	PersistentVolumes      VClusterSyncPersistentVolumes      `json:"persistentvolumes,omitempty"`
 	PersistentVolumeClaims VClusterSyncPersistentVolumeClaims `json:"persistentvolumeclaims,omitempty"`
 	StorageClasses         VClusterSyncStorageClasses         `json:"storageclasses,omitempty"`
 }
 
 type VClusterSyncIngresses struct {
-	Enabled bool `json:"enabled"`
-}
-
-type VClusterSyncPersistentVolumes struct {
 	Enabled bool `json:"enabled"`
 }
 
