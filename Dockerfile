@@ -30,7 +30,6 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 
 COPY --from=builder /workspace/manager .
-COPY --from=builder /usr/local/bin/flux /usr/local/bin/flux
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
