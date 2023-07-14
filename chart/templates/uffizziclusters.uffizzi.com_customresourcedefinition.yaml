@@ -120,6 +120,7 @@ spec:
               storage:
                 properties:
                   syncFromManifests:
+                    default: true
                     type: boolean
                 type: object
               ttl:
