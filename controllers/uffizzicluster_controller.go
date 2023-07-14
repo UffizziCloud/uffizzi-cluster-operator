@@ -369,10 +369,10 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 				Enabled: true,
 			},
 			StorageClasses: VClusterSyncStorageClasses{
-				Enabled: true,
+				Enabled: false,
 			},
 			PersistentVolumeClaims: VClusterSyncPersistentVolumeClaims{
-				Enabled: true,
+				Enabled: false,
 			},
 		},
 	}
