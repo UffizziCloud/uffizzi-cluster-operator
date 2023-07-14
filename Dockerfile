@@ -3,9 +3,6 @@ FROM golang:1.19 as builder
 ARG TARGETOS
 ARG TARGETARCH
 
-# Install flux
-RUN curl -s https://fluxcd.io/install.sh | bash
-
 # Do the rest
 WORKDIR /workspace
 # Copy the Go Modules manifests
