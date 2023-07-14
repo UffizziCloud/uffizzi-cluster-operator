@@ -69,7 +69,7 @@ type UffizziClusterIngress struct {
 }
 
 type UffizziClusterStorage struct {
-	//+kubebuilder:default:=true
+	//+kubebuilder:default:=false
 	SyncFromManifests *bool `json:"syncFromManifests,omitempty"`
 }
 

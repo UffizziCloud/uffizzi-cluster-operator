@@ -1,0 +1,7 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  name: storage-manifest
+spec:
+  storage:
+    syncFromManifests: false
