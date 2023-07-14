@@ -85,7 +85,6 @@ type UffizziClusterSpec struct {
 	TTL       string                `json:"ttl,omitempty"`
 	Helm      []HelmChart           `json:"helm,omitempty"`
 	Manifests *string               `json:"manifests,omitempty"`
-	Upgrade   bool                  `json:"upgrade,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster

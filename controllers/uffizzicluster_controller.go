@@ -164,7 +164,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil && k8serrors.IsNotFound(err) {
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
-		newHelmRelease, err := r.createVClusterHelmRelease(ctx, uCluster)
+		newHelmRelease, err := r.createVClusterHelmRelease(false, ctx, uCluster)
 		if err != nil {
 			logger.Error(err, "Failed to create HelmRelease")
 			return ctrl.Result{}, err
@@ -253,7 +253,13 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
 		if currentSpec != lastAppliedSpec {
-			logger.Info("UffizziCluster spec has changed, updating HelmRelease")
+			logger.Info("UffizziCluster spec has changed, updating HelmRelease", "NamespacedName", req.NamespacedName)
+			_, err := r.createVClusterHelmRelease(true, ctx, uCluster)
+			if err != nil {
+				logger.Error(err, "Failed to create HelmRelease")
+				return ctrl.Result{}, err
+			}
+			logger.Info("HelmRelease updated", "NamespacedName", req.NamespacedName)
 		}
 	}
 
@@ -322,7 +328,7 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 	return status, nil
 }
 
-func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
 		TLSSanArgValue              = BuildVClusterIngressHost(uCluster)
@@ -447,19 +453,22 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		},
 	}
 
-	if uCluster.Spec.Upgrade {
-		newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
-			Force: true,
-		}
-	}
-
 	if err := controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
 		return nil, errors.Wrap(err, "failed to set controller reference")
 	}
-
-	err = r.Create(ctx, newHelmRelease)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create HelmRelease")
+	if update {
+		newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
+			Force: true,
+		}
+		err = r.Update(ctx, newHelmRelease)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to update HelmRelease")
+		}
+	} else {
+		err = r.Create(ctx, newHelmRelease)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create HelmRelease")
+		}
 	}
 
 	return newHelmRelease, nil
