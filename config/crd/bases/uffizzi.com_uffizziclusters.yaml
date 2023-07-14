@@ -125,7 +125,14 @@ spec:
               storage:
                 properties:
                   syncFromManifests:
-                    type: boolean
+                    properties:
+                      persistentVolumeClaims:
+                        type: boolean
+                      persistentVolumes:
+                        type: boolean
+                      storageClasses:
+                        type: boolean
+                    type: object
                 type: object
               ttl:
                 type: string

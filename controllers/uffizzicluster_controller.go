@@ -365,7 +365,7 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 			},
 		},
 		Sync: VClusterSync{
-			Ingresses: VClusterSyncIngresses{
+			Ingresses: EnabledBool{
 				Enabled: true,
 			},
 		},
@@ -375,9 +375,18 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(ctx context.Context
 		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
 	}
 
-	if uCluster.Spec.Storage.SyncFromManifests != nil {
-		uClusterHelmValues.Sync.PersistentVolumeClaims.Enabled = *uCluster.Spec.Storage.SyncFromManifests
-		uClusterHelmValues.Sync.StorageClasses.Enabled = *uCluster.Spec.Storage.SyncFromManifests
+	storageSyncManifests := uCluster.Spec.Storage.SyncFromManifests
+
+	if storageSyncManifests != nil {
+		if storageSyncManifests.PersistentVolumeClaims != nil {
+			uClusterHelmValues.Sync.PersistentVolumeClaims.Enabled = *storageSyncManifests.PersistentVolumeClaims
+		}
+		if storageSyncManifests.StorageClasses != nil {
+			uClusterHelmValues.Sync.StorageClasses.Enabled = *storageSyncManifests.StorageClasses
+		}
+		if storageSyncManifests.PersistentVolumes != nil {
+			uClusterHelmValues.Sync.PersistentVolumes.Enabled = *storageSyncManifests.PersistentVolumes
+		}
 	}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {

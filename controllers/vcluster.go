@@ -6,7 +6,7 @@ type VCluster struct {
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
-	Ingress         VClusterIngress         `json:"ingress,omitempty"`
+	Ingress         EnabledBool             `json:"ingress,omitempty"`
 	FsGroup         int64                   `json:"fsgroup,omitempty"`
 	Isolation       VClusterIsolation       `json:"isolation,omitempty"`
 	NodeSelector    VClusterNodeSelector    `json:"nodeSelector,omitempty"`
@@ -29,25 +29,13 @@ type VClusterSyncer struct {
 }
 
 type VClusterSync struct {
-	Ingresses              VClusterSyncIngresses              `json:"ingresses,omitempty"`
-	PersistentVolumeClaims VClusterSyncPersistentVolumeClaims `json:"persistentvolumeclaims,omitempty"`
-	StorageClasses         VClusterSyncStorageClasses         `json:"storageclasses,omitempty"`
+	Ingresses              EnabledBool `json:"ingresses,omitempty"`
+	PersistentVolumes      EnabledBool `json:"persistentvolumes,omitempty"`
+	PersistentVolumeClaims EnabledBool `json:"persistentvolumeclaims,omitempty"`
+	StorageClasses         EnabledBool `json:"storageclasses,omitempty"`
 }
 
-type VClusterSyncIngresses struct {
-	Enabled bool `json:"enabled"`
-}
-
-type VClusterSyncPersistentVolumeClaims struct {
-	Enabled bool `json:"enabled"`
-}
-
-type VClusterSyncStorageClasses struct {
-	Enabled bool `json:"enabled"`
-}
-
-// VClusterIngress - parameters to create the ingress with
-type VClusterIngress struct {
+type EnabledBool struct {
 	Enabled bool `json:"enabled"`
 }
 
