@@ -29,10 +29,7 @@ type VClusterSyncer struct {
 }
 
 type VClusterSync struct {
-	Ingresses              EnabledBool `json:"ingresses,omitempty"`
-	PersistentVolumes      EnabledBool `json:"persistentvolumes,omitempty"`
-	PersistentVolumeClaims EnabledBool `json:"persistentvolumeclaims,omitempty"`
-	StorageClasses         EnabledBool `json:"storageclasses,omitempty"`
+	Ingresses EnabledBool `json:"ingresses,omitempty"`
 }
 
 type EnabledBool struct {
