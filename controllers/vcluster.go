@@ -79,9 +79,9 @@ type EnabledBool struct {
 }
 
 type VClusterIngress struct {
-	Enabled          bool   `json:"enabled"`
-	IngressClassName string `json:"ingressClassName"`
-	Host             string `json:"host"`
+	Enabled          bool   `json:"enabled,omitempty"`
+	IngressClassName string `json:"ingressClassName,omitempty"`
+	Host             string `json:"host,omitempty"`
 }
 
 type VClusterResourceQuota struct {
