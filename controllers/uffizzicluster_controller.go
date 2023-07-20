@@ -502,6 +502,9 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
 		uClusterHelmValues.Ingress.Enabled = true
+		uClusterHelmValues.Ingress.IngressClassName = uCluster.Spec.Ingress.Class
+		ingressHost := BuildVClusterIngressHost(uCluster)
+		uClusterHelmValues.Ingress.Host = ingressHost
 		uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
 			"--tls-san="+TLSSanArgValue,
 			"--out-kube-config-server="+OutKubeConfigServerArgValue,
