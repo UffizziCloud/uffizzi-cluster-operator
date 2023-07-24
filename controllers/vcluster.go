@@ -37,11 +37,38 @@ type EnabledBool struct {
 }
 
 type VClusterResourceQuota struct {
+	Enabled 	bool                       `json:"enabled"`
 	Quota VClusterResourceQuotaDefiniton `json:"quota"`
 }
 
 type VClusterResourceQuotaDefiniton struct {
+	RequestsCpu string `json:"requests.cpu"`
+	RequestsMemory string `json:"requests.memory"`
+	RequestsStorage string `json:"requests.storage"`
+	RequestsEphemeralStorage string `json:"requests.ephemeral-storage"`
+	LimitsCpu string `json:"limits.cpu"`
+	LimitsMemory string `json:"limits.memory"`
+	LimitsEphemeralStorage string `json:"limits.ephemeral-storage"`
+	ServicesLoadbalancers int `json:"services.loadbalancers"`
 	ServicesNodePorts int `json:"services.nodeports"`
+	CountEndpoints int `json:"count/endpoints"`
+	CountPods int `json:"count/pods"`
+	CountServices int `json:"count/services"`
+	CountSecrets int `json:"count/secrets"`
+	CountConfigmaps int `json:"count/configmaps"`
+	CountPersistentvolumeclaims int `json:"count/persistentvolumeclaims"`
+}
+
+type LimitRangeResources struct {
+	EphemeralStorage string `json:"ephemeral-storage"`
+	Memory string `json:"memory"`
+	Cpu string `json:"cpu"`
+}
+
+type VClusterLimitRange struct {
+	Enabled bool `json:"enabled"`
+	Default LimitRangeResources `json:"default"`
+	DefaultRequest LimitRangeResources `json:"defaultRequest"`
 }
 
 type VClusterMapServicesFromVirtual struct {
@@ -58,6 +85,7 @@ type VClusterIsolation struct {
 	Enabled             bool                  `json:"enabled"`
 	PodSecurityStandard string                `json:"podSecurityStandard"`
 	ResourceQuota       VClusterResourceQuota `json:"resourceQuota"`
+	LimitRange 		VClusterLimitRange    `json:"limitRange"`
 }
 
 // VClusterNodeSelector - parameters to define the node selector of the cluster

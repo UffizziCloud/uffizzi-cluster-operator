@@ -68,12 +68,54 @@ type UffizziClusterIngress struct {
 	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
+type UffizziClusterResourceQuota struct {
+	//+kubebuilder:default:=true
+	Enabled  bool                       `json:"enabled,omitempty"`
+	Requests UffizziClusterRequestsQuota `json:"requests,omitempty"`
+	Limits   BasicComputeResources       `json:"limits,omitempty"`
+	Services UffizziClusterServicesQuota `json:"services,omitempty"`
+	Count    UffizziClusterResourceCount `json:"count,omitempty"`
+}
+
+type UffizziClusterRequestsQuota struct {
+	BasicComputeResources
+	Storage string `json:"storage,omitempty"`
+}
+
+type BasicComputeResources struct {
+	CPU  string `json:"cpu,omitempty"`
+	Memory string `json:"memory,omitempty"`
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
+}
+
+type UffizziClusterServicesQuota struct {
+	NodePorts int `json:"nodePorts,omitempty"`
+	LoadBalancers int `json:"loadBalancers,omitempty"`
+}
+
+type UffizziClusterResourceCount struct {
+	Pods int `json:"pods,omitempty"`
+	Services int `json:"services,omitempty"`
+	ConfigMaps int `json:"configMaps,omitempty"`
+	Secrets int `json:"secrets,omitempty"`
+	PersistentVolumeClaims int `json:"persistentVolumeClaims,omitempty"`
+	Endpoints int `json:"endpoints,omitempty"`
+}
+
+type UffizziClusterLimitRange struct {
+	Enabled *bool `json:"enabled,omitempty"`
+	Default BasicComputeResources `json:"default,omitempty"`
+	DefaultRequest BasicComputeResources `json:"defaultRequest,omitempty"`
+}
+
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
 	Ingress   UffizziClusterIngress `json:"ingress,omitempty"`
 	TTL       string                `json:"ttl,omitempty"`
 	Helm      []HelmChart           `json:"helm,omitempty"`
-	Manifests *string               `json:"manifests,omitempty"`
+	Manifests     *string                     `json:"manifests,omitempty"`
+	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
+	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
