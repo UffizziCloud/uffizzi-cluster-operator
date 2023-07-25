@@ -72,51 +72,78 @@ type UffizziClusterIngress struct {
 // quota of resources a namespace has access to
 type UffizziClusterResourceQuota struct {
 	//+kubebuilder:default:=true
-	Enabled bool `json:"enabled,omitempty"`
-	//+kubebuilder:default:={cpu="0.5",memory="1Gi",ephemeralStorage="5Gi",storage=""}
-	Requests UffizziClusterRequestsQuota `json:"requests,omitempty"`
-	//+kubebuilder:default:={cpu="0.5",memory="8Gi",ephemeralStorage="5Gi"}
-	Limits BasicComputeResources `json:"limits,omitempty"`
-	//+kubebuilder:default:={nodePorts=0,loadBalancer=3}
-	Services UffizziClusterServicesQuota `json:"services,omitempty"`
-	//+kubebuilder:default:={pods=20,services=10,persistentVolumeClaims=4,endpoints=20,configMaps=10,secrets=10}
-	Count UffizziClusterResourceCount `json:"count,omitempty"`
+	Enabled  bool                              `json:"enabled,omitempty"`
+	Requests UffizziClusterRequestsQuota       `json:"requests,omitempty"`
+	Limits   UffizziClusterResourceQuotaLimits `json:"limits,omitempty"`
+	Services UffizziClusterServicesQuota       `json:"services,omitempty"`
+	Count    UffizziClusterResourceCount       `json:"count,omitempty"`
 }
 
 type UffizziClusterLimitRange struct {
 	//+kubebuilder:default:=true
-	Enabled bool `json:"enabled,omitempty"`
-	//+kubebuilder:default:={cpu="0.5",memory="1Gi",ephemeralStorage="8Gi"}
-	Default BasicComputeResources `json:"default,omitempty"`
-	//+kubebuilder:default:={cpu="0.1",memory="128Mi",ephemeralStorage="1Gi"}
-	DefaultRequest BasicComputeResources `json:"defaultRequest,omitempty"`
+	Enabled        bool                                   `json:"enabled,omitempty"`
+	Default        UffizziClusterLimitRangeDefault        `json:"default,omitempty"`
+	DefaultRequest UffizziClusterLimitRangeDefaultRequest `json:"defaultRequest,omitempty"`
 }
 
 type UffizziClusterRequestsQuota struct {
-	CPU              string `json:"cpu,omitempty"`
-	Memory           string `json:"memory,omitempty"`
+	//+kubebuilder:default:="0.5"
+	CPU string `json:"cpu,omitempty"`
+	//+kubebuilder:default:="1Gi"
+	Memory string `json:"memory,omitempty"`
+	//+kubebuilder:default:="5Gi"
 	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
-	Storage          string `json:"storage,omitempty"`
+	//+kubebuilder:default:="5Gi"
+	Storage string `json:"storage,omitempty"`
 }
 
-type BasicComputeResources struct {
-	CPU              string `json:"cpu,omitempty"`
-	Memory           string `json:"memory,omitempty"`
+type UffizziClusterResourceQuotaLimits struct {
+	//+kubebuilder:default:="0.5"
+	CPU string `json:"cpu,omitempty"`
+	//+kubebuilder:default:="8Gi"
+	Memory string `json:"memory,omitempty"`
+	//+kubebuilder:default:="5Gi"
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
+}
+
+type UffizziClusterLimitRangeDefault struct {
+	//+kubebuilder:default:="0.5"
+	CPU string `json:"cpu,omitempty"`
+	//+kubebuilder:default:="1Gi"
+	Memory string `json:"memory,omitempty"`
+	//+kubebuilder:default:="8Gi"
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
+}
+
+type UffizziClusterLimitRangeDefaultRequest struct {
+	//+kubebuilder:default:="0.1"
+	CPU string `json:"cpu,omitempty"`
+	//+kubebuilder:default:="128Mi"
+	Memory string `json:"memory,omitempty"`
+	//+kubebuilder:default:="1Gi"
 	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
 }
 
 type UffizziClusterServicesQuota struct {
-	NodePorts     int `json:"nodePorts,omitempty"`
+	//+kubebuilder:default:=0
+	NodePorts int `json:"nodePorts,omitempty"`
+	//+kubebuilder:default:=3
 	LoadBalancers int `json:"loadBalancers,omitempty"`
 }
 
 type UffizziClusterResourceCount struct {
-	Pods                   int `json:"pods,omitempty"`
-	Services               int `json:"services,omitempty"`
-	ConfigMaps             int `json:"configMaps,omitempty"`
-	Secrets                int `json:"secrets,omitempty"`
+	//+kubebuilder:default:=20
+	Pods int `json:"pods,omitempty"`
+	//+kubebuilder:default:=10
+	Services int `json:"services,omitempty"`
+	//+kubebuilder:default:=4
+	ConfigMaps int `json:"configMaps,omitempty"`
+	//+kubebuilder:default:=20
+	Secrets int `json:"secrets,omitempty"`
+	//+kubebuilder:default:=10
 	PersistentVolumeClaims int `json:"persistentVolumeClaims,omitempty"`
-	Endpoints              int `json:"endpoints,omitempty"`
+	//+kubebuilder:default:=10
+	Endpoints int `json:"endpoints,omitempty"`
 }
 
 // UffizziClusterSpec defines the desired state of UffizziCluster

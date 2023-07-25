@@ -118,29 +118,27 @@ spec:
               limitRange:
                 properties:
                   default:
-                    default:
-                    - cpu="0.5"
-                    - memory="1Gi"
-                    - ephemeralStorage="8Gi"
                     properties:
                       cpu:
+                        default: "0.5"
                         type: string
                       ephemeralStorage:
+                        default: 8Gi
                         type: string
                       memory:
+                        default: 1Gi
                         type: string
                     type: object
                   defaultRequest:
-                    default:
-                    - cpu="0.1"
-                    - memory="128Mi"
-                    - ephemeralStorage="1Gi"
                     properties:
                       cpu:
+                        default: "0.1"
                         type: string
                       ephemeralStorage:
+                        default: 1Gi
                         type: string
                       memory:
+                        default: 128Mi
                         type: string
                     type: object
                   enabled:
@@ -153,67 +151,63 @@ spec:
                 description: UffizziClusterResourceQuota defines the resource quota which defines the quota of resources a namespace has access to
                 properties:
                   count:
-                    default:
-                    - pods=20
-                    - services=10
-                    - persistentVolumeClaims=4
-                    - endpoints=20
-                    - configMaps=10
-                    - secrets=10
                     properties:
                       configMaps:
+                        default: 4
                         type: integer
                       endpoints:
+                        default: 10
                         type: integer
                       persistentVolumeClaims:
+                        default: 10
                         type: integer
                       pods:
+                        default: 20
                         type: integer
                       secrets:
+                        default: 20
                         type: integer
                       services:
+                        default: 10
                         type: integer
                     type: object
                   enabled:
                     default: true
                     type: boolean
                   limits:
-                    default:
-                    - cpu="0.5"
-                    - memory="8Gi"
-                    - ephemeralStorage="5Gi"
                     properties:
                       cpu:
+                        default: "0.5"
                         type: string
                       ephemeralStorage:
+                        default: 5Gi
                         type: string
                       memory:
+                        default: 8Gi
                         type: string
                     type: object
                   requests:
-                    default:
-                    - cpu="0.5"
-                    - memory="1Gi"
-                    - ephemeralStorage="5Gi"
-                    - storage=""
                     properties:
                       cpu:
+                        default: "0.5"
                         type: string
                       ephemeralStorage:
+                        default: 5Gi
                         type: string
                       memory:
+                        default: 1Gi
                         type: string
                       storage:
+                        default: 5Gi
                         type: string
                     type: object
                   services:
-                    default:
-                    - nodePorts=0
-                    - loadBalancer=3
                     properties:
                       loadBalancers:
+                        default: 3
                         type: integer
                       nodePorts:
+                        default: 0
                         type: integer
                     type: object
                 type: object
