@@ -378,46 +378,43 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 	}
 
 	// map uCluster.Spec.ResourceQuota to uClusterHelmValues.Isolation.ResourceQuota
-	if uCluster.Spec.ResourceQuota != nil {
-		q := *uCluster.Spec.ResourceQuota
-		qHelmValues := uClusterHelmValues.Isolation.ResourceQuota
-		// enabled
-		qHelmValues.Enabled = q.Enabled
-		//requests
-		qHelmValues.Quota.RequestsMemory = q.Requests.Memory
-		qHelmValues.Quota.RequestsCpu = q.Requests.CPU
-		qHelmValues.Quota.RequestsEphemeralStorage = q.Requests.EphemeralStorage
-		qHelmValues.Quota.RequestsStorage = q.Requests.Storage
-		// limits
-		qHelmValues.Quota.LimitsMemory = q.Limits.Memory
-		qHelmValues.Quota.LimitsCpu = q.Limits.CPU
-		qHelmValues.Quota.LimitsEphemeralStorage = q.Limits.EphemeralStorage
-		// services
-		qHelmValues.Quota.ServicesNodePorts = q.Services.NodePorts
-		qHelmValues.Quota.ServicesLoadbalancers = q.Services.LoadBalancers
-		// count
-		qHelmValues.Quota.CountPods = q.Count.Pods
-		qHelmValues.Quota.CountServices = q.Count.Services
-		qHelmValues.Quota.CountPersistentVolumeClaims = q.Count.PersistentVolumeClaims
-		qHelmValues.Quota.CountConfigmaps = q.Count.ConfigMaps
-		qHelmValues.Quota.CountSecrets = q.Count.Secrets
-		qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
-	}
+	q := uCluster.Spec.ResourceQuota
+	qHelmValues := uClusterHelmValues.Isolation.ResourceQuota
+	// enabled
+	qHelmValues.Enabled = q.Enabled
+	//requests
+	qHelmValues.Quota.RequestsMemory = q.Requests.Memory
+	qHelmValues.Quota.RequestsCpu = q.Requests.CPU
+	qHelmValues.Quota.RequestsEphemeralStorage = q.Requests.EphemeralStorage
+	qHelmValues.Quota.RequestsStorage = q.Requests.Storage
+	// limits
+	qHelmValues.Quota.LimitsMemory = q.Limits.Memory
+	qHelmValues.Quota.LimitsCpu = q.Limits.CPU
+	qHelmValues.Quota.LimitsEphemeralStorage = q.Limits.EphemeralStorage
+	// services
+	qHelmValues.Quota.ServicesNodePorts = q.Services.NodePorts
+	qHelmValues.Quota.ServicesLoadbalancers = q.Services.LoadBalancers
+	// count
+	qHelmValues.Quota.CountPods = q.Count.Pods
+	qHelmValues.Quota.CountServices = q.Count.Services
+	qHelmValues.Quota.CountPersistentVolumeClaims = q.Count.PersistentVolumeClaims
+	qHelmValues.Quota.CountConfigmaps = q.Count.ConfigMaps
+	qHelmValues.Quota.CountSecrets = q.Count.Secrets
+	qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
 
-	if uCluster.Spec.LimitRange != nil {
-		lr := *uCluster.Spec.LimitRange
-		lrHelmValues := uClusterHelmValues.Isolation.LimitRange
-		// enabled
-		lrHelmValues.Enabled = lr.Enabled
-		// default
-		lrHelmValues.Default.Cpu = lr.Default.CPU
-		lrHelmValues.Default.Memory = lr.Default.Memory
-		lrHelmValues.Default.EphemeralStorage = lr.Default.EphemeralStorage
-		// default requests
-		lrHelmValues.DefaultRequest.Cpu = lr.DefaultRequest.CPU
-		lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
-		lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
-	}
+	// same for limit range
+	lr := uCluster.Spec.LimitRange
+	lrHelmValues := uClusterHelmValues.Isolation.LimitRange
+	// enabled
+	lrHelmValues.Enabled = lr.Enabled
+	// default
+	lrHelmValues.Default.Cpu = lr.Default.CPU
+	lrHelmValues.Default.Memory = lr.Default.Memory
+	lrHelmValues.Default.EphemeralStorage = lr.Default.EphemeralStorage
+	// default requests
+	lrHelmValues.DefaultRequest.Cpu = lr.DefaultRequest.CPU
+	lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
+	lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
 
 	if uCluster.Spec.Ingress.SyncFromManifests != nil {
 		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests

@@ -128,6 +128,10 @@ spec:
                       memory:
                         default: 1Gi
                         type: string
+                    required:
+                    - cpu
+                    - ephemeralStorage
+                    - memory
                     type: object
                   defaultRequest:
                     properties:
@@ -140,10 +144,18 @@ spec:
                       memory:
                         default: 128Mi
                         type: string
+                    required:
+                    - cpu
+                    - ephemeralStorage
+                    - memory
                     type: object
                   enabled:
                     default: true
                     type: boolean
+                required:
+                - default
+                - defaultRequest
+                - enabled
                 type: object
               manifests:
                 type: string
@@ -170,6 +182,13 @@ spec:
                       services:
                         default: 10
                         type: integer
+                    required:
+                    - configMaps
+                    - endpoints
+                    - persistentVolumeClaims
+                    - pods
+                    - secrets
+                    - services
                     type: object
                   enabled:
                     default: true
@@ -185,6 +204,10 @@ spec:
                       memory:
                         default: 8Gi
                         type: string
+                    required:
+                    - cpu
+                    - ephemeralStorage
+                    - memory
                     type: object
                   requests:
                     properties:
@@ -200,6 +223,11 @@ spec:
                       storage:
                         default: 5Gi
                         type: string
+                    required:
+                    - cpu
+                    - ephemeralStorage
+                    - memory
+                    - storage
                     type: object
                   services:
                     properties:
@@ -209,7 +237,16 @@ spec:
                       nodePorts:
                         default: 0
                         type: integer
+                    required:
+                    - loadBalancers
+                    - nodePorts
                     type: object
+                required:
+                - count
+                - enabled
+                - limits
+                - requests
+                - services
                 type: object
               ttl:
                 type: string

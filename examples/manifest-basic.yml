@@ -3,6 +3,8 @@ apiVersion: uffizzi.com/v1alpha1
 metadata:
   name: manifest-basic
 spec:
+  resourceQuota: {}
+  limitRange: {}
   manifests: |
     apiVersion: v1
     kind: Pod
