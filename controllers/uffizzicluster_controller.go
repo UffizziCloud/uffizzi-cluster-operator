@@ -493,6 +493,9 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 			Namespace: uCluster.Namespace,
 		},
 		Spec: fluxhelmv2beta1.HelmReleaseSpec{
+			Upgrade: &fluxhelmv2beta1.Upgrade{
+				Force: false,
+			},
 			Chart: fluxhelmv2beta1.HelmChartTemplate{
 				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
 					Chart:   VCLUSTER_CHART,
