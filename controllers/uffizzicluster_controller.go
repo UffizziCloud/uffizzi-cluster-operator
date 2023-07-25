@@ -24,6 +24,7 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -516,10 +517,19 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 		return nil, errors.Wrap(err, "failed to set controller reference")
 	}
 	if update {
+		existingHelmRelease := &fluxhelmv2beta1.HelmRelease{}
+		existingHelmReleaseNN := types.NamespacedName{
+			Name:      newHelmRelease.Name,
+			Namespace: newHelmRelease.Namespace,
+		}
+		if err := r.Get(ctx, existingHelmReleaseNN, existingHelmRelease); err != nil {
+			return nil, errors.Wrap(err, "failed to find HelmRelease to update")
+		}
 		newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
 			Force: true,
 		}
-		err = r.Update(ctx, newHelmRelease)
+		existingHelmRelease.Spec = newHelmRelease.Spec
+		err = r.Update(ctx, existingHelmRelease)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to update HelmRelease")
 		}
