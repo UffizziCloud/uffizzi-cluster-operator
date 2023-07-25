@@ -533,6 +533,16 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to update HelmRelease")
 		}
+		// update the lastAppliedConfig
+		updatedSpecBytes, err := json.Marshal(uCluster.Spec)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to marshal current spec")
+		}
+		updatedSpec := string(updatedSpecBytes)
+		uCluster.Status.LastAppliedConfiguration = &updatedSpec
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedConfig")
+		}
 	} else {
 		err = r.Create(ctx, newHelmRelease)
 		if err != nil {
