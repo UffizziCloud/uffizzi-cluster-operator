@@ -68,52 +68,63 @@ type UffizziClusterIngress struct {
 	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
+// UffizziClusterResourceQuota defines the resource quota which defines the
+// quota of resources a namespace has access to
 type UffizziClusterResourceQuota struct {
 	//+kubebuilder:default:=true
-	Enabled  bool                       `json:"enabled,omitempty"`
+	Enabled bool `json:"enabled,omitempty"`
+	//+kubebuilder:default:={cpu="0.5",memory="1Gi",ephemeralStorage="5Gi",storage=""}
 	Requests UffizziClusterRequestsQuota `json:"requests,omitempty"`
-	Limits   BasicComputeResources       `json:"limits,omitempty"`
+	//+kubebuilder:default:={cpu="0.5",memory="8Gi",ephemeralStorage="5Gi"}
+	Limits BasicComputeResources `json:"limits,omitempty"`
+	//+kubebuilder:default:={nodePorts=0,loadBalancer=3}
 	Services UffizziClusterServicesQuota `json:"services,omitempty"`
-	Count    UffizziClusterResourceCount `json:"count,omitempty"`
+	//+kubebuilder:default:={pods=20,services=10,persistentVolumeClaims=4,endpoints=20,configMaps=10,secrets=10}
+	Count UffizziClusterResourceCount `json:"count,omitempty"`
+}
+
+type UffizziClusterLimitRange struct {
+	//+kubebuilder:default:=true
+	Enabled bool `json:"enabled,omitempty"`
+	//+kubebuilder:default:={cpu="0.5",memory="1Gi",ephemeralStorage="8Gi"}
+	Default BasicComputeResources `json:"default,omitempty"`
+	//+kubebuilder:default:={cpu="0.1",memory="128Mi",ephemeralStorage="1Gi"}
+	DefaultRequest BasicComputeResources `json:"defaultRequest,omitempty"`
 }
 
 type UffizziClusterRequestsQuota struct {
-	BasicComputeResources
-	Storage string `json:"storage,omitempty"`
+	CPU              string `json:"cpu,omitempty"`
+	Memory           string `json:"memory,omitempty"`
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
+	Storage          string `json:"storage,omitempty"`
 }
 
 type BasicComputeResources struct {
-	CPU  string `json:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty"`
+	CPU              string `json:"cpu,omitempty"`
+	Memory           string `json:"memory,omitempty"`
 	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
 }
 
 type UffizziClusterServicesQuota struct {
-	NodePorts int `json:"nodePorts,omitempty"`
+	NodePorts     int `json:"nodePorts,omitempty"`
 	LoadBalancers int `json:"loadBalancers,omitempty"`
 }
 
 type UffizziClusterResourceCount struct {
-	Pods int `json:"pods,omitempty"`
-	Services int `json:"services,omitempty"`
-	ConfigMaps int `json:"configMaps,omitempty"`
-	Secrets int `json:"secrets,omitempty"`
+	Pods                   int `json:"pods,omitempty"`
+	Services               int `json:"services,omitempty"`
+	ConfigMaps             int `json:"configMaps,omitempty"`
+	Secrets                int `json:"secrets,omitempty"`
 	PersistentVolumeClaims int `json:"persistentVolumeClaims,omitempty"`
-	Endpoints int `json:"endpoints,omitempty"`
-}
-
-type UffizziClusterLimitRange struct {
-	Enabled *bool `json:"enabled,omitempty"`
-	Default BasicComputeResources `json:"default,omitempty"`
-	DefaultRequest BasicComputeResources `json:"defaultRequest,omitempty"`
+	Endpoints              int `json:"endpoints,omitempty"`
 }
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
-	Ingress   UffizziClusterIngress `json:"ingress,omitempty"`
-	TTL       string                `json:"ttl,omitempty"`
-	Helm      []HelmChart           `json:"helm,omitempty"`
-	Manifests     *string                     `json:"manifests,omitempty"`
+	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
+	TTL           string                       `json:"ttl,omitempty"`
+	Helm          []HelmChart                  `json:"helm,omitempty"`
+	Manifests     *string                      `json:"manifests,omitempty"`
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 }

@@ -398,10 +398,25 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 		// count
 		qHelmValues.Quota.CountPods = q.Count.Pods
 		qHelmValues.Quota.CountServices = q.Count.Services
-		qHelmValues.Quota.CountPersistentvolumeclaims = q.Count.PersistentVolumeClaims
+		qHelmValues.Quota.CountPersistentVolumeClaims = q.Count.PersistentVolumeClaims
 		qHelmValues.Quota.CountConfigmaps = q.Count.ConfigMaps
 		qHelmValues.Quota.CountSecrets = q.Count.Secrets
 		qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
+	}
+
+	if uCluster.Spec.LimitRange != nil {
+		lr := *uCluster.Spec.LimitRange
+		lrHelmValues := uClusterHelmValues.Isolation.LimitRange
+		// enabled
+		lrHelmValues.Enabled = lr.Enabled
+		// default
+		lrHelmValues.Default.Cpu = lr.Default.CPU
+		lrHelmValues.Default.Memory = lr.Default.Memory
+		lrHelmValues.Default.EphemeralStorage = lr.Default.EphemeralStorage
+		// default requests
+		lrHelmValues.DefaultRequest.Cpu = lr.DefaultRequest.CPU
+		lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
+		lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
 	}
 
 	if uCluster.Spec.Ingress.SyncFromManifests != nil {

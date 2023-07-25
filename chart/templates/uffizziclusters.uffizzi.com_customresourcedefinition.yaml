@@ -115,8 +115,108 @@ spec:
                     default: true
                     type: boolean
                 type: object
+              limitRange:
+                properties:
+                  default:
+                    default:
+                    - cpu="0.5"
+                    - memory="1Gi"
+                    - ephemeralStorage="8Gi"
+                    properties:
+                      cpu:
+                        type: string
+                      ephemeralStorage:
+                        type: string
+                      memory:
+                        type: string
+                    type: object
+                  defaultRequest:
+                    default:
+                    - cpu="0.1"
+                    - memory="128Mi"
+                    - ephemeralStorage="1Gi"
+                    properties:
+                      cpu:
+                        type: string
+                      ephemeralStorage:
+                        type: string
+                      memory:
+                        type: string
+                    type: object
+                  enabled:
+                    default: true
+                    type: boolean
+                type: object
               manifests:
                 type: string
+              resourceQuota:
+                description: UffizziClusterResourceQuota defines the resource quota which defines the quota of resources a namespace has access to
+                properties:
+                  count:
+                    default:
+                    - pods=20
+                    - services=10
+                    - persistentVolumeClaims=4
+                    - endpoints=20
+                    - configMaps=10
+                    - secrets=10
+                    properties:
+                      configMaps:
+                        type: integer
+                      endpoints:
+                        type: integer
+                      persistentVolumeClaims:
+                        type: integer
+                      pods:
+                        type: integer
+                      secrets:
+                        type: integer
+                      services:
+                        type: integer
+                    type: object
+                  enabled:
+                    default: true
+                    type: boolean
+                  limits:
+                    default:
+                    - cpu="0.5"
+                    - memory="8Gi"
+                    - ephemeralStorage="5Gi"
+                    properties:
+                      cpu:
+                        type: string
+                      ephemeralStorage:
+                        type: string
+                      memory:
+                        type: string
+                    type: object
+                  requests:
+                    default:
+                    - cpu="0.5"
+                    - memory="1Gi"
+                    - ephemeralStorage="5Gi"
+                    - storage=""
+                    properties:
+                      cpu:
+                        type: string
+                      ephemeralStorage:
+                        type: string
+                      memory:
+                        type: string
+                      storage:
+                        type: string
+                    type: object
+                  services:
+                    default:
+                    - nodePorts=0
+                    - loadBalancer=3
+                    properties:
+                      loadBalancers:
+                        type: integer
+                      nodePorts:
+                        type: integer
+                    type: object
+                type: object
               ttl:
                 type: string
             type: object
