@@ -72,88 +72,94 @@ type UffizziClusterIngress struct {
 // quota of resources a namespace has access to
 type UffizziClusterResourceQuota struct {
 	//+kubebuilder:default:=true
-	Enabled  bool                              `json:"enabled"`
-	Requests UffizziClusterRequestsQuota       `json:"requests"`
-	Limits   UffizziClusterResourceQuotaLimits `json:"limits"`
-	Services UffizziClusterServicesQuota       `json:"services"`
-	Count    UffizziClusterResourceCount       `json:"count"`
+	Enabled bool `json:"enabled"`
+	//+kubebuilder:default:={}
+	Requests UffizziClusterRequestsQuota `json:"requests,omitempty"`
+	//+kubebuilder:default:={}
+	Limits UffizziClusterResourceQuotaLimits `json:"limits,omitempty"`
+	//+kubebuilder:default:={}
+	Services UffizziClusterServicesQuota `json:"services,omitempty"`
+	//+kubebuilder:default:={}
+	Count UffizziClusterResourceCount `json:"count,omitempty"`
 }
 
 type UffizziClusterLimitRange struct {
 	//+kubebuilder:default:=true
-	Enabled        bool                                   `json:"enabled"`
-	Default        UffizziClusterLimitRangeDefault        `json:"default"`
-	DefaultRequest UffizziClusterLimitRangeDefaultRequest `json:"defaultRequest"`
+	Enabled bool `json:"enabled"`
+	//+kubebuilder:default:={}
+	Default UffizziClusterLimitRangeDefault `json:"default,omitempty"`
+	//+kubebuilder:default:={}
+	DefaultRequest UffizziClusterLimitRangeDefaultRequest `json:"defaultRequest,omitempty"`
 }
 
 type UffizziClusterRequestsQuota struct {
 	//+kubebuilder:default:="0.5"
-	CPU string `json:"cpu"`
+	CPU string `json:"cpu,omitempty"`
 	//+kubebuilder:default:="1Gi"
-	Memory string `json:"memory"`
+	Memory string `json:"memory,omitempty"`
 	//+kubebuilder:default:="5Gi"
-	EphemeralStorage string `json:"ephemeralStorage"`
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
 	//+kubebuilder:default:="5Gi"
-	Storage string `json:"storage"`
+	Storage string `json:"storage,omitempty"`
 }
 
 type UffizziClusterResourceQuotaLimits struct {
 	//+kubebuilder:default:="0.5"
-	CPU string `json:"cpu"`
+	CPU string `json:"cpu,omitempty"`
 	//+kubebuilder:default:="8Gi"
-	Memory string `json:"memory"`
+	Memory string `json:"memory,omitempty"`
 	//+kubebuilder:default:="5Gi"
-	EphemeralStorage string `json:"ephemeralStorage"`
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
 }
 
 type UffizziClusterLimitRangeDefault struct {
 	//+kubebuilder:default:="0.5"
-	CPU string `json:"cpu"`
+	CPU string `json:"cpu,omitempty"`
 	//+kubebuilder:default:="1Gi"
-	Memory string `json:"memory"`
+	Memory string `json:"memory,omitempty"`
 	//+kubebuilder:default:="8Gi"
-	EphemeralStorage string `json:"ephemeralStorage"`
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
 }
 
 type UffizziClusterLimitRangeDefaultRequest struct {
 	//+kubebuilder:default:="0.1"
-	CPU string `json:"cpu"`
+	CPU string `json:"cpu,omitempty"`
 	//+kubebuilder:default:="128Mi"
-	Memory string `json:"memory"`
+	Memory string `json:"memory,omitempty"`
 	//+kubebuilder:default:="1Gi"
-	EphemeralStorage string `json:"ephemeralStorage"`
+	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
 }
 
 type UffizziClusterServicesQuota struct {
 	//+kubebuilder:default:=0
-	NodePorts int `json:"nodePorts"`
+	NodePorts int `json:"nodePorts,omitempty"`
 	//+kubebuilder:default:=3
-	LoadBalancers int `json:"loadBalancers"`
+	LoadBalancers int `json:"loadBalancers,omitempty"`
 }
 
 type UffizziClusterResourceCount struct {
 	//+kubebuilder:default:=20
-	Pods int `json:"pods"`
+	Pods int `json:"pods,omitempty"`
 	//+kubebuilder:default:=10
-	Services int `json:"services"`
-	//+kubebuilder:default:=4
-	ConfigMaps int `json:"configMaps"`
+	Services int `json:"services,omitempty"`
 	//+kubebuilder:default:=20
-	Secrets int `json:"secrets"`
+	ConfigMaps int `json:"configMaps,omitempty"`
+	//+kubebuilder:default:=20
+	Secrets int `json:"secrets,omitempty"`
 	//+kubebuilder:default:=10
-	PersistentVolumeClaims int `json:"persistentVolumeClaims"`
+	PersistentVolumeClaims int `json:"persistentVolumeClaims,omitempty"`
 	//+kubebuilder:default:=10
-	Endpoints int `json:"endpoints"`
+	Endpoints int `json:"endpoints,omitempty"`
 }
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
-	Ingress       UffizziClusterIngress       `json:"ingress,omitempty"`
-	TTL           string                      `json:"ttl,omitempty"`
-	Helm          []HelmChart                 `json:"helm,omitempty"`
-	Manifests     *string                     `json:"manifests,omitempty"`
-	ResourceQuota UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
-	LimitRange    UffizziClusterLimitRange    `json:"limitRange,omitempty"`
+	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
+	TTL           string                       `json:"ttl,omitempty"`
+	Helm          []HelmChart                  `json:"helm,omitempty"`
+	Manifests     *string                      `json:"manifests,omitempty"`
+	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
+	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
