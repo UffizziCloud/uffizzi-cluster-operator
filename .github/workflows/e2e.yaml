@@ -1,0 +1,142 @@
+name: Unit Tests and Coverage
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened,reopened,synchronize,closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  build-operator:
+    name: Build and Push `operator` Image
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v3
+      - name: Generate UUID image name
+        id: uuid
+        run: echo "UUID_OPERATOR=$(uuidgen)" >> $GITHUB_ENV
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          # An anonymous, emphemeral registry built on ttl.sh
+          images: registry.uffizzi.com/${{ env.UUID_OPERATOR }}
+          tags: type=raw,value=48h
+      - name: Build and Push Image to Uffizzi Ephemeral Registry
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          context: ./
+
+  uffizzi-cluster:
+    name: Deploy to Uffizzi Virtual Cluster
+    needs:
+      - build-operator
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Identify comment to be updated
+      - name: Find comment for Ephemeral Environment
+        uses: peter-evans/find-comment@v2
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: pr-${{ github.event.pull_request.number }}
+          direction: last
+
+      # Create/Update comment with action deployment status
+      - name: Create or Update Comment with Deployment Notification
+        id: notification
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Uffizzi Ephemeral Environment - Virtual Cluster
+
+            :cloud: deploying ...
+
+            :gear: Updating now by workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            Download the Uffizzi CLI to interact with the upcoming virtual cluster
+            https://docs.uffizzi.com/install
+          edit-mode: replace
+
+      - name: Connect to Virtual Cluster
+        uses: UffizziCloud/cluster-action@main
+        with:
+          cluster-name: pr-${{ github.event.pull_request.number }}
+
+      - name: Apply Helm Chart
+        id: prev
+        run: |
+          if [[ ${RUNNER_DEBUG} == 1 ]]; then
+            echo "`pwd`"
+            echo "`ls`"
+          fi
+
+          helm install pr-${{ github.event.pull_request.number }} \
+          ./chart --set image.repository=registry.uffizzi.com,image.tag=${{ steps.build-operator.outputs.tags }}
+
+      - name: Create or Update Comment with Deployment URL
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.notification.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Uffizzi Ephemeral Environment - Virtual Cluster
+
+            Your cluster `pr-${{ github.event.pull_request.number }}` was successfully created. Learn more about [Uffizzi virtual clusters](https://docs.uffizzi.com/virtual-clusters)
+            To connect to this cluster, follow these steps:
+
+            1. Download and install the Uffizzi CLI from https://docs.uffizzi.com/install
+            2. Login to Uffizzi: `uffizzi login`
+            3a. Update your kubeconfig: `uffizzi cluster update-kubeconfig pr-${{ github.event.pull_request.number }}`. This command will update your local `~/.kube/config`.
+            If you want to provide an alternate location follow 3b (the next step) instead.
+            3b. Update your kubeconfig: `uffizzi cluster update-kubeconfig pr-${{ github.event.pull_request.number }} --kubeconfig=[KUBECONFIG]`, replacing `[KUBECONFIG]` with the path to your kubeconfig file.
+            After updating your kubeconfig, you can manage your cluster with `kubectl`, `kustomize`, `helm`, and other tools that use kubeconfig files: `kubectl get namespace --kubeconfig [KUBECONFIG]`
+
+          edit-mode: replace
+
+  uffizzi-cluster-delete:
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Virtual Cluster
+        uses: UffizziCloud/cluster-action@main
+        with:
+          action: delete
+          cluster-name: pr-${{ github.event.pull_request.number }}
+
+      # Identify comment to be updated
+      - name: Find comment for Ephemeral Environment
+        uses: peter-evans/find-comment@v2
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: pr-${{ github.event.pull_request.number }}
+          direction: last
+
+      - name: Update Comment with Deletion
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Uffizzi Cluster `pr-${{ github.event.pull_request.number }}` was deleted.
+          edit-mode: replace
