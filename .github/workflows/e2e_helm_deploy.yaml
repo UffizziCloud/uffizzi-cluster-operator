@@ -60,7 +60,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: pr-${{ github.event.pull_request.number }}
+          body-includes: pr-${{ github.event.pull_request.number }}-e2e-helm
           direction: last
 
       # Create/Update comment with action deployment status
@@ -84,7 +84,7 @@ jobs:
       - name: Create and connect to vcluster
         uses: UffizziCloud/cluster-action@main
         with:
-          cluster-name: pr-${{ github.event.pull_request.number }}-${{ github.run_id }}
+          cluster-name: pr-${{ github.event.pull_request.number }}-e2e-helm
           server: https://app.uffizzi.com
 
       - name: Apply Helm Chart
@@ -108,7 +108,7 @@ jobs:
           body: |
             ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Helm Chart
 
-            Your cluster `pr-${{ github.event.pull_request.number }}-${{ github.run_id }}` for running e2e tests was successfully created.
+            Your cluster `pr-${{ github.event.pull_request.number }}-e2e-helm` for running e2e tests was successfully created.
 
           edit-mode: replace
 
@@ -120,7 +120,7 @@ jobs:
         uses: UffizziCloud/cluster-action@main
         with:
           action: delete
-          cluster-name: pr-${{ github.event.pull_request.number }}
+          cluster-name: pr-${{ github.event.pull_request.number }}-e2e-helm
 
       # Identify comment to be updated
       - name: Find comment for Ephemeral Environment
