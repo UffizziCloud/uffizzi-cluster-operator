@@ -44,7 +44,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   uffizzi-cluster:
-    name: Deploy to Uffizzi Virtual Cluster
+    name: Deploy Helm chart to Uffizzi Virtual Cluster
     needs:
       - build-operator
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
