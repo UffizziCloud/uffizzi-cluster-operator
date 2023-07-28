@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
+	"time"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
@@ -165,7 +166,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil && k8serrors.IsNotFound(err) {
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
-		newHelmRelease, err := r.createVClusterHelmRelease(false, ctx, uCluster)
+		newHelmRelease, err := r.upsertVClusterHelmRelease(false, ctx, uCluster)
 		if err != nil {
 			logger.Error(err, "Failed to create HelmRelease")
 			return ctrl.Result{}, err
@@ -206,7 +207,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
 
 		logger.Info("Created HelmRelease", "HelmRelease", newHelmRelease.Name)
@@ -227,7 +228,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		uCluster.Status.Conditions = uClusterConditions
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
 	}
 
@@ -254,13 +255,10 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
 		if currentSpec != lastAppliedSpec {
-			logger.Info("UffizziCluster spec has changed, updating HelmRelease", "NamespacedName", req.NamespacedName)
-			_, err := r.createVClusterHelmRelease(true, ctx, uCluster)
-			if err != nil {
-				logger.Error(err, "Failed to create HelmRelease")
+			if _, err := r.upsertVClusterHelmRelease(true, ctx, uCluster); err != nil {
+				logger.Error(err, "Failed to update HelmRelease")
 				return ctrl.Result{}, err
 			}
-			logger.Info("HelmRelease updated", "NamespacedName", req.NamespacedName)
 		}
 	}
 
@@ -329,7 +327,7 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 	return status, nil
 }
 
-func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
 		TLSSanArgValue              = BuildVClusterIngressHost(uCluster)
@@ -345,34 +343,34 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 			ResourceQuota: VClusterResourceQuota{
 				Enabled: true,
 				Quota: VClusterResourceQuotaDefiniton{
-					RequestsEphemeralStorage:    "5Gi",
-					RequestsCpu:                 "0.5",
-					RequestsMemory:              "1Gi",
-					RequestsStorage:             "5Gi",
-					LimitsCpu:                   "0.5",
-					LimitsEphemeralStorage:      "5Gi",
-					LimitsMemory:                "8Gi",
-					ServicesLoadbalancers:       3,
-					ServicesNodePorts:           3,
-					CountEndpoints:              10,
-					CountConfigmaps:             20,
-					CountPersistentVolumeClaims: 5,
+					RequestsCpu:                 "10",
+					RequestsMemory:              "20Gi",
+					RequestsEphemeralStorage:    "60Gi",
+					RequestsStorage:             "100Gi",
+					LimitsCpu:                   "20",
+					LimitsMemory:                "40Gi",
+					LimitsEphemeralStorage:      "160Gi",
+					ServicesLoadbalancers:       1,
+					ServicesNodePorts:           0,
+					CountEndpoints:              40,
+					CountConfigmaps:             100,
+					CountPersistentVolumeClaims: 20,
 					CountPods:                   20,
-					CountSecrets:                20,
+					CountSecrets:                100,
 					CountServices:               20,
 				},
 			},
 			LimitRange: VClusterLimitRange{
 				Enabled: true,
 				Default: LimitRangeResources{
-					Cpu:              "0.5",
-					Memory:           "1Gi",
+					Cpu:              "1",
+					Memory:           "512Mi",
 					EphemeralStorage: "8Gi",
 				},
 				DefaultRequest: LimitRangeResources{
-					Cpu:              "0.5",
+					Cpu:              "100m",
 					Memory:           "128Mi",
-					EphemeralStorage: "1Gi",
+					EphemeralStorage: "3Gi",
 				},
 			},
 		},
@@ -431,6 +429,8 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 		qHelmValues.Quota.CountConfigmaps = q.Count.ConfigMaps
 		qHelmValues.Quota.CountSecrets = q.Count.Secrets
 		qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
+		// set it back
+		uClusterHelmValues.Isolation.ResourceQuota = qHelmValues
 	}
 
 	if uCluster.Spec.LimitRange != nil {
@@ -447,7 +447,10 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 		lrHelmValues.DefaultRequest.Cpu = lr.DefaultRequest.CPU
 		lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
 		lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
+		// set it back
+		uClusterHelmValues.Isolation.LimitRange = lrHelmValues
 	}
+
 	if uCluster.Spec.Ingress.SyncFromManifests != nil {
 		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
 	}
@@ -516,41 +519,77 @@ func (r *UffizziClusterReconciler) createVClusterHelmRelease(update bool, ctx co
 	if err := controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
 		return nil, errors.Wrap(err, "failed to set controller reference")
 	}
-	if update {
-		existingHelmRelease := &fluxhelmv2beta1.HelmRelease{}
-		existingHelmReleaseNN := types.NamespacedName{
-			Name:      newHelmRelease.Name,
-			Namespace: newHelmRelease.Namespace,
-		}
-		if err := r.Get(ctx, existingHelmReleaseNN, existingHelmRelease); err != nil {
-			return nil, errors.Wrap(err, "failed to find HelmRelease to update")
-		}
-		newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
-			Force: true,
-		}
-		existingHelmRelease.Spec = newHelmRelease.Spec
-		err = r.Update(ctx, existingHelmRelease)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to update HelmRelease")
-		}
-		// update the lastAppliedConfig
-		updatedSpecBytes, err := json.Marshal(uCluster.Spec)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to marshal current spec")
-		}
-		updatedSpec := string(updatedSpecBytes)
-		uCluster.Status.LastAppliedConfiguration = &updatedSpec
-		if err := r.Status().Update(ctx, uCluster); err != nil {
-			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedConfig")
-		}
-	} else {
-		err = r.Create(ctx, newHelmRelease)
-		if err != nil {
+	// get the helm release spec in string
+	newHelmReleaseSpecBytes, err := json.Marshal(newHelmRelease.Spec)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to marshal current spec")
+	}
+	newHelmReleaseSpec := string(newHelmReleaseSpecBytes)
+	// upsert
+	if !update && uCluster.Status.LastAppliedHelmReleaseSpec == nil {
+		if err := r.Create(ctx, newHelmRelease); err != nil {
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
+		}
+		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
+		}
+
+	} else if uCluster.Status.LastAppliedHelmReleaseSpec != nil {
+		// create helm release if there is no existing helm release to update
+		if update && *uCluster.Status.LastAppliedHelmReleaseSpec != newHelmReleaseSpec {
+			if err := r.updateHelmRelease(newHelmRelease, uCluster, ctx); err != nil {
+				return nil, errors.Wrap(err, "failed to update HelmRelease")
+			}
+			return nil, errors.Wrap(err, "couldn't update HelmRelease as LastAppliedHelmReleaseSpec does not exist on resource")
 		}
 	}
 
 	return newHelmRelease, nil
+}
+
+func (r *UffizziClusterReconciler) updateHelmRelease(newHelmRelease *fluxhelmv2beta1.HelmRelease, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster, ctx context.Context) error {
+	existingHelmRelease := &fluxhelmv2beta1.HelmRelease{}
+	existingHelmReleaseNN := types.NamespacedName{
+		Name:      newHelmRelease.Name,
+		Namespace: newHelmRelease.Namespace,
+	}
+	if err := r.Get(ctx, existingHelmReleaseNN, existingHelmRelease); err != nil {
+		return errors.Wrap(err, "failed to find HelmRelease")
+	}
+	// check if the helm release is already progressing, if so, do not update
+	if existingHelmRelease.Status.Conditions != nil {
+		for _, condition := range existingHelmRelease.Status.Conditions {
+			if condition.Type == fluxhelmv2beta1.ReleasedCondition && condition.Status == "Unknown" && condition.Reason == "Progressing" {
+				return nil
+			}
+		}
+	}
+
+	newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
+		Force: true,
+	}
+	existingHelmRelease.Spec = newHelmRelease.Spec
+	if err := r.Update(ctx, existingHelmRelease); err != nil {
+		return errors.Wrap(err, "error while updating helm release")
+	}
+	// update the lastAppliedConfig
+	updatedSpecBytes, err := json.Marshal(uCluster.Spec)
+	if err != nil {
+		return errors.Wrap(err, "Failed to marshal current spec")
+	}
+	updatedHelmReleaseSpecBytes, err := json.Marshal(existingHelmRelease.Spec)
+	if err != nil {
+		return errors.Wrap(err, "Failed to marshal current spec")
+	}
+	updatedSpec := string(updatedSpecBytes)
+	updatedHelmReleaseSpec := string(updatedHelmReleaseSpecBytes)
+	uCluster.Status.LastAppliedConfiguration = &updatedSpec
+	uCluster.Status.LastAppliedHelmReleaseSpec = &updatedHelmReleaseSpec
+	if err := r.Status().Update(ctx, uCluster); err != nil {
+		return errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedConfig")
+	}
+	return nil
 }
 
 func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, namespace, url string) error {
@@ -593,9 +632,5 @@ func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				IsController: true,
 				OwnerType:    &uclusteruffizzicomv1alpha1.UffizziCluster{},
 			}).
-		// Watch HelmRepository reconciled by the Source Controller
-		//Watches(
-		//	&controllerruntimesource.Kind{Type: &fluxsourcev1.HelmRepository{}},
-		//	&handler.EnqueueRequestForObject{}).
 		Complete(r)
 }

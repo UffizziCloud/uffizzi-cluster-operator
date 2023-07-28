@@ -1,0 +1,47 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  name: manifest-quota-basic
+spec:
+  resourceQuota:
+    enabled: true
+    requests:
+      cpu: "2"
+      memory: 8Gi
+      ephemeralStorage: 15Gi
+      storage: 10Gi
+    limits:
+      cpu: "4"
+      memory: 4Gi
+      ephemeralStorage: 32Gi
+    services:
+      nodePorts: 0
+      loadBalancers: 5
+    count:
+      pods: 10
+      services: 10
+      configMaps: 10
+      secrets: 10
+      persistentVolumeClaims: 20
+      endpoints: 40
+  limitRange:
+    enabled: true
+    default:
+      cpu: "1"
+      memory: 512Mi
+      ephemeralStorage: 8Gi
+    defaultRequest:
+      cpu: "100m"
+      memory: 128Mi
+      ephemeralStorage: 3Gi
+  manifests: |
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
