@@ -1,4 +1,4 @@
-name: E2E - end to end test suite
+name: E2E - Helm Chart Deployment and Tests
 
 on:
   pull_request:
@@ -44,7 +44,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   uffizzi-cluster:
-    name: Deploy to Uffizzi Virtual Cluster
+    name: Deploy Helm chart to Uffizzi Virtual Cluster
     needs:
       - build-operator
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
@@ -60,7 +60,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: pr-${{ github.event.pull_request.number }}-e2e-tests
+          body-includes: pr-${{ github.event.pull_request.number }}-e2e-helm
           direction: last
 
       # Create/Update comment with action deployment status
@@ -71,13 +71,13 @@ jobs:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Tests
+            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Helm Chart
 
             :cloud: deploying ...
 
             :gear: Updating now by workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
-            Cluster name will be `pr-${{ github.event.pull_request.number }}-e2e-tests`
+            Cluster name will be `pr-${{ github.event.pull_request.number }}-e2e-helm`
 
             Download the Uffizzi CLI to interact with the upcoming virtual cluster
             https://docs.uffizzi.com/install
@@ -86,10 +86,10 @@ jobs:
       - name: Create and connect to vcluster
         uses: UffizziCloud/cluster-action@main
         with:
-          cluster-name: pr-${{ github.event.pull_request.number }}-e2e-tests
+          cluster-name: pr-${{ github.event.pull_request.number }}-e2e-helm
           server: https://app.uffizzi.com
 
-      - name: Run e2e tests
+      - name: Apply Helm Chart
         id: prev
         run: |
           if [[ ${RUNNER_DEBUG} == 1 ]]; then
@@ -98,9 +98,9 @@ jobs:
           fi
 
           export KUBECONFIG="`pwd`/kubeconfig"
-          go test -timeout 120m -v ./controllers \
-          --kubeconfig=$KUBECONFIG \
-          --operator-image=registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }}:48h -count=1
+          helm dep update ./chart
+          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
+          ./chart --set image.repository=registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }},image.tag=48h
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2
@@ -108,9 +108,9 @@ jobs:
           comment-id: ${{ steps.notification.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Tests
+            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Helm Chart
 
-            Your cluster `pr-${{ github.event.pull_request.number }}-e2e-tests` for e2e tests for successfully created.
+            Your cluster `pr-${{ github.event.pull_request.number }}-e2e-helm` for running e2e tests was successfully created.
 
           edit-mode: replace
 
@@ -122,7 +122,7 @@ jobs:
         uses: UffizziCloud/cluster-action@main
         with:
           action: delete
-          cluster-name: pr-${{ github.event.pull_request.number }}-e2e-tests
+          cluster-name: pr-${{ github.event.pull_request.number }}-e2e-helm
 
       # Identify comment to be updated
       - name: Find comment for Ephemeral Environment
