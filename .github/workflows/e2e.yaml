@@ -93,7 +93,8 @@ jobs:
             echo "`pwd`"
             echo "`ls`"
           fi
-
+          
+          export KUBECONFIG="`pwd`/kubeconfig"
           helm dep update ./chart
           helm install pr-${{ github.event.pull_request.number }} \
           ./chart --set image.repository=registry.uffizzi.com,image.tag=${{ steps.build-operator.outputs.tags }}
