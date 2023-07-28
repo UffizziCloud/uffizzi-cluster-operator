@@ -125,6 +125,7 @@ jobs:
         with:
           action: delete
           cluster-name: pr-${{ github.event.pull_request.number }}-e2e-helm
+          server: https://app.uffizzi.com
 
       # Identify comment to be updated
       - name: Find comment for Ephemeral Environment
