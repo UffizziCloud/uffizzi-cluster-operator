@@ -94,6 +94,7 @@ jobs:
             echo "`ls`"
           fi
 
+          helm dep update ./chart
           helm install pr-${{ github.event.pull_request.number }} \
           ./chart --set image.repository=registry.uffizzi.com,image.tag=${{ steps.build-operator.outputs.tags }}
 
