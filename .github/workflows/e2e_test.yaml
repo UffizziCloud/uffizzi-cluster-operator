@@ -96,8 +96,9 @@ jobs:
           fi
 
           export KUBECONFIG="`pwd`/kubeconfig"
-
-
+          go test -timeout 120m -v ./controllers \
+          --kubeconfig=$(KUBECONFIG) \
+          --operator-image=registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }}:48h -count=1
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2
