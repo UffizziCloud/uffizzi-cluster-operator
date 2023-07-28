@@ -98,7 +98,7 @@ jobs:
           export KUBECONFIG="`pwd`/kubeconfig"
           helm dep update ./chart
           helm upgrade --install pr-${{ github.event.pull_request.number }} \
-          ./chart --set image.repository=registry.uffizzi.com,image.tag=${{ needs.build-operator.outputs.uuid }}
+          ./chart --set image.repository=https://registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }},image.tag=48h
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2
