@@ -1,4 +1,4 @@
-name: e2e
+name: E2E - Helm Chart Deployment
 
 on:
   pull_request:
@@ -71,7 +71,7 @@ jobs:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Uffizzi Ephemeral Environment - Virtual Cluster
+            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Helm Chart
 
             :cloud: deploying ...
 
@@ -84,7 +84,7 @@ jobs:
       - name: Create and connect to vcluster
         uses: UffizziCloud/cluster-action@main
         with:
-          cluster-name: pr-${{ github.event.pull_request.number }}
+          cluster-name: pr-${{ github.event.pull_request.number }}-${{ github.run_id }}
           server: https://app.uffizzi.com
 
       - name: Apply Helm Chart
@@ -99,7 +99,6 @@ jobs:
           helm dep update ./chart
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart --set image.repository=registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }},image.tag=48h
-          
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2
@@ -107,17 +106,9 @@ jobs:
           comment-id: ${{ steps.notification.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Uffizzi Ephemeral Environment - Virtual Cluster
+            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Helm Chart
 
-            Your cluster `pr-${{ github.event.pull_request.number }}` was successfully created. Learn more about [Uffizzi virtual clusters](https://docs.uffizzi.com/virtual-clusters)
-            To connect to this cluster, follow these steps:
-
-            1. Download and install the Uffizzi CLI from https://docs.uffizzi.com/install
-            2. Login to Uffizzi: `uffizzi login`
-            3a. Update your kubeconfig: `uffizzi cluster update-kubeconfig pr-${{ github.event.pull_request.number }}`. This command will update your local `~/.kube/config`.
-            If you want to provide an alternate location follow 3b (the next step) instead.
-            3b. Update your kubeconfig: `uffizzi cluster update-kubeconfig pr-${{ github.event.pull_request.number }} --kubeconfig=[KUBECONFIG]`, replacing `[KUBECONFIG]` with the path to your kubeconfig file.
-            After updating your kubeconfig, you can manage your cluster with `kubectl`, `kustomize`, `helm`, and other tools that use kubeconfig files: `kubectl get namespace --kubeconfig [KUBECONFIG]`
+            Your cluster `pr-${{ github.event.pull_request.number }}-${{ github.run_id }}` for running e2e tests was successfully created.
 
           edit-mode: replace
 
