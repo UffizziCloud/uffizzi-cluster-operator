@@ -389,6 +389,32 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 				Operator: "Exists",
 			},
 		},
+		Plugin: VClusterPlugins{
+			VClusterPlugin{
+				Image:           "uffizzi/ucluster-sync-plugin:v0.1.6",
+				ImagePullPolicy: "IfNotPresent",
+				Rbac: VClusterRbac{
+					Role: VClusterRbacRole{
+						ExtraRules: []VClusterRbacRule{
+							{
+								ApiGroups: []string{"networking.k8s.io"},
+								Resources: []string{"ingresses"},
+								Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+							},
+						},
+					},
+					ClusterRole: VClusterRbacClusterRole{
+						ExtraRules: []VClusterRbacRule{
+							{
+								ApiGroups: []string{"apiextensions.k8s.io"},
+								Resources: []string{"customresourcedefinitions"},
+								Verbs:     []string{"patch", "update", "get", "list", "watch"},
+							},
+						},
+					},
+				},
+			},
+		},
 		Syncer: VClusterSyncer{
 			KubeConfigContextName: helmReleaseName,
 			ExtraArgs: []string{

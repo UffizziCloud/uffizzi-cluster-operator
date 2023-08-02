@@ -13,6 +13,7 @@ type VCluster struct {
 	SecurityContext VClusterSecurityContext `json:"securityContext,omitempty"`
 	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
 	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
+	Plugin          VClusterPlugins         `json:"plugin"`
 }
 
 // VClusterInit - resources which are created during the init phase of the vcluster
@@ -26,6 +27,35 @@ type VClusterInit struct {
 type VClusterSyncer struct {
 	KubeConfigContextName string   `json:"kubeConfigContextName"`
 	ExtraArgs             []string `json:"extraArgs"`
+}
+
+type VClusterPlugins struct {
+	UffizziClusterSyncPlugin VClusterPlugin `json:"ucluster-sync-plugin"`
+}
+
+type VClusterPlugin struct {
+	Image           string       `json:"image"`
+	ImagePullPolicy string       `json:"imagePullPolicy"`
+	Rbac            VClusterRbac `json:"rbac"`
+}
+
+type VClusterRbac struct {
+	Role        VClusterRbacRole        `json:"role,omitempty"`
+	ClusterRole VClusterRbacClusterRole `json:"clusterRole,omitempty"`
+}
+
+type VClusterRbacRole struct {
+	ExtraRules []VClusterRbacRule `json:"extraRules,omitempty"`
+}
+
+type VClusterRbacClusterRole struct {
+	ExtraRules []VClusterRbacRule `json:"extraRules,omitempty"`
+}
+
+type VClusterRbacRule struct {
+	ApiGroups []string `json:"apiGroups,omitempty"`
+	Resources []string `json:"resources,omitempty"`
+	Verbs     []string `json:"verbs,omitempty"`
 }
 
 type VClusterSync struct {
