@@ -6,13 +6,13 @@ spec:
   resourceQuota:
     enabled: true
     requests:
-      cpu: "2"
-      memory: 8Gi
+      cpu: "2.5"
+      memory: 10Gi
       ephemeralStorage: 15Gi
       storage: 10Gi
     limits:
-      cpu: "4"
-      memory: 4Gi
+      cpu: "2.5"
+      memory: 10Gi
       ephemeralStorage: 32Gi
     services:
       nodePorts: 0

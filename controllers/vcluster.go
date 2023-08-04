@@ -13,30 +13,36 @@ type VCluster struct {
 	SecurityContext VClusterSecurityContext `json:"securityContext,omitempty"`
 	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
 	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
-	Plugin          VClusterPlugins         `json:"plugin"`
+	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
 }
 
 // VClusterInit - resources which are created during the init phase of the vcluster
 type VClusterInit struct {
-	Manifests string               `json:"manifests"`
-	Helm      []v1alpha1.HelmChart `json:"helm"`
+	Manifests string               `json:"manifests,omitempty"`
+	Helm      []v1alpha1.HelmChart `json:"helm,omitempty"`
 }
 
 // VClusterSyncer - parameters to create the syncer with
 // https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
 type VClusterSyncer struct {
-	KubeConfigContextName string   `json:"kubeConfigContextName"`
-	ExtraArgs             []string `json:"extraArgs"`
+	KubeConfigContextName string   `json:"kubeConfigContextName,omitempty"`
+	ExtraArgs             []string `json:"extraArgs,omitempty"`
 }
 
 type VClusterPlugins struct {
-	UffizziClusterSyncPlugin VClusterPlugin `json:"ucluster-sync-plugin"`
+	UffizziClusterSyncPlugin VClusterPlugin `json:"ucluster-sync-plugin,omitempty"`
 }
 
 type VClusterPlugin struct {
-	Image           string       `json:"image"`
-	ImagePullPolicy string       `json:"imagePullPolicy"`
-	Rbac            VClusterRbac `json:"rbac"`
+	Env             []VClusterPluginEnv `json:"env,omitempty"`
+	Image           string              `json:"image,omitempty"`
+	ImagePullPolicy string              `json:"imagePullPolicy,omitempty"`
+	Rbac            VClusterRbac        `json:"rbac,omitempty"`
+}
+
+type VClusterPluginEnv struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type VClusterRbac struct {

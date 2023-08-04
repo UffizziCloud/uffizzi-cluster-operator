@@ -1,23 +1,44 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: manifest-basic
+  name: manifest-basic-ing5
 spec:
   resourceQuota:
     enabled: false
   limitRange:
     enabled: false
+  ingress:
+    host: test.app.qa-gke.uffizzi.com
   manifests: |
     apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
-      name: minimal-ingress
+      name: ingress-1
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
     spec:
       ingressClassName: nginx-example
       rules:
-        - host: test.app.qa-gke.uffizzi.com
+        - http:
+            paths:
+              - path: /testpath
+                pathType: Prefix
+                backend:
+                  service:
+                    name: test
+                    port:
+                      number: 80
+    ---
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: ingress-2
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    spec:
+      ingressClassName: nginx-example
+      rules:
+        - host: whathostmost
           http:
             paths:
               - path: /testpath

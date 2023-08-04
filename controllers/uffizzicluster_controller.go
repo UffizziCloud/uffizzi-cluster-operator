@@ -391,7 +391,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 		Plugin: VClusterPlugins{
 			VClusterPlugin{
-				Image:           "uffizzi/ucluster-sync-plugin:v0.1.6",
+				Image:           "uffizzi/ucluster-sync-plugin:v0.1.8",
 				ImagePullPolicy: "IfNotPresent",
 				Rbac: VClusterRbac{
 					Role: VClusterRbacRole{
@@ -428,6 +428,15 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 				Enabled: true,
 			},
 		},
+	}
+
+	if uCluster.Spec.Ingress.Host != "" {
+		uClusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []VClusterPluginEnv{
+			{
+				Name:  "VCLUSTER_INGRESS_HOST",
+				Value: uCluster.Spec.Ingress.Host,
+			},
+		}
 	}
 
 	if uCluster.Spec.ResourceQuota != nil {
