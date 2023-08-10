@@ -95,7 +95,7 @@ func TestBuildVClusterIngressHost(t *testing.T) {
 	}
 
 	// Expected output
-	expectedHost := "cluster1.uc.test.com"
+	expectedHost := "cluster1.test.com"
 
 	// Call the function being tested
 	host := BuildVClusterIngressHost(uCluster)
