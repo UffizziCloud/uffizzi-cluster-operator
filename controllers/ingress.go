@@ -135,7 +135,7 @@ func BuildVClusterInternalServiceIngress(service v1alpha1.ExposedVClusterService
 }
 
 func BuildVClusterIngressHost(uCluster *v1alpha1.UffizziCluster) string {
-	return uCluster.Name + ".uc." + uCluster.Spec.Ingress.Host
+	return uCluster.Name + "." + uCluster.Spec.Ingress.Host
 }
 
 func BuildVClusterInternalServiceIngressHost(uCluster *v1alpha1.UffizziCluster) string {

@@ -173,13 +173,13 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 		// check if ingresses are enabled and if so create the ingress for the vcluster
 		if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
-			vclusterIngressHost, err := r.createVClusterIngress(ctx, uCluster)
+			vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create ingress to vcluster internal service")
 				return ctrl.Result{}, err
 			}
 
-			uCluster.Status.Host = vclusterIngressHost
+			uCluster.Status.Host = &vclusterIngressHost
 
 			// check if there are any services that need to be exposed from the vcluster
 			if uCluster.Spec.Ingress.Services != nil {
@@ -282,16 +282,16 @@ func (r *UffizziClusterReconciler) createVClusterIngress(ctx context.Context, uC
 		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
 	}
 	// create the nginx ingress
-	if err := r.Create(ctx, clusterIngress); err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			// If the Ingress already exists, update it
-			if err := r.Update(ctx, clusterIngress); err != nil {
-				return nil, errors.Wrap(err, "Failed to update Cluster Ingress")
-			}
-		} else {
-			return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
-		}
-	}
+	//if err := r.Create(ctx, clusterIngress); err != nil {
+	//	if strings.Contains(err.Error(), "already exists") {
+	//		// If the Ingress already exists, update it
+	//		if err := r.Update(ctx, clusterIngress); err != nil {
+	//			return nil, errors.Wrap(err, "Failed to update Cluster Ingress")
+	//		}
+	//	} else {
+	//		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
+	//	}
+	//}
 	return &ingressHost, nil
 }
 
@@ -337,6 +337,16 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	uClusterHelmValues := VCluster{
 		Init:    VClusterInit{},
 		FsGroup: 12345,
+		Ingress: VClusterIngress{
+			Enabled: true,
+			Host:    BuildVClusterIngressHost(uCluster),
+			Annotations: map[string]string{
+				"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
+				"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
+				"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
+				"app.uffizzi.com/ingress-sync":                 "true",
+			},
+		},
 		Isolation: VClusterIsolation{
 			Enabled:             true,
 			PodSecurityStandard: "baseline",
@@ -391,7 +401,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 		Plugin: VClusterPlugins{
 			VClusterPlugin{
-				Image:           "uffizzi/ucluster-sync-plugin:v0.1.8",
+				Image:           "uffizzi/ucluster-sync-plugin:v0.2.0",
 				ImagePullPolicy: "IfNotPresent",
 				Rbac: VClusterRbac{
 					Role: VClusterRbacRole{
@@ -425,7 +435,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 		Sync: VClusterSync{
 			Ingresses: EnabledBool{
-				Enabled: true,
+				Enabled: false,
 			},
 		},
 	}
@@ -486,9 +496,9 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		uClusterHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	if uCluster.Spec.Ingress.SyncFromManifests != nil {
-		uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
-	}
+	//if uCluster.Spec.Ingress.SyncFromManifests != nil {
+	//	uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
+	//}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
 		uClusterHelmValues.Ingress.Enabled = true

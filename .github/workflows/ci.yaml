@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+env:
+  RELEASE_VERSION: ${{ github.ref_name }}
 
 jobs:
   build-and-push:
@@ -52,6 +54,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.PAT }}
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
           generate_release_notes: true

@@ -1,7 +1,7 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: manifest-basic-ing5
+  name: i7
 spec:
   resourceQuota:
     enabled: false

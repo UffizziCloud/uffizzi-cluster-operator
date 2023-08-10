@@ -6,7 +6,7 @@ type VCluster struct {
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
-	Ingress         EnabledBool             `json:"ingress,omitempty"`
+	Ingress         VClusterIngress         `json:"ingress,omitempty"`
 	FsGroup         int64                   `json:"fsgroup,omitempty"`
 	Isolation       VClusterIsolation       `json:"isolation,omitempty"`
 	NodeSelector    VClusterNodeSelector    `json:"nodeSelector,omitempty"`
@@ -66,6 +66,12 @@ type VClusterRbacRule struct {
 
 type VClusterSync struct {
 	Ingresses EnabledBool `json:"ingresses,omitempty"`
+}
+
+type VClusterIngress struct {
+	Enabled     bool              `json:"enabled,omitempty"`
+	Host        string            `json:"host,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type EnabledBool struct {

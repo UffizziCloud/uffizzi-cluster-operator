@@ -1,20 +1,12 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: manifest-basic
+  name: i11
 spec:
+  ingress:
+    host: test.app.qa-gke.uffizzi.com
   resourceQuota:
     enabled: false
   limitRange:
     enabled: false
-  manifests: |
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
+

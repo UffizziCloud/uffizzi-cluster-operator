@@ -4,7 +4,7 @@
 
 image:
   repository: docker.io/uffizzi/uffizzi-cluster-operator
-  tag: v0.1.1
+  tag: v0.2.0
 
 # `flux` dependency values
 flux:
