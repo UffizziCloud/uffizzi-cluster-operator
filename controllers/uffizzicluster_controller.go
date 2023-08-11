@@ -339,12 +339,10 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		FsGroup: 12345,
 		Ingress: VClusterIngress{
 			Enabled: true,
+			IngressClassName: uCluster.Spec.Ingress.Class,
 			Host:    BuildVClusterIngressHost(uCluster),
 			Annotations: map[string]string{
-				"nginx.ingress.kubernetes.io/backend-protocol": "HTTPS",
-				"nginx.ingress.kubernetes.io/ssl-redirect":     "true",
-				"nginx.ingress.kubernetes.io/ssl-passthrough":  "true",
-				"app.uffizzi.com/ingress-sync":                 "true",
+				"app.uffizzi.com/ingress-sync": "true",
 			},
 		},
 		Isolation: VClusterIsolation{
@@ -501,7 +499,6 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	//}
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
-		uClusterHelmValues.Ingress.Enabled = true
 		uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
 			"--tls-san="+TLSSanArgValue,
 			"--out-kube-config-server="+OutKubeConfigServerArgValue,

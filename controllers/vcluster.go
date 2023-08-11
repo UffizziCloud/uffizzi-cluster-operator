@@ -68,14 +68,15 @@ type VClusterSync struct {
 	Ingresses EnabledBool `json:"ingresses,omitempty"`
 }
 
-type VClusterIngress struct {
-	Enabled     bool              `json:"enabled,omitempty"`
-	Host        string            `json:"host,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
-}
-
 type EnabledBool struct {
 	Enabled bool `json:"enabled"`
+}
+
+type VClusterIngress struct {
+	Enabled          bool   `json:"enabled,omitempty"`
+	IngressClassName string `json:"ingressClassName,omitempty"`
+	Host             string `json:"host,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type VClusterResourceQuota struct {
