@@ -332,14 +332,19 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	var (
 		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
 		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
+		ingressClass                = "uffizzi"
 	)
+
+	if uCluster.Spec.Ingress.Class != "" {
+		ingressClass = uCluster.Spec.Ingress.Class
+	}
 
 	uClusterHelmValues := VCluster{
 		Init:    VClusterInit{},
 		FsGroup: 12345,
 		Ingress: VClusterIngress{
 			Enabled:          true,
-			IngressClassName: uCluster.Spec.Ingress.Class,
+			IngressClassName: ingressClass,
 			Host:             VClusterIngressHostname,
 			Annotations: map[string]string{
 				"app.uffizzi.com/ingress-sync": "true",
@@ -399,7 +404,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 		Plugin: VClusterPlugins{
 			VClusterPlugin{
-				Image:           "uffizzi/ucluster-sync-plugin:v0.2.0",
+				Image:           "uffizzi/ucluster-sync-plugin:v0.2.1",
 				ImagePullPolicy: "IfNotPresent",
 				Rbac: VClusterRbac{
 					Role: VClusterRbacRole{

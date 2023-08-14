@@ -1,14 +1,15 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: i7
+  name: i27
 spec:
   resourceQuota:
     enabled: false
   limitRange:
     enabled: false
   ingress:
-    host: test.app.qa-gke.uffizzi.com
+    host: app.qa-gke.uffizzi.com
+    class: nginx
   manifests: |
     apiVersion: networking.k8s.io/v1
     kind: Ingress
@@ -17,7 +18,7 @@ spec:
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
     spec:
-      ingressClassName: nginx-example
+      ingressClassName: nginx
       rules:
         - http:
             paths:
@@ -36,7 +37,7 @@ spec:
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
     spec:
-      ingressClassName: nginx-example
+      ingressClassName: nginx
       rules:
         - host: whathostmost
           http:
