@@ -330,17 +330,17 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
-		TLSSanArgValue              = BuildVClusterIngressHost(uCluster)
-		OutKubeConfigServerArgValue = "https://" + TLSSanArgValue
+		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
+		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
 	)
 
 	uClusterHelmValues := VCluster{
 		Init:    VClusterInit{},
 		FsGroup: 12345,
 		Ingress: VClusterIngress{
-			Enabled: true,
+			Enabled:          true,
 			IngressClassName: uCluster.Spec.Ingress.Class,
-			Host:    BuildVClusterIngressHost(uCluster),
+			Host:             VClusterIngressHostname,
 			Annotations: map[string]string{
 				"app.uffizzi.com/ingress-sync": "true",
 			},
@@ -442,7 +442,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		uClusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []VClusterPluginEnv{
 			{
 				Name:  "VCLUSTER_INGRESS_HOST",
-				Value: uCluster.Spec.Ingress.Host,
+				Value: VClusterIngressHostname,
 			},
 		}
 	}
@@ -500,7 +500,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 
 	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
 		uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
-			"--tls-san="+TLSSanArgValue,
+			"--tls-san="+VClusterIngressHostname,
 			"--out-kube-config-server="+OutKubeConfigServerArgValue,
 			//"--out-kube-config-secret="+KubeConfigSecretName,
 		)
