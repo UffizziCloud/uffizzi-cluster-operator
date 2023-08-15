@@ -9,7 +9,6 @@ import (
 )
 
 func BuildVClusterIngress(helmReleaseName string, uCluster *v1alpha1.UffizziCluster) *v1.Ingress {
-	nginxIngressClass := INGRESS_CLASS_NGINX
 	uclusterIngressHost := BuildVClusterIngressHost(uCluster)
 	ingress := &v1.Ingress{
 		ObjectMeta: v12.ObjectMeta{
@@ -22,7 +21,6 @@ func BuildVClusterIngress(helmReleaseName string, uCluster *v1alpha1.UffizziClus
 			},
 		},
 		Spec: v1.IngressSpec{
-			IngressClassName: &nginxIngressClass,
 			Rules: []v1.IngressRule{
 				{
 					Host: uclusterIngressHost,
@@ -74,7 +72,6 @@ func BuildVClusterIngress(helmReleaseName string, uCluster *v1alpha1.UffizziClus
 
 func BuildVClusterInternalServiceIngress(service v1alpha1.ExposedVClusterService, uCluster *v1alpha1.UffizziCluster, helmReleaseName string) *v1.Ingress {
 	const PATH = "/"
-	nginxIngressClass := INGRESS_CLASS_NGINX
 	internalServiceHost := BuildVClusterInternalServiceIngressHost(uCluster)
 	ingress := &v1.Ingress{
 		ObjectMeta: v12.ObjectMeta{
@@ -86,7 +83,6 @@ func BuildVClusterInternalServiceIngress(service v1alpha1.ExposedVClusterService
 			},
 		},
 		Spec: v1.IngressSpec{
-			IngressClassName: &nginxIngressClass,
 			Rules: []v1.IngressRule{
 				{
 					Host: internalServiceHost,

@@ -5,7 +5,6 @@ metadata:
   namespace: quickstart-too
 spec:
   ingress:
-    class: "nginx"
     host: uffizzi-client-clone-3.app.qa-gke.uffizzi.com
     cluster:
       ingressAnnotations:

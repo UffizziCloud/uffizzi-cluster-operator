@@ -4,7 +4,6 @@ metadata:
   name: testnode
 spec:
 #  ingress:
-#    class: "nginx"
 #    host: deleteme2023.uffizzi.cloud
 #    services:
 #      - name: test-node-svc
