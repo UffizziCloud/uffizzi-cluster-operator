@@ -354,7 +354,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 					LimitsCpu:                   "2.5",
 					LimitsMemory:                "10Gi",
 					LimitsEphemeralStorage:      "15Gi",
-					ServicesLoadbalancers:       1,
+					ServicesLoadbalancers:       5,
 					ServicesNodePorts:           0,
 					CountEndpoints:              40,
 					CountConfigmaps:             100,
