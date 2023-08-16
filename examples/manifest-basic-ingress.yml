@@ -1,48 +1,51 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: i27
+  name: i32
 spec:
   resourceQuota:
     enabled: false
   limitRange:
     enabled: false
   ingress:
-    host: app.qa-gke.uffizzi.com
+    host: uclusters.app.qa-gke.uffizzi.com
   manifests: |
     apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
-      name: ingress-1
-      annotations:
-        nginx.ingress.kubernetes.io/rewrite-target: /
+      name: result
     spec:
       rules:
-        - http:
-            paths:
-              - path: /testpath
-                pathType: Prefix
-                backend:
-                  service:
-                    name: test
-                    port:
-                      number: 80
+      - host: result.example.com
+        http:
+          paths:
+          - backend:
+              service:
+                name: result
+                port:
+                  number: 5001
+            path: /
+            pathType: Prefix
+      tls:
+      - hosts:
+        - result.example.com
     ---
     apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
-      name: ingress-2
-      annotations:
-        nginx.ingress.kubernetes.io/rewrite-target: /
+      name: vote
     spec:
       rules:
-        - host: whathostmost
-          http:
-            paths:
-              - path: /testpath
-                pathType: Prefix
-                backend:
-                  service:
-                    name: test
-                    port:
-                      number: 80
+      - host: vote.example.com
+        http:
+          paths:
+          - backend:
+              service:
+                name: vote
+                port:
+                  number: 5001
+            path: /
+            pathType: Prefix
+      tls:
+      - hosts:
+        - vote.example.com

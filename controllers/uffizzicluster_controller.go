@@ -395,7 +395,7 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 		Plugin: VClusterPlugins{
 			VClusterPlugin{
-				Image:           "uffizzi/ucluster-sync-plugin:v0.2.2",
+				Image:           "uffizzi/ucluster-sync-plugin:v0.2.3",
 				ImagePullPolicy: "IfNotPresent",
 				Rbac: VClusterRbac{
 					Role: VClusterRbacRole{
