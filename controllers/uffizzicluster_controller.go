@@ -52,7 +52,6 @@ const (
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.5"
 	LOFT_CHART_REPO_URL    = "https://charts.loft.sh"
-	INGRESS_CLASS_NGINX    = "nginx"
 )
 
 type LIFECYCLE_OP_TYPE string
@@ -171,31 +170,29 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			logger.Error(err, "Failed to create HelmRelease")
 			return ctrl.Result{}, err
 		}
-		// check if ingresses are enabled and if so create the ingress for the vcluster
-		if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
-			vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
-			if err != nil {
-				logger.Error(err, "Failed to create ingress to vcluster internal service")
-				return ctrl.Result{}, err
-			}
+		// create the ingress for the vcluster
+		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
+		if err != nil {
+			logger.Error(err, "Failed to create ingress to vcluster internal service")
+			return ctrl.Result{}, err
+		}
 
-			uCluster.Status.Host = &vclusterIngressHost
+		uCluster.Status.Host = &vclusterIngressHost
 
-			// check if there are any services that need to be exposed from the vcluster
-			if uCluster.Spec.Ingress.Services != nil {
-				// Create the ingress for each service that is specified in the UffizziCluster services config
-				for _, service := range uCluster.Spec.Ingress.Services {
-					vclusterInternalServiceIngressStatus, err := r.createVClusterInternalServiceIngress(uCluster, service, ctx)
-					if err != nil {
-						logger.Error(err, "Failed to create ingress to vcluster internal service")
-						return ctrl.Result{}, err
-					}
-
-					// add the exposed service to the status
-					uCluster.Status.ExposedServices = append(uCluster.Status.ExposedServices,
-						*vclusterInternalServiceIngressStatus,
-					)
+		// check if there are any services that need to be exposed from the vcluster
+		if uCluster.Spec.Ingress.Services != nil {
+			// Create the ingress for each service that is specified in the UffizziCluster services config
+			for _, service := range uCluster.Spec.Ingress.Services {
+				vclusterInternalServiceIngressStatus, err := r.createVClusterInternalServiceIngress(uCluster, service, ctx)
+				if err != nil {
+					logger.Error(err, "Failed to create ingress to vcluster internal service")
+					return ctrl.Result{}, err
 				}
+
+				// add the exposed service to the status
+				uCluster.Status.ExposedServices = append(uCluster.Status.ExposedServices,
+					*vclusterInternalServiceIngressStatus,
+				)
 			}
 		}
 
@@ -332,20 +329,14 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	var (
 		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
 		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
-		ingressClass                = "uffizzi"
 	)
-
-	if uCluster.Spec.Ingress.Class != "" {
-		ingressClass = uCluster.Spec.Ingress.Class
-	}
 
 	uClusterHelmValues := VCluster{
 		Init:    VClusterInit{},
 		FsGroup: 12345,
 		Ingress: VClusterIngress{
-			Enabled:          true,
-			IngressClassName: ingressClass,
-			Host:             VClusterIngressHostname,
+			Enabled: true,
+			Host:    VClusterIngressHostname,
 			Annotations: map[string]string{
 				"app.uffizzi.com/ingress-sync": "true",
 			},
@@ -503,20 +494,17 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	//	uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
 	//}
 
-	if uCluster.Spec.Ingress.Class == INGRESS_CLASS_NGINX {
-		uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
-			"--tls-san="+VClusterIngressHostname,
-			"--out-kube-config-server="+OutKubeConfigServerArgValue,
-			//"--out-kube-config-secret="+KubeConfigSecretName,
-		)
+	uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
+		"--tls-san="+VClusterIngressHostname,
+		"--out-kube-config-server="+OutKubeConfigServerArgValue,
+	)
 
-		if uCluster.Spec.Ingress.Services != nil {
-			for _, service := range uCluster.Spec.Ingress.Services {
-				uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
-					From: service.Namespace + "/" + service.Name,
-					To:   helmReleaseName + "-" + service.Name,
-				})
-			}
+	if uCluster.Spec.Ingress.Services != nil {
+		for _, service := range uCluster.Spec.Ingress.Services {
+			uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
+				From: service.Namespace + "/" + service.Name,
+				To:   helmReleaseName + "-" + service.Name,
+			})
 		}
 	}
 

@@ -4,7 +4,6 @@ metadata:
   name: helm-basic
 spec:
   ingress:
-    class: "nginx"
     host: deleteme2023.uffizzi.cloud
     certManagerTLSEnabled: true
     services:
