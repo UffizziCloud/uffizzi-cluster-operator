@@ -347,12 +347,12 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 			ResourceQuota: VClusterResourceQuota{
 				Enabled: true,
 				Quota: VClusterResourceQuotaDefiniton{
-					RequestsCpu:                 "10",
-					RequestsMemory:              "20Gi",
+					RequestsCpu:                 "2.5",
+					RequestsMemory:              "10Gi",
 					RequestsEphemeralStorage:    "60Gi",
 					RequestsStorage:             "100Gi",
-					LimitsCpu:                   "20",
-					LimitsMemory:                "40Gi",
+					LimitsCpu:                   "2.5",
+					LimitsMemory:                "10Gi",
 					LimitsEphemeralStorage:      "160Gi",
 					ServicesLoadbalancers:       1,
 					ServicesNodePorts:           0,
