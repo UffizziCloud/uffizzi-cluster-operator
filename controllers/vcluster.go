@@ -127,7 +127,7 @@ type VClusterMapServices struct {
 type VClusterIsolation struct {
 	Enabled             bool                  `json:"enabled,omitempty"`
 	PodSecurityStandard string                `json:"podSecurityStandard,omitempty"`
-	ResourceQuota       VClusterResourceQuota `json:"quota,omitempty"`
+	ResourceQuota       VClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange          VClusterLimitRange    `json:"limitRange,omitempty"`
 }
 
