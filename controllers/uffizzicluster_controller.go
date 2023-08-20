@@ -186,7 +186,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return ctrl.Result{}, err
 			}
 		} else {
-			err := fmt.Errorf("invalid distro %s; please specify either k3s, k8s or k0s", uCluster.Spec.Distro)
+			err := fmt.Errorf("invalid distro %s; please specify either k3s or k8s", uCluster.Spec.Distro)
 			logger.Error(err, "Invalid distro")
 			return ctrl.Result{}, err
 		}
