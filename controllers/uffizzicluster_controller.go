@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -53,6 +54,8 @@ const (
 	VCLUSTER_CHART         = "vcluster"
 	VCLUSTER_CHART_VERSION = "0.15.5"
 	LOFT_CHART_REPO_URL    = "https://charts.loft.sh"
+	VCLUSTER_K3S_DISTRO    = "k3s"
+	VCLUSTER_K8S_DISTRO    = "k8s"
 )
 
 type LIFECYCLE_OP_TYPE string
@@ -167,11 +170,19 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil && k8serrors.IsNotFound(err) {
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
-		newHelmRelease, err := r.upsertVClusterHelmRelease(false, ctx, uCluster)
-		if err != nil {
-			logger.Error(err, "Failed to create HelmRelease")
+		newHelmRelease := &fluxhelmv2beta1.HelmRelease{}
+		if uCluster.Spec.Distro == VCLUSTER_K3S_DISTRO {
+			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
+			if err != nil {
+				logger.Error(err, "Failed to create HelmRelease")
+				return ctrl.Result{}, err
+			}
+		} else {
+			err := fmt.Errorf("invalid distro %s; please specify either k3s, k8s or k0s", uCluster.Spec.Distro)
+			logger.Error(err, "Invalid distro")
 			return ctrl.Result{}, err
 		}
+
 		// create the ingress for the vcluster
 		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
 		if err != nil {
@@ -256,7 +267,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
 		if currentSpec != lastAppliedSpec {
-			if _, err := r.upsertVClusterHelmRelease(true, ctx, uCluster); err != nil {
+			if _, err := r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
 				logger.Error(err, "Failed to update HelmRelease")
 				return ctrl.Result{}, err
 			}
@@ -318,14 +329,14 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 	return status, nil
 }
 
-func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
 		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
 		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
 	)
 
-	uClusterHelmValues := VCluster{
+	vclusterK3sHelmValues := VCluster{
 		VCluster: VClusterContainer{
 			Image: "rancher/k3s:v1.27.3-k3s1",
 			Command: []string{
@@ -462,11 +473,11 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
-		uClusterHelmValues.VCluster.Image = uCluster.Spec.APIServer.Image
+		vclusterK3sHelmValues.VCluster.Image = uCluster.Spec.APIServer.Image
 	}
 
 	if uCluster.Spec.Ingress.Host != "" {
-		uClusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []Env{
+		vclusterK3sHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []Env{
 			{
 				Name:  "VCLUSTER_INGRESS_HOST",
 				Value: VClusterIngressHostname,
@@ -475,9 +486,9 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	}
 
 	if uCluster.Spec.ResourceQuota != nil {
-		// map uCluster.Spec.ResourceQuota to uClusterHelmValues.Isolation.ResourceQuota
+		// map uCluster.Spec.ResourceQuota to vclusterK3sHelmValues.Isolation.ResourceQuota
 		q := *uCluster.Spec.ResourceQuota
-		qHelmValues := uClusterHelmValues.Isolation.ResourceQuota
+		qHelmValues := vclusterK3sHelmValues.Isolation.ResourceQuota
 		// enabled
 		qHelmValues.Enabled = q.Enabled
 		//requests
@@ -500,13 +511,13 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		qHelmValues.Quota.CountSecrets = q.Count.Secrets
 		qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
 		// set it back
-		uClusterHelmValues.Isolation.ResourceQuota = qHelmValues
+		vclusterK3sHelmValues.Isolation.ResourceQuota = qHelmValues
 	}
 
 	if uCluster.Spec.LimitRange != nil {
 		// same for limit range
 		lr := uCluster.Spec.LimitRange
-		lrHelmValues := uClusterHelmValues.Isolation.LimitRange
+		lrHelmValues := vclusterK3sHelmValues.Isolation.LimitRange
 		// enabled
 		lrHelmValues.Enabled = lr.Enabled
 		// default
@@ -518,17 +529,17 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
 		lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
 		// set it back
-		uClusterHelmValues.Isolation.LimitRange = lrHelmValues
+		vclusterK3sHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
+	vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
 		"--tls-san="+VClusterIngressHostname,
 		"--out-kube-config-server="+OutKubeConfigServerArgValue,
 	)
 
 	if uCluster.Spec.Ingress.Services != nil {
 		for _, service := range uCluster.Spec.Ingress.Services {
-			uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
+			vclusterK3sHelmValues.MapServices.FromVirtual = append(vclusterK3sHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
 				From: service.Namespace + "/" + service.Name,
 				To:   helmReleaseName + "-" + service.Name,
 			})
@@ -536,15 +547,15 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	}
 
 	if len(uCluster.Spec.Helm) > 0 {
-		uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
+		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
 	}
 
 	if uCluster.Spec.Manifests != nil {
-		uClusterHelmValues.Init.Manifests = *uCluster.Spec.Manifests
+		vclusterK3sHelmValues.Init.Manifests = *uCluster.Spec.Manifests
 	}
 
 	// marshal HelmValues struct to JSON
-	helmValuesRaw, err := json.Marshal(uClusterHelmValues)
+	helmValuesRaw, err := json.Marshal(vclusterK3sHelmValues)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal HelmValues struct to JSON")
 	}

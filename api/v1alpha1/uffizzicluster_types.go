@@ -159,6 +159,7 @@ type UffizziClusterResourceCount struct {
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
+	Distro        string                       `json:"distro,omitempty"`
 	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
 	TTL           string                       `json:"ttl,omitempty"`

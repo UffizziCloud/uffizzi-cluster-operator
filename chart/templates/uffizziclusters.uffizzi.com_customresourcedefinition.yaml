@@ -47,6 +47,8 @@ spec:
                   image:
                     type: string
                 type: object
+              distro:
+                type: string
               helm:
                 items:
                   properties:
