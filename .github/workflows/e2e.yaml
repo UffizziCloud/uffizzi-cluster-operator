@@ -53,6 +53,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install krew
+        uses: developer-guy/setup-krew@main
+
       # Identify comment to be updated
       - name: Find comment for Ephemeral Environment
         uses: peter-evans/find-comment@v2
@@ -92,6 +95,9 @@ jobs:
       - name: Apply Helm Chart
         id: prev
         run: |
+          # install kuttl
+          kubectl krew install kuttl
+
           if [[ ${RUNNER_DEBUG} == 1 ]]; then
             echo "`pwd`"
             echo "`ls`"
@@ -102,8 +108,10 @@ jobs:
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart --set image.repository=registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }},image.tag=48h
 
-          kubectl apply -f examples/k3s-manifest-basic.yml
-          kubectl apply -f examples/k8s-manifest-basic.yml
+          # kubectl apply -f examples/k3s-manifest-basic.yml
+          # kubectl apply -f examples/k8s-manifest-basic.yml
+
+          kubectl kuttl test --start-kind=false ./tests/e2e/
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2

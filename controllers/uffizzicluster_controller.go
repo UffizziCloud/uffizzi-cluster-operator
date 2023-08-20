@@ -170,16 +170,22 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
+		d := uCluster.Spec.Distro
+		if d == "" {
+			d = VCLUSTER_K3S_DISTRO
+		} else {
+			d = uCluster.Spec.Distro
+		}
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 		newHelmRelease := &fluxhelmv2beta1.HelmRelease{}
-		if uCluster.Spec.Distro == VCLUSTER_K3S_DISTRO {
+		if d == VCLUSTER_K3S_DISTRO {
 			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create HelmRelease")
 				return ctrl.Result{}, err
 			}
-		} else if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
+		} else if d == VCLUSTER_K8S_DISTRO {
 			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create HelmRelease")
@@ -274,14 +280,20 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
+		d := uCluster.Spec.Distro
+		if d == "" {
+			d = VCLUSTER_K3S_DISTRO
+		} else {
+			d = uCluster.Spec.Distro
+		}
 		if currentSpec != lastAppliedSpec {
-			if uCluster.Spec.Distro == VCLUSTER_K3S_DISTRO {
+			if d == VCLUSTER_K3S_DISTRO {
 				if _, err := r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
 					logger.Error(err, "Failed to update HelmRelease")
 					return ctrl.Result{}, err
 				}
 			}
-			if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
+			if d == VCLUSTER_K8S_DISTRO {
 				if _, err := r.upsertVClusterK8sHelmRelease(true, ctx, uCluster); err != nil {
 					logger.Error(err, "Failed to update HelmRelease")
 					return ctrl.Result{}, err
