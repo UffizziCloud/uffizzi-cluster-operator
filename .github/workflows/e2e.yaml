@@ -111,7 +111,7 @@ jobs:
           # kubectl apply -f examples/k3s-manifest-basic.yml
           # kubectl apply -f examples/k8s-manifest-basic.yml
 
-          kubectl kuttl test --start-kind=false ./tests/e2e/
+          kubectl kuttl test
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2

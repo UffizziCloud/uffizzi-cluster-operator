@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
-	networkingv1 "k8s.io/api/networking/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -153,8 +152,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			Host:            &host,
 			KubeConfig:      kubeConfig,
 		}
-		uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-		if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
 			return ctrl.Result{}, err
 		}
@@ -228,8 +226,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		uCluster.Status.KubeConfig.SecretRef = &meta.SecretKeyReference{
 			Name: "vc-" + helmReleaseName,
 		}
-		uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-		if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
@@ -250,8 +247,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 
 		uCluster.Status.Conditions = uClusterConditions
-		uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-		if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
@@ -265,8 +261,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			logger.Info("Loft Helm Repo for UffizziCluster created", "NamespacedName", req.NamespacedName)
 		}
 		uCluster.Status.LastAppliedConfiguration = &currentSpec
-		uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-		if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster lastAppliedConfig")
 			return ctrl.Result{}, err
 		}
@@ -336,9 +331,8 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 
 	if err := r.Create(ctx, vclusterInternalServiceIngress); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			vclusterServiceIngressUpdate := r.IngressNilOrCreate(vclusterInternalServiceIngress)
 			// If the Ingress already exists, update it
-			if err := r.Update(ctx, vclusterServiceIngressUpdate); err != nil {
+			if err := r.Update(ctx, vclusterInternalServiceIngress); err != nil {
 				return nil, errors.Wrap(err, "Failed to update Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
 			}
 		} else {
@@ -632,8 +626,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
 		}
 		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
-		uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-		if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+		if err := r.Status().Update(ctx, uCluster); err != nil {
 			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
 		}
 
@@ -901,8 +894,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
 		}
 		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
-		uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-		if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+		if err := r.Status().Update(ctx, uCluster); err != nil {
 			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
 		}
 
@@ -941,8 +933,7 @@ func (r *UffizziClusterReconciler) updateHelmRelease(newHelmRelease *fluxhelmv2b
 		Force: true,
 	}
 	existingHelmRelease.Spec = newHelmRelease.Spec
-	helmReleaseUpdate := r.HelmReleaseNilOrCreate(existingHelmRelease)
-	if err := r.Update(ctx, helmReleaseUpdate); err != nil {
+	if err := r.Update(ctx, existingHelmRelease); err != nil {
 		return errors.Wrap(err, "error while updating helm release")
 	}
 	// update the lastAppliedConfig
@@ -958,8 +949,7 @@ func (r *UffizziClusterReconciler) updateHelmRelease(newHelmRelease *fluxhelmv2b
 	updatedHelmReleaseSpec := string(updatedHelmReleaseSpecBytes)
 	uCluster.Status.LastAppliedConfiguration = &updatedSpec
 	uCluster.Status.LastAppliedHelmReleaseSpec = &updatedHelmReleaseSpec
-	uClusterUpdate := r.UffizziClusterNilOrCreate(uCluster)
-	if err := r.Status().Update(ctx, uClusterUpdate); err != nil {
+	if err := r.Status().Update(ctx, uCluster); err != nil {
 		return errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedConfig")
 	}
 	return nil
@@ -1006,58 +996,4 @@ func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				OwnerType:    &uclusteruffizzicomv1alpha1.UffizziCluster{},
 			}).
 		Complete(r)
-}
-
-func (r *UffizziClusterReconciler) UffizziClusterNilOrCreate(ucluster *uclusteruffizzicomv1alpha1.UffizziCluster) *uclusteruffizzicomv1alpha1.UffizziCluster {
-	uc := &uclusteruffizzicomv1alpha1.UffizziCluster{}
-	current := &uclusteruffizzicomv1alpha1.UffizziCluster{}
-	if err := r.Get(context.Background(),
-		types.NamespacedName{
-			Name:      ucluster.Name,
-			Namespace: ucluster.Namespace,
-		}, current); err != nil {
-		return ucluster
-	}
-	if ucluster != nil {
-		uc.ObjectMeta = current.ObjectMeta
-		uc.Spec = ucluster.Spec
-		uc.Status = ucluster.Status
-	}
-	return uc
-}
-
-func (r *UffizziClusterReconciler) HelmReleaseNilOrCreate(release *fluxhelmv2beta1.HelmRelease) *fluxhelmv2beta1.HelmRelease {
-	ret := &fluxhelmv2beta1.HelmRelease{}
-	current := &fluxhelmv2beta1.HelmRelease{}
-	if err := r.Get(context.Background(),
-		types.NamespacedName{
-			Name:      release.Name,
-			Namespace: release.Namespace,
-		}, current); err != nil {
-		return release
-	}
-	if release != nil {
-		ret.ObjectMeta = current.ObjectMeta
-		ret.Spec = release.Spec
-		ret.Status = release.Status
-	}
-	return ret
-}
-
-func (r *UffizziClusterReconciler) IngressNilOrCreate(ingress *networkingv1.Ingress) *networkingv1.Ingress {
-	ret := &networkingv1.Ingress{}
-	current := &networkingv1.Ingress{}
-	if err := r.Get(context.Background(),
-		types.NamespacedName{
-			Name:      ingress.Name,
-			Namespace: ingress.Namespace,
-		}, current); err != nil {
-		return ingress
-	}
-	if ingress != nil {
-		ret.ObjectMeta = current.ObjectMeta
-		ret.Spec = ingress.Spec
-		ret.Status = ingress.Status
-	}
-	return ret
 }
