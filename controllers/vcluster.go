@@ -2,8 +2,22 @@ package controllers
 
 import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 
-type VCluster struct {
-	VCluster        VClusterContainer       `json:"vcluster,omitempty"`
+type VClusterK3S struct {
+	VCluster Container    `json:"vcluster,omitempty"`
+	Init     VClusterInit `json:"init,omitempty"`
+	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
+	Sync            VClusterSync            `json:"sync,omitempty"`
+	Ingress         VClusterIngress         `json:"ingress,omitempty"`
+	FsGroup         int64                   `json:"fsgroup,omitempty"`
+	Isolation       VClusterIsolation       `json:"isolation,omitempty"`
+	NodeSelector    VClusterNodeSelector    `json:"nodeSelector,omitempty"`
+	SecurityContext VClusterSecurityContext `json:"securityContext,omitempty"`
+	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
+	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
+	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
+}
+
+type VClusterK8S struct {
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
@@ -17,8 +31,8 @@ type VCluster struct {
 	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
 }
 
-// VClusterContainer - parameters to create the vcluster container with
-type VClusterContainer struct {
+// Container - parameters to create the vcluster container with
+type Container struct {
 	Image        string                          `json:"image,omitempty"`
 	Command      []string                        `json:"command,omitempty"`
 	BaseArgs     []string                        `json:"baseArgs,omitempty"`
