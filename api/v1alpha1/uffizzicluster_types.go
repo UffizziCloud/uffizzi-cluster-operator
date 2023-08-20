@@ -68,6 +68,11 @@ type UffizziClusterIngress struct {
 	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
+// UffizziClusterAPIServer defines the API server capabilities of the cluster
+type UffizziClusterAPIServer struct {
+	Image string `json:"image,omitempty"`
+}
+
 // UffizziClusterResourceQuota defines the resource quota which defines the
 // quota of resources a namespace has access to
 type UffizziClusterResourceQuota struct {
@@ -154,6 +159,7 @@ type UffizziClusterResourceCount struct {
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
+	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
 	TTL           string                       `json:"ttl,omitempty"`
 	Helm          []HelmChart                  `json:"helm,omitempty"`
@@ -176,6 +182,13 @@ type UffizziClusterStatus struct {
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
 type VClusterKubeConfig struct {
 	SecretRef *meta.SecretKeyReference `json:"secretRef,omitempty"`
+}
+
+type UffizziClusterDistro struct {
+	//+kubebuilder:default:="k3s"
+	Type string `json:"type,omitempty"`
+	//+kubebuilder:default:="v1.27.3-k3s1"
+	Version string `json:"version,omitempty"`
 }
 
 //+kubebuilder:object:root=true

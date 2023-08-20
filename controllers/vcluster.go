@@ -3,6 +3,7 @@ package controllers
 import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 
 type VCluster struct {
+	VCluster        VClusterContainer       `json:"vcluster,omitempty"`
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
@@ -14,6 +15,36 @@ type VCluster struct {
 	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
 	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
 	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
+}
+
+// VClusterContainer - parameters to create the vcluster container with
+type VClusterContainer struct {
+	Image        string                          `json:"image,omitempty"`
+	Command      []string                        `json:"command,omitempty"`
+	BaseArgs     []string                        `json:"baseArgs,omitempty"`
+	ExtraArgs    []string                        `json:"extraArgs,omitempty"`
+	Env          []Env                           `json:"env,omitempty"`
+	VolumeMounts []VClusterContainerVolumeMounts `json:"volumeMounts,omitempty"`
+	Resources    VClusterContainerResources      `json:"resources,omitempty"`
+}
+
+type VClusterContainerResources struct {
+	Limits   VClusterContainerResourcesLimits   `json:"limits,omitempty"`
+	Requests VClusterContainerResourcesRequests `json:"requests,omitempty"`
+}
+
+type VClusterContainerResourcesLimits struct {
+	Memory string `json:"memory,omitempty"`
+}
+
+type VClusterContainerResourcesRequests struct {
+	Memory string `json:"memory,omitempty"`
+	Cpu    string `json:"cpu,omitempty"`
+}
+
+type VClusterContainerVolumeMounts struct {
+	Name      string `json:"name,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 }
 
 // VClusterInit - resources which are created during the init phase of the vcluster
@@ -34,13 +65,13 @@ type VClusterPlugins struct {
 }
 
 type VClusterPlugin struct {
-	Env             []VClusterPluginEnv `json:"env,omitempty"`
-	Image           string              `json:"image,omitempty"`
-	ImagePullPolicy string              `json:"imagePullPolicy,omitempty"`
-	Rbac            VClusterRbac        `json:"rbac,omitempty"`
+	Env             []Env        `json:"env,omitempty"`
+	Image           string       `json:"image,omitempty"`
+	ImagePullPolicy string       `json:"imagePullPolicy,omitempty"`
+	Rbac            VClusterRbac `json:"rbac,omitempty"`
 }
 
-type VClusterPluginEnv struct {
+type Env struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
 }

@@ -332,6 +332,39 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	)
 
 	uClusterHelmValues := VCluster{
+		VCluster: VClusterContainer{
+			Image: "rancher/k3s:v1.27.3-k3s1",
+			Command: []string{
+				"/bin/k3s",
+			},
+			BaseArgs: []string{
+				"server",
+				"--write-kubeconfig=/data/k3s-config/kube-config.yaml",
+				"--data-dir=/data",
+				"--disable=traefik,servicelb,metrics-server,local-storage,coredns",
+				"--disable-network-policy",
+				"--disable-agent",
+				"--disable-cloud-controller",
+				"--flannel-backend=none",
+			},
+			ExtraArgs: []string{},
+			VolumeMounts: []VClusterContainerVolumeMounts{
+				{
+					Name:      "data",
+					MountPath: "/data",
+				},
+			},
+			Env: []Env{},
+			Resources: VClusterContainerResources{
+				Limits: VClusterContainerResourcesLimits{
+					Memory: "2Gi",
+				},
+				Requests: VClusterContainerResourcesRequests{
+					Memory: "256Mi",
+					Cpu:    "200m",
+				},
+			},
+		},
 		Init:    VClusterInit{},
 		FsGroup: 12345,
 		Ingress: VClusterIngress{
@@ -434,8 +467,12 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 	}
 
+	if uCluster.Spec.APIServer.Image != "" {
+		uClusterHelmValues.VCluster.Image = uCluster.Spec.APIServer.Image
+	}
+
 	if uCluster.Spec.Ingress.Host != "" {
-		uClusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []VClusterPluginEnv{
+		uClusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []Env{
 			{
 				Name:  "VCLUSTER_INGRESS_HOST",
 				Value: VClusterIngressHostname,
