@@ -32,32 +32,6 @@ type VClusterK8S struct {
 	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
 }
 
-//api:
-//  image: registry.k8s.io/kube-apiserver:v1.26.1
-//  extraArgs: []
-//  # The amount of replicas to run the deployment with
-//  replicas: 1
-//  # NodeSelector used to schedule the syncer
-//  nodeSelector: {}
-//  # Affinity to apply to the syncer deployment
-//  affinity: {}
-//  # Tolerations to apply to the syncer deployment
-//  tolerations: []
-//  # Extra Labels for the syncer deployment
-//  labels: {}
-//  # Extra Annotations for the syncer deployment
-//  annotations: {}
-//  podAnnotations: {}
-//  podLabels: {}
-//  resources:
-//    requests:
-//      cpu: 40m
-//      memory: 300Mi
-//  priorityClassName: ""
-//  securityContext: {}
-//  serviceAnnotations: {}
-// Create type based on the above
-
 type VClusterK8SAPIServer struct {
 	Image              string                     `json:"image,omitempty"`
 	ExtraArgs          []string                   `json:"extraArgs,omitempty"`
