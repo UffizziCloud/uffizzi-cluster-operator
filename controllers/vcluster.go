@@ -3,8 +3,8 @@ package controllers
 import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 
 type VClusterK3S struct {
-	VCluster Container    `json:"vcluster,omitempty"`
-	Init     VClusterInit `json:"init,omitempty"`
+	VCluster        Container               `json:"vcluster,omitempty"`
+	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
 	Ingress         VClusterIngress         `json:"ingress,omitempty"`
@@ -18,6 +18,7 @@ type VClusterK3S struct {
 }
 
 type VClusterK8S struct {
+	APIServer       VClusterK8SAPIServer    `json:"apiserver,omitempty"`
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
@@ -29,6 +30,48 @@ type VClusterK8S struct {
 	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
 	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
 	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
+}
+
+//api:
+//  image: registry.k8s.io/kube-apiserver:v1.26.1
+//  extraArgs: []
+//  # The amount of replicas to run the deployment with
+//  replicas: 1
+//  # NodeSelector used to schedule the syncer
+//  nodeSelector: {}
+//  # Affinity to apply to the syncer deployment
+//  affinity: {}
+//  # Tolerations to apply to the syncer deployment
+//  tolerations: []
+//  # Extra Labels for the syncer deployment
+//  labels: {}
+//  # Extra Annotations for the syncer deployment
+//  annotations: {}
+//  podAnnotations: {}
+//  podLabels: {}
+//  resources:
+//    requests:
+//      cpu: 40m
+//      memory: 300Mi
+//  priorityClassName: ""
+//  securityContext: {}
+//  serviceAnnotations: {}
+// Create type based on the above
+
+type VClusterK8SAPIServer struct {
+	Image              string                     `json:"image,omitempty"`
+	ExtraArgs          []string                   `json:"extraArgs,omitempty"`
+	Replicas           int32                      `json:"replicas,omitempty"`
+	NodeSelector       VClusterNodeSelector       `json:"nodeSelector,omitempty"`
+	Tolerations        []VClusterToleration       `json:"tolerations,omitempty"`
+	Labels             map[string]string          `json:"labels,omitempty"`
+	Annotations        map[string]string          `json:"annotations,omitempty"`
+	PodAnnotations     map[string]string          `json:"podAnnotations,omitempty"`
+	PodLabels          map[string]string          `json:"podLabels,omitempty"`
+	Resources          VClusterContainerResources `json:"resources,omitempty"`
+	PriorityClass      string                     `json:"priorityClassName,omitempty"`
+	SecurityContext    VClusterSecurityContext    `json:"securityContext,omitempty"`
+	ServiceAnnotations map[string]string          `json:"serviceAnnotations,omitempty"`
 }
 
 // Container - parameters to create the vcluster container with

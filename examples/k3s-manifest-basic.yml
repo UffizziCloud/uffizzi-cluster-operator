@@ -1,0 +1,15 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  name: i39
+spec:
+  distro: k3s
+  apiServer:
+    image: "rancher/k3s:v1.26.0-k3s1"
+  ingress:
+    host: app.qa-gke.uffizzi.com
+  resourceQuota:
+    enabled: false
+  limitRange:
+    enabled: false
+
