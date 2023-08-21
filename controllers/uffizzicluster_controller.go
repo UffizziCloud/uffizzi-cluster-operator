@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -168,31 +167,22 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
-		d := uCluster.Spec.Distro
-		if d == "" {
-			d = VCLUSTER_K3S_DISTRO
-		} else {
-			d = uCluster.Spec.Distro
-		}
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 		newHelmRelease := &fluxhelmv2beta1.HelmRelease{}
-		if d == VCLUSTER_K3S_DISTRO {
-			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
-			if err != nil {
-				logger.Error(err, "Failed to create HelmRelease")
-				return ctrl.Result{}, err
-			}
-		} else if d == VCLUSTER_K8S_DISTRO {
+		if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
 			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create HelmRelease")
-				return ctrl.Result{}, err
+				return ctrl.Result{Requeue: true}, err
 			}
 		} else {
-			err := fmt.Errorf("invalid distro %s; please specify either k3s or k8s", uCluster.Spec.Distro)
-			logger.Error(err, "Invalid distro")
-			return ctrl.Result{}, err
+			// default to k3s
+			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
+			if err != nil {
+				logger.Error(err, "Failed to create HelmRelease")
+				return ctrl.Result{Requeue: true}, err
+			}
 		}
 
 		// create the ingress for the vcluster
@@ -275,23 +265,16 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
-		d := uCluster.Spec.Distro
-		if d == "" {
-			d = VCLUSTER_K3S_DISTRO
-		} else {
-			d = uCluster.Spec.Distro
-		}
 		if currentSpec != lastAppliedSpec {
-			if d == VCLUSTER_K3S_DISTRO {
-				if _, err := r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
-					logger.Error(err, "Failed to update HelmRelease")
-					return ctrl.Result{}, err
-				}
-			}
-			if d == VCLUSTER_K8S_DISTRO {
+			if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
 				if _, err := r.upsertVClusterK8sHelmRelease(true, ctx, uCluster); err != nil {
 					logger.Error(err, "Failed to update HelmRelease")
-					return ctrl.Result{}, err
+					return ctrl.Result{Requeue: true}, err
+				}
+			} else {
+				if _, err := r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
+					logger.Error(err, "Failed to update HelmRelease")
+					return ctrl.Result{Requeue: true}, err
 				}
 			}
 		}
