@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -47,11 +48,15 @@ type UffizziClusterReconciler struct {
 }
 
 const (
-	UCLUSTER_NAME_PREFIX   = "uc-"
-	LOFT_HELM_REPO         = "loft"
-	VCLUSTER_CHART         = "vcluster"
-	VCLUSTER_CHART_VERSION = "0.15.5"
-	LOFT_CHART_REPO_URL    = "https://charts.loft.sh"
+	UCLUSTER_NAME_PREFIX       = "uc-"
+	LOFT_HELM_REPO             = "loft"
+	VCLUSTER_CHART_K3S         = "vcluster"
+	VCLUSTER_CHART_K8S         = "vcluster-k8s"
+	VCLUSTER_CHART_K3S_VERSION = "0.15.5"
+	VCLUSTER_CHART_K8S_VERSION = "0.15.5"
+	LOFT_CHART_REPO_URL        = "https://charts.loft.sh"
+	VCLUSTER_K3S_DISTRO        = "k3s"
+	VCLUSTER_K8S_DISTRO        = "k8s"
 )
 
 type LIFECYCLE_OP_TYPE string
@@ -153,7 +158,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
-	// Check if there is already exists a VCluster HelmRelease for this UCluster, if not create one
+	// Check if there is already exists a VClusterK3S HelmRelease for this UCluster, if not create one
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	helmRelease := &fluxhelmv2beta1.HelmRelease{}
 	helmReleaseNamespacedName := client.ObjectKey{
@@ -163,13 +168,33 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
+		d := uCluster.Spec.Distro
+		if d == "" {
+			d = VCLUSTER_K3S_DISTRO
+		} else {
+			d = uCluster.Spec.Distro
+		}
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
-		newHelmRelease, err := r.upsertVClusterHelmRelease(false, ctx, uCluster)
-		if err != nil {
-			logger.Error(err, "Failed to create HelmRelease")
+		newHelmRelease := &fluxhelmv2beta1.HelmRelease{}
+		if d == VCLUSTER_K3S_DISTRO {
+			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
+			if err != nil {
+				logger.Error(err, "Failed to create HelmRelease")
+				return ctrl.Result{}, err
+			}
+		} else if d == VCLUSTER_K8S_DISTRO {
+			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
+			if err != nil {
+				logger.Error(err, "Failed to create HelmRelease")
+				return ctrl.Result{}, err
+			}
+		} else {
+			err := fmt.Errorf("invalid distro %s; please specify either k3s or k8s", uCluster.Spec.Distro)
+			logger.Error(err, "Invalid distro")
 			return ctrl.Result{}, err
 		}
+
 		// create the ingress for the vcluster
 		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
 		if err != nil {
@@ -201,7 +226,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		uCluster.Status.KubeConfig.SecretRef = &meta.SecretKeyReference{
 			Name: "vc-" + helmReleaseName,
 		}
-
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
@@ -251,10 +275,24 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
+		d := uCluster.Spec.Distro
+		if d == "" {
+			d = VCLUSTER_K3S_DISTRO
+		} else {
+			d = uCluster.Spec.Distro
+		}
 		if currentSpec != lastAppliedSpec {
-			if _, err := r.upsertVClusterHelmRelease(true, ctx, uCluster); err != nil {
-				logger.Error(err, "Failed to update HelmRelease")
-				return ctrl.Result{}, err
+			if d == VCLUSTER_K3S_DISTRO {
+				if _, err := r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
+					logger.Error(err, "Failed to update HelmRelease")
+					return ctrl.Result{}, err
+				}
+			}
+			if d == VCLUSTER_K8S_DISTRO {
+				if _, err := r.upsertVClusterK8sHelmRelease(true, ctx, uCluster); err != nil {
+					logger.Error(err, "Failed to update HelmRelease")
+					return ctrl.Result{}, err
+				}
 			}
 		}
 	}
@@ -278,17 +316,6 @@ func (r *UffizziClusterReconciler) createVClusterIngress(ctx context.Context, uC
 	if err := controllerutil.SetControllerReference(uCluster, clusterIngress, r.Scheme); err != nil {
 		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
 	}
-	// create the nginx ingress
-	//if err := r.Create(ctx, clusterIngress); err != nil {
-	//	if strings.Contains(err.Error(), "already exists") {
-	//		// If the Ingress already exists, update it
-	//		if err := r.Update(ctx, clusterIngress); err != nil {
-	//			return nil, errors.Wrap(err, "Failed to update Cluster Ingress")
-	//		}
-	//	} else {
-	//		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
-	//	}
-	//}
 	return &ingressHost, nil
 }
 
@@ -324,14 +351,47 @@ func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster
 	return status, nil
 }
 
-func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
 		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
 		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
 	)
 
-	uClusterHelmValues := VCluster{
+	vclusterK3sHelmValues := VClusterK3S{
+		VCluster: Container{
+			Image: "rancher/k3s:v1.27.3-k3s1",
+			Command: []string{
+				"/bin/k3s",
+			},
+			BaseArgs: []string{
+				"server",
+				"--write-kubeconfig=/data/k3s-config/kube-config.yaml",
+				"--data-dir=/data",
+				"--disable=traefik,servicelb,metrics-server,local-storage,coredns",
+				"--disable-network-policy",
+				"--disable-agent",
+				"--disable-cloud-controller",
+				"--flannel-backend=none",
+			},
+			ExtraArgs: []string{},
+			VolumeMounts: []VClusterContainerVolumeMounts{
+				{
+					Name:      "data",
+					MountPath: "/data",
+				},
+			},
+			Env: []Env{},
+			Resources: VClusterContainerResources{
+				Limits: VClusterContainerResourcesLimits{
+					Memory: "2Gi",
+				},
+				Requests: VClusterContainerResourcesRequests{
+					Memory: "256Mi",
+					Cpu:    "200m",
+				},
+			},
+		},
 		Init:    VClusterInit{},
 		FsGroup: 12345,
 		Ingress: VClusterIngress{
@@ -434,8 +494,12 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		},
 	}
 
+	if uCluster.Spec.APIServer.Image != "" {
+		vclusterK3sHelmValues.VCluster.Image = uCluster.Spec.APIServer.Image
+	}
+
 	if uCluster.Spec.Ingress.Host != "" {
-		uClusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []VClusterPluginEnv{
+		vclusterK3sHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []Env{
 			{
 				Name:  "VCLUSTER_INGRESS_HOST",
 				Value: VClusterIngressHostname,
@@ -444,9 +508,9 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	}
 
 	if uCluster.Spec.ResourceQuota != nil {
-		// map uCluster.Spec.ResourceQuota to uClusterHelmValues.Isolation.ResourceQuota
+		// map uCluster.Spec.ResourceQuota to vclusterK3sHelmValues.Isolation.ResourceQuota
 		q := *uCluster.Spec.ResourceQuota
-		qHelmValues := uClusterHelmValues.Isolation.ResourceQuota
+		qHelmValues := vclusterK3sHelmValues.Isolation.ResourceQuota
 		// enabled
 		qHelmValues.Enabled = q.Enabled
 		//requests
@@ -469,13 +533,13 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		qHelmValues.Quota.CountSecrets = q.Count.Secrets
 		qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
 		// set it back
-		uClusterHelmValues.Isolation.ResourceQuota = qHelmValues
+		vclusterK3sHelmValues.Isolation.ResourceQuota = qHelmValues
 	}
 
 	if uCluster.Spec.LimitRange != nil {
 		// same for limit range
 		lr := uCluster.Spec.LimitRange
-		lrHelmValues := uClusterHelmValues.Isolation.LimitRange
+		lrHelmValues := vclusterK3sHelmValues.Isolation.LimitRange
 		// enabled
 		lrHelmValues.Enabled = lr.Enabled
 		// default
@@ -487,21 +551,17 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 		lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
 		lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
 		// set it back
-		uClusterHelmValues.Isolation.LimitRange = lrHelmValues
+		vclusterK3sHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	//if uCluster.Spec.Ingress.SyncFromManifests != nil {
-	//	uClusterHelmValues.Sync.Ingresses.Enabled = *uCluster.Spec.Ingress.SyncFromManifests
-	//}
-
-	uClusterHelmValues.Syncer.ExtraArgs = append(uClusterHelmValues.Syncer.ExtraArgs,
+	vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
 		"--tls-san="+VClusterIngressHostname,
 		"--out-kube-config-server="+OutKubeConfigServerArgValue,
 	)
 
 	if uCluster.Spec.Ingress.Services != nil {
 		for _, service := range uCluster.Spec.Ingress.Services {
-			uClusterHelmValues.MapServices.FromVirtual = append(uClusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
+			vclusterK3sHelmValues.MapServices.FromVirtual = append(vclusterK3sHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
 				From: service.Namespace + "/" + service.Name,
 				To:   helmReleaseName + "-" + service.Name,
 			})
@@ -509,15 +569,15 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 	}
 
 	if len(uCluster.Spec.Helm) > 0 {
-		uClusterHelmValues.Init.Helm = uCluster.Spec.Helm
+		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
 	}
 
 	if uCluster.Spec.Manifests != nil {
-		uClusterHelmValues.Init.Manifests = *uCluster.Spec.Manifests
+		vclusterK3sHelmValues.Init.Manifests = *uCluster.Spec.Manifests
 	}
 
 	// marshal HelmValues struct to JSON
-	helmValuesRaw, err := json.Marshal(uClusterHelmValues)
+	helmValuesRaw, err := json.Marshal(vclusterK3sHelmValues)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal HelmValues struct to JSON")
 	}
@@ -537,8 +597,276 @@ func (r *UffizziClusterReconciler) upsertVClusterHelmRelease(update bool, ctx co
 			},
 			Chart: fluxhelmv2beta1.HelmChartTemplate{
 				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
-					Chart:   VCLUSTER_CHART,
-					Version: VCLUSTER_CHART_VERSION,
+					Chart:   VCLUSTER_CHART_K3S,
+					Version: VCLUSTER_CHART_K3S_VERSION,
+					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
+						Kind:      "HelmRepository",
+						Name:      LOFT_HELM_REPO,
+						Namespace: uCluster.Namespace,
+					},
+				},
+			},
+			ReleaseName: helmReleaseName,
+			Values:      &helmValuesJSONObj,
+		},
+	}
+
+	if err := controllerutil.SetControllerReference(uCluster, newHelmRelease, r.Scheme); err != nil {
+		return nil, errors.Wrap(err, "failed to set controller reference")
+	}
+	// get the helm release spec in string
+	newHelmReleaseSpecBytes, err := json.Marshal(newHelmRelease.Spec)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to marshal current spec")
+	}
+	newHelmReleaseSpec := string(newHelmReleaseSpecBytes)
+	// upsert
+	if !update && uCluster.Status.LastAppliedHelmReleaseSpec == nil {
+		if err := r.Create(ctx, newHelmRelease); err != nil {
+			return nil, errors.Wrap(err, "failed to create HelmRelease")
+		}
+		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
+		if err := r.Status().Update(ctx, uCluster); err != nil {
+			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
+		}
+
+	} else if uCluster.Status.LastAppliedHelmReleaseSpec != nil {
+		// create helm release if there is no existing helm release to update
+		if update && *uCluster.Status.LastAppliedHelmReleaseSpec != newHelmReleaseSpec {
+			if err := r.updateHelmRelease(newHelmRelease, uCluster, ctx); err != nil {
+				return nil, errors.Wrap(err, "failed to update HelmRelease")
+			}
+			return nil, errors.Wrap(err, "couldn't update HelmRelease as LastAppliedHelmReleaseSpec does not exist on resource")
+		}
+	}
+
+	return newHelmRelease, nil
+}
+
+func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
+	var (
+		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
+		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
+	)
+
+	vclusterHelmValues := VClusterK8S{
+		APIServer: VClusterK8SAPIServer{
+			Image: "registry.k8s.io/kube-apiserver:v1.26.1",
+			Resources: VClusterContainerResources{
+				Requests: VClusterContainerResourcesRequests{
+					Cpu:    "40m",
+					Memory: "300Mi",
+				},
+			},
+		},
+		Init:    VClusterInit{},
+		FsGroup: 12345,
+		Ingress: VClusterIngress{
+			Enabled: true,
+			Host:    VClusterIngressHostname,
+			Annotations: map[string]string{
+				"app.uffizzi.com/ingress-sync": "true",
+			},
+		},
+		Isolation: VClusterIsolation{
+			Enabled:             true,
+			PodSecurityStandard: "baseline",
+			ResourceQuota: VClusterResourceQuota{
+				Enabled: true,
+				Quota: VClusterResourceQuotaDefiniton{
+					RequestsCpu:                 "10",
+					RequestsMemory:              "20Gi",
+					RequestsEphemeralStorage:    "60Gi",
+					RequestsStorage:             "100Gi",
+					LimitsCpu:                   "20",
+					LimitsMemory:                "40Gi",
+					LimitsEphemeralStorage:      "160Gi",
+					ServicesLoadbalancers:       5,
+					ServicesNodePorts:           0,
+					CountEndpoints:              40,
+					CountConfigmaps:             100,
+					CountPersistentVolumeClaims: 20,
+					CountPods:                   20,
+					CountSecrets:                100,
+					CountServices:               20,
+				},
+			},
+			LimitRange: VClusterLimitRange{
+				Enabled: true,
+				Default: LimitRangeResources{
+					Cpu:              "1",
+					Memory:           "512Mi",
+					EphemeralStorage: "8Gi",
+				},
+				DefaultRequest: LimitRangeResources{
+					Cpu:              "100m",
+					Memory:           "128Mi",
+					EphemeralStorage: "3Gi",
+				},
+			},
+		},
+		NodeSelector: VClusterNodeSelector{
+			SandboxGKEIORuntime: "gvisor",
+		},
+		SecurityContext: VClusterSecurityContext{
+			Capabilities: VClusterSecurityContextCapabilities{
+				Drop: []string{"all"},
+			},
+		},
+		Tolerations: []VClusterToleration{
+			{
+				Key:      "sandbox.gke.io/runtime",
+				Effect:   "NoSchedule",
+				Operator: "Exists",
+			},
+		},
+		Plugin: VClusterPlugins{
+			VClusterPlugin{
+				Image:           "uffizzi/ucluster-sync-plugin:v0.2.4",
+				ImagePullPolicy: "IfNotPresent",
+				Rbac: VClusterRbac{
+					Role: VClusterRbacRole{
+						ExtraRules: []VClusterRbacRule{
+							{
+								ApiGroups: []string{"networking.k8s.io"},
+								Resources: []string{"ingresses"},
+								Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+							},
+						},
+					},
+					ClusterRole: VClusterRbacClusterRole{
+						ExtraRules: []VClusterRbacRule{
+							{
+								ApiGroups: []string{"apiextensions.k8s.io"},
+								Resources: []string{"customresourcedefinitions"},
+								Verbs:     []string{"patch", "update", "get", "list", "watch"},
+							},
+						},
+					},
+				},
+			},
+		},
+		Syncer: VClusterSyncer{
+			KubeConfigContextName: helmReleaseName,
+			ExtraArgs: []string{
+				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
+				"--node-selector=sandbox.gke.io/runtime=gvisor",
+				"--enforce-node-selector",
+			},
+		},
+		Sync: VClusterSync{
+			Ingresses: EnabledBool{
+				Enabled: false,
+			},
+		},
+	}
+
+	if uCluster.Spec.APIServer.Image != "" {
+		vclusterHelmValues.APIServer.Image = uCluster.Spec.APIServer.Image
+	}
+
+	if uCluster.Spec.Ingress.Host != "" {
+		vclusterHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []Env{
+			{
+				Name:  "VCLUSTER_INGRESS_HOST",
+				Value: VClusterIngressHostname,
+			},
+		}
+	}
+
+	if uCluster.Spec.ResourceQuota != nil {
+		// map uCluster.Spec.ResourceQuota to vclusterHelmValues.Isolation.ResourceQuota
+		q := *uCluster.Spec.ResourceQuota
+		qHelmValues := vclusterHelmValues.Isolation.ResourceQuota
+		// enabled
+		qHelmValues.Enabled = q.Enabled
+		//requests
+		qHelmValues.Quota.RequestsMemory = q.Requests.Memory
+		qHelmValues.Quota.RequestsCpu = q.Requests.CPU
+		qHelmValues.Quota.RequestsEphemeralStorage = q.Requests.EphemeralStorage
+		qHelmValues.Quota.RequestsStorage = q.Requests.Storage
+		// limits
+		qHelmValues.Quota.LimitsMemory = q.Limits.Memory
+		qHelmValues.Quota.LimitsCpu = q.Limits.CPU
+		qHelmValues.Quota.LimitsEphemeralStorage = q.Limits.EphemeralStorage
+		// services
+		qHelmValues.Quota.ServicesNodePorts = q.Services.NodePorts
+		qHelmValues.Quota.ServicesLoadbalancers = q.Services.LoadBalancers
+		// count
+		qHelmValues.Quota.CountPods = q.Count.Pods
+		qHelmValues.Quota.CountServices = q.Count.Services
+		qHelmValues.Quota.CountPersistentVolumeClaims = q.Count.PersistentVolumeClaims
+		qHelmValues.Quota.CountConfigmaps = q.Count.ConfigMaps
+		qHelmValues.Quota.CountSecrets = q.Count.Secrets
+		qHelmValues.Quota.CountEndpoints = q.Count.Endpoints
+		// set it back
+		vclusterHelmValues.Isolation.ResourceQuota = qHelmValues
+	}
+
+	if uCluster.Spec.LimitRange != nil {
+		// same for limit range
+		lr := uCluster.Spec.LimitRange
+		lrHelmValues := vclusterHelmValues.Isolation.LimitRange
+		// enabled
+		lrHelmValues.Enabled = lr.Enabled
+		// default
+		lrHelmValues.Default.Cpu = lr.Default.CPU
+		lrHelmValues.Default.Memory = lr.Default.Memory
+		lrHelmValues.Default.EphemeralStorage = lr.Default.EphemeralStorage
+		// default requests
+		lrHelmValues.DefaultRequest.Cpu = lr.DefaultRequest.CPU
+		lrHelmValues.DefaultRequest.Memory = lr.DefaultRequest.Memory
+		lrHelmValues.DefaultRequest.EphemeralStorage = lr.DefaultRequest.EphemeralStorage
+		// set it back
+		vclusterHelmValues.Isolation.LimitRange = lrHelmValues
+	}
+
+	vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
+		"--tls-san="+VClusterIngressHostname,
+		"--out-kube-config-server="+OutKubeConfigServerArgValue,
+	)
+
+	if uCluster.Spec.Ingress.Services != nil {
+		for _, service := range uCluster.Spec.Ingress.Services {
+			vclusterHelmValues.MapServices.FromVirtual = append(vclusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
+				From: service.Namespace + "/" + service.Name,
+				To:   helmReleaseName + "-" + service.Name,
+			})
+		}
+	}
+
+	if len(uCluster.Spec.Helm) > 0 {
+		vclusterHelmValues.Init.Helm = uCluster.Spec.Helm
+	}
+
+	if uCluster.Spec.Manifests != nil {
+		vclusterHelmValues.Init.Manifests = *uCluster.Spec.Manifests
+	}
+
+	// marshal HelmValues struct to JSON
+	helmValuesRaw, err := json.Marshal(vclusterHelmValues)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal HelmValues struct to JSON")
+	}
+
+	// Create the apiextensionsv1.JSON instance with the raw data
+	helmValuesJSONObj := v1.JSON{Raw: helmValuesRaw}
+
+	// Create a new HelmRelease
+	newHelmRelease := &fluxhelmv2beta1.HelmRelease{
+		ObjectMeta: ctrl.ObjectMeta{
+			Name:      helmReleaseName,
+			Namespace: uCluster.Namespace,
+		},
+		Spec: fluxhelmv2beta1.HelmReleaseSpec{
+			Upgrade: &fluxhelmv2beta1.Upgrade{
+				Force: false,
+			},
+			Chart: fluxhelmv2beta1.HelmChartTemplate{
+				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
+					Chart:   VCLUSTER_CHART_K8S,
+					Version: VCLUSTER_CHART_K8S_VERSION,
 					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
 						Kind:      "HelmRepository",
 						Name:      LOFT_HELM_REPO,

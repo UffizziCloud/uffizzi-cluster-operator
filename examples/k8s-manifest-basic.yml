@@ -1,10 +1,13 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: i11
+  name: i39
 spec:
+  distro: k8s
+  apiServer:
+    image: "registry.k8s.io/kube-apiserver:v1.26.1"
   ingress:
-    host: test.app.qa-gke.uffizzi.com
+    host: app.qa-gke.uffizzi.com
   resourceQuota:
     enabled: false
   limitRange:

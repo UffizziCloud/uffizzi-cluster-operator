@@ -45,6 +45,15 @@ spec:
           spec:
             description: UffizziClusterSpec defines the desired state of UffizziCluster
             properties:
+              apiServer:
+                description: UffizziClusterAPIServer defines the API server capabilities
+                  of the cluster
+                properties:
+                  image:
+                    type: string
+                type: object
+              distro:
+                type: string
               helm:
                 items:
                   properties:
