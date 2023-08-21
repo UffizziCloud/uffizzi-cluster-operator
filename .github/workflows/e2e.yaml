@@ -102,10 +102,10 @@ jobs:
           tar zxvf "${KREW}.tar.gz" &&
           ./"${KREW}" install krew
 
-          cd -
+          #cd -
 
           # install kuttl
-          kubectl krew install kuttl
+          ./"${KREW}" install kuttl
 
           if [[ ${RUNNER_DEBUG} == 1 ]]; then
             echo "`pwd`"
