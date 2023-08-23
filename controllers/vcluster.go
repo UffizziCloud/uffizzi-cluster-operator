@@ -51,12 +51,6 @@ type VClusterK8SAPIServer struct {
 // VClusterContainer - parameters to create the vcluster container with
 type VClusterContainer struct {
 	Image string `json:"image,omitempty"`
-	//Command      []string                        `json:"command,omitempty"`
-	//BaseArgs     []string                        `json:"baseArgs,omitempty"`
-	//ExtraArgs    []string                        `json:"extraArgs,omitempty"`
-	//Env          []VClusterContainerEnv          `json:"env,omitempty"`
-	//VolumeMounts []VClusterContainerVolumeMounts `json:"volumeMounts,omitempty"`
-	//Resources    VClusterContainerResources      `json:"resources,omitempty"`
 }
 
 type VClusterContainerResources struct {
@@ -176,6 +170,10 @@ type VClusterLimitRange struct {
 	DefaultRequest LimitRangeResources `json:"defaultRequest,omitempty"`
 }
 
+type VClusterNetworkPolicy struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
 type VClusterMapServicesFromVirtual struct {
 	From string `json:"from"`
 	To   string `json:"to"`
@@ -191,6 +189,7 @@ type VClusterIsolation struct {
 	PodSecurityStandard string                `json:"podSecurityStandard,omitempty"`
 	ResourceQuota       VClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange          VClusterLimitRange    `json:"limitRange,omitempty"`
+	NetworkPolicy       VClusterNetworkPolicy `json:"networkPolicy,omitempty"`
 }
 
 // VClusterNodeSelector - parameters to define the node selector of the cluster

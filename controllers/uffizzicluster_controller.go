@@ -399,6 +399,9 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 					EphemeralStorage: "3Gi",
 				},
 			},
+			NetworkPolicy: VClusterNetworkPolicy{
+				Enabled: false,
+			},
 		},
 		NodeSelector: VClusterNodeSelector{
 			SandboxGKEIORuntime: "gvisor",
