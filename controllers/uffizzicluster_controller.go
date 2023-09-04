@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
 	"time"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
@@ -137,19 +136,17 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			intialConditions = []metav1.Condition{
 				buildInitializingCondition(),
 			}
-			helmReleaseRef  = ""
-			exposedServices = []uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{}
-			host            = ""
-			kubeConfig      = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
+			helmReleaseRef = ""
+			host           = ""
+			kubeConfig     = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
 				SecretRef: &meta.SecretKeyReference{},
 			}
 		)
 		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
-			Conditions:      intialConditions,
-			HelmReleaseRef:  &helmReleaseRef,
-			ExposedServices: exposedServices,
-			Host:            &host,
-			KubeConfig:      kubeConfig,
+			Conditions:     intialConditions,
+			HelmReleaseRef: &helmReleaseRef,
+			Host:           &host,
+			KubeConfig:     kubeConfig,
 		}
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
@@ -197,23 +194,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 
 		uCluster.Status.Host = &vclusterIngressHost
-
-		// check if there are any services that need to be exposed from the vcluster
-		if uCluster.Spec.Ingress.Services != nil {
-			// Create the ingress for each service that is specified in the UffizziCluster services config
-			for _, service := range uCluster.Spec.Ingress.Services {
-				vclusterInternalServiceIngressStatus, err := r.createVClusterInternalServiceIngress(uCluster, service, ctx)
-				if err != nil {
-					logger.Error(err, "Failed to create ingress to vcluster internal service")
-					return ctrl.Result{}, err
-				}
-
-				// add the exposed service to the status
-				uCluster.Status.ExposedServices = append(uCluster.Status.ExposedServices,
-					*vclusterInternalServiceIngressStatus,
-				)
-			}
-		}
 
 		// reference the HelmRelease in the status
 		uCluster.Status.HelmReleaseRef = &helmReleaseName
@@ -309,38 +289,6 @@ func (r *UffizziClusterReconciler) createVClusterIngress(ctx context.Context, uC
 		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
 	}
 	return &ingressHost, nil
-}
-
-func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster, service uclusteruffizzicomv1alpha1.ExposedVClusterService, ctx context.Context) (*uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus, error) {
-	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
-
-	vclusterInternalServiceIngress := BuildVClusterInternalServiceIngress(service, uCluster, helmReleaseName)
-
-	// Let the ingresses be owned by UffizziCluster
-	if err := controllerutil.SetControllerReference(uCluster, vclusterInternalServiceIngress, r.Scheme); err != nil {
-		return nil, errors.Wrap(err, "Failed to set ownerReference for Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
-	}
-
-	if err := r.Create(ctx, vclusterInternalServiceIngress); err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			// If the Ingress already exists, update it
-			if err := r.Update(ctx, vclusterInternalServiceIngress); err != nil {
-				return nil, errors.Wrap(err, "Failed to update Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
-			}
-		} else {
-			return nil, errors.Wrap(err, "Failed to create Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
-		}
-	}
-
-	// Create the ingress status
-	vclusterInternalServiceHost := BuildVClusterInternalServiceIngressHost(uCluster)
-	status := &uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{
-		Name:      service.Name,
-		Namespace: service.Namespace,
-		Host:      vclusterInternalServiceHost,
-	}
-
-	return status, nil
 }
 
 func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {

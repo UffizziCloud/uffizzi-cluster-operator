@@ -412,11 +412,6 @@ func (in *UffizziClusterStatus) DeepCopyInto(out *UffizziClusterStatus) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.ExposedServices != nil {
-		in, out := &in.ExposedServices, &out.ExposedServices
-		*out = make([]ExposedVClusterServiceStatus, len(*in))
-		copy(*out, *in)
-	}
 	if in.LastAppliedConfiguration != nil {
 		in, out := &in.LastAppliedConfiguration, &out.LastAppliedConfiguration
 		*out = new(string)

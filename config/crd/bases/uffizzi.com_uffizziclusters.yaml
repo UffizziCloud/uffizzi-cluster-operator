@@ -304,21 +304,6 @@ spec:
                   - type
                   type: object
                 type: array
-              exposedServices:
-                items:
-                  properties:
-                    host:
-                      type: string
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                  required:
-                  - host
-                  - name
-                  - namespace
-                  type: object
-                type: array
               helmReleaseRef:
                 type: string
               host:
