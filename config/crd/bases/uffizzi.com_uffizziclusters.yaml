@@ -92,42 +92,8 @@ spec:
                 properties:
                   class:
                     type: string
-                  cluster:
-                    properties:
-                      certManagerTLSEnabled:
-                        type: boolean
-                      ingressAnnotations:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
                   host:
                     type: string
-                  services:
-                    items:
-                      properties:
-                        certManagerTLSEnabled:
-                          type: boolean
-                        ingressAnnotations:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        name:
-                          type: string
-                        namespace:
-                          type: string
-                        port:
-                          format: int32
-                          type: integer
-                      required:
-                      - name
-                      - namespace
-                      - port
-                      type: object
-                    type: array
-                  syncFromManifests:
-                    default: true
-                    type: boolean
                 type: object
               limitRange:
                 properties:
@@ -302,21 +268,6 @@ spec:
                   - reason
                   - status
                   - type
-                  type: object
-                type: array
-              exposedServices:
-                items:
-                  properties:
-                    host:
-                      type: string
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                  required:
-                  - host
-                  - name
-                  - namespace
                   type: object
                 type: array
               helmReleaseRef:

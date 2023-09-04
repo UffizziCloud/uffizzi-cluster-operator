@@ -38,20 +38,6 @@ type HelmChart struct {
 	Release HelmReleaseInfo `json:"release"`
 }
 
-type ExposedVClusterService struct {
-	Name                  string            `json:"name"`
-	Namespace             string            `json:"namespace"`
-	Port                  int32             `json:"port"`
-	IngressAnnotations    map[string]string `json:"ingressAnnotations,omitempty"`
-	CertManagerTLSEnabled bool              `json:"certManagerTLSEnabled,omitempty"`
-}
-
-type ExposedVClusterServiceStatus struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-	Host      string `json:"host"`
-}
-
 type VClusterIngressSpec struct {
 	IngressAnnotations    map[string]string `json:"ingressAnnotations,omitempty"`
 	CertManagerTLSEnabled bool              `json:"certManagerTLSEnabled,omitempty"`
@@ -62,10 +48,6 @@ type VClusterIngressSpec struct {
 type UffizziClusterIngress struct {
 	Host  string `json:"host,omitempty"`
 	Class string `json:"class,omitempty"`
-	//+kubebuilder:default:=true
-	SyncFromManifests *bool                    `json:"syncFromManifests,omitempty"`
-	Cluster           VClusterIngressSpec      `json:"cluster,omitempty"`
-	Services          []ExposedVClusterService `json:"services,omitempty"`
 }
 
 // UffizziClusterAPIServer defines the API server capabilities of the cluster
@@ -171,13 +153,12 @@ type UffizziClusterSpec struct {
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
 type UffizziClusterStatus struct {
-	Conditions                 []metav1.Condition             `json:"conditions,omitempty"`
-	HelmReleaseRef             *string                        `json:"helmReleaseRef,omitempty"`
-	KubeConfig                 VClusterKubeConfig             `json:"kubeConfig,omitempty"`
-	Host                       *string                        `json:"host,omitempty"`
-	ExposedServices            []ExposedVClusterServiceStatus `json:"exposedServices,omitempty"`
-	LastAppliedConfiguration   *string                        `json:"lastAppliedConfiguration,omitempty"`
-	LastAppliedHelmReleaseSpec *string                        `json:"lastAppliedHelmReleaseSpec,omitempty"`
+	Conditions                 []metav1.Condition `json:"conditions,omitempty"`
+	HelmReleaseRef             *string            `json:"helmReleaseRef,omitempty"`
+	KubeConfig                 VClusterKubeConfig `json:"kubeConfig,omitempty"`
+	Host                       *string            `json:"host,omitempty"`
+	LastAppliedConfiguration   *string            `json:"lastAppliedConfiguration,omitempty"`
+	LastAppliedHelmReleaseSpec *string            `json:"lastAppliedHelmReleaseSpec,omitempty"`
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster

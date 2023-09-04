@@ -19,19 +19,22 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
 	"time"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
@@ -82,6 +85,9 @@ var (
 
 // add the ingress rbac
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+
+// add networkpolicy rbac
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
 // add services rbac
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
@@ -137,19 +143,17 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			intialConditions = []metav1.Condition{
 				buildInitializingCondition(),
 			}
-			helmReleaseRef  = ""
-			exposedServices = []uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{}
-			host            = ""
-			kubeConfig      = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
+			helmReleaseRef = ""
+			host           = ""
+			kubeConfig     = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
 				SecretRef: &meta.SecretKeyReference{},
 			}
 		)
 		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
-			Conditions:      intialConditions,
-			HelmReleaseRef:  &helmReleaseRef,
-			ExposedServices: exposedServices,
-			Host:            &host,
-			KubeConfig:      kubeConfig,
+			Conditions:     intialConditions,
+			HelmReleaseRef: &helmReleaseRef,
+			Host:           &host,
+			KubeConfig:     kubeConfig,
 		}
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
@@ -168,8 +172,15 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
+		// create egress policy for vcluster which will allow the vcluster to talk to the outside world
+		egressPolicy := r.buildEgressPolicy(uCluster)
+		if err := r.Create(ctx, egressPolicy); err != nil {
+			logger.Error(err, "Failed to create egress policy")
+			return ctrl.Result{Requeue: true}, err
+		}
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
+		// create either a k8s based vcluster or a k3s based vcluster
 		if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
 			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
 			if err != nil {
@@ -184,37 +195,14 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return ctrl.Result{Requeue: true}, err
 			}
 		}
-
+		// if newHelmRelease is still nil, then the upsert vcluster helm release upsert wasn't concluded
 		if newHelmRelease == nil {
 			return ctrl.Result{}, nil
 		}
 
-		// create the ingress for the vcluster
+		// get the ingress hostname for the vcluster
 		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
-		if err != nil {
-			logger.Error(err, "Failed to create ingress to vcluster internal service")
-			return ctrl.Result{}, err
-		}
-
 		uCluster.Status.Host = &vclusterIngressHost
-
-		// check if there are any services that need to be exposed from the vcluster
-		if uCluster.Spec.Ingress.Services != nil {
-			// Create the ingress for each service that is specified in the UffizziCluster services config
-			for _, service := range uCluster.Spec.Ingress.Services {
-				vclusterInternalServiceIngressStatus, err := r.createVClusterInternalServiceIngress(uCluster, service, ctx)
-				if err != nil {
-					logger.Error(err, "Failed to create ingress to vcluster internal service")
-					return ctrl.Result{}, err
-				}
-
-				// add the exposed service to the status
-				uCluster.Status.ExposedServices = append(uCluster.Status.ExposedServices,
-					*vclusterInternalServiceIngressStatus,
-				)
-			}
-		}
-
 		// reference the HelmRelease in the status
 		uCluster.Status.HelmReleaseRef = &helmReleaseName
 		uCluster.Status.KubeConfig.SecretRef = &meta.SecretKeyReference{
@@ -293,54 +281,67 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{Requeue: true}, nil
 }
 
+func (r *UffizziClusterReconciler) buildEgressPolicy(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) *networkingv1.NetworkPolicy {
+	port443 := intstr.FromInt(443)
+	port80 := intstr.FromInt(80)
+	TCP := corev1.ProtocolTCP
+	uClusterHelmReleaseName := BuildVClusterHelmReleaseName(uCluster)
+	egressPolicy := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-workloads-ingress", uClusterHelmReleaseName),
+			Namespace: uCluster.Namespace,
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			Egress: []networkingv1.NetworkPolicyEgressRule{
+				{
+					Ports: []networkingv1.NetworkPolicyPort{
+						{
+							Port:     &port443,
+							Protocol: &TCP,
+						},
+						{
+							Port:     &port80,
+							Protocol: &TCP,
+						},
+					},
+					To: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"app.kubernetes.io/component": "controller",
+									"app.kubernetes.io/name":      "ingress-nginx",
+								},
+							},
+						},
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"kubernetes.io/metadata.name": "uffizzi",
+								},
+							},
+						},
+					},
+				},
+			},
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"vcluster.loft.sh/managed-by": uClusterHelmReleaseName,
+				},
+			},
+			PolicyTypes: []networkingv1.PolicyType{
+				networkingv1.PolicyTypeEgress,
+			},
+		},
+	}
+	return egressPolicy
+}
+
 func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
 	return r.createHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace, LOFT_CHART_REPO_URL)
 }
 
 func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
 	return r.deleteHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace)
-}
-
-func (r *UffizziClusterReconciler) createVClusterIngress(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*string, error) {
-	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
-	clusterIngress := BuildVClusterIngress(helmReleaseName, uCluster)
-	ingressHost := BuildVClusterIngressHost(uCluster)
-	if err := controllerutil.SetControllerReference(uCluster, clusterIngress, r.Scheme); err != nil {
-		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
-	}
-	return &ingressHost, nil
-}
-
-func (r *UffizziClusterReconciler) createVClusterInternalServiceIngress(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster, service uclusteruffizzicomv1alpha1.ExposedVClusterService, ctx context.Context) (*uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus, error) {
-	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
-
-	vclusterInternalServiceIngress := BuildVClusterInternalServiceIngress(service, uCluster, helmReleaseName)
-
-	// Let the ingresses be owned by UffizziCluster
-	if err := controllerutil.SetControllerReference(uCluster, vclusterInternalServiceIngress, r.Scheme); err != nil {
-		return nil, errors.Wrap(err, "Failed to set ownerReference for Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
-	}
-
-	if err := r.Create(ctx, vclusterInternalServiceIngress); err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			// If the Ingress already exists, update it
-			if err := r.Update(ctx, vclusterInternalServiceIngress); err != nil {
-				return nil, errors.Wrap(err, "Failed to update Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
-			}
-		} else {
-			return nil, errors.Wrap(err, "Failed to create Ingress for internal service "+service.Name+" in namespace "+service.Namespace)
-		}
-	}
-
-	// Create the ingress status
-	vclusterInternalServiceHost := BuildVClusterInternalServiceIngressHost(uCluster)
-	status := &uclusteruffizzicomv1alpha1.ExposedVClusterServiceStatus{
-		Name:      service.Name,
-		Namespace: service.Namespace,
-		Host:      vclusterInternalServiceHost,
-	}
-
-	return status, nil
 }
 
 func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
@@ -400,7 +401,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 				},
 			},
 			NetworkPolicy: VClusterNetworkPolicy{
-				Enabled: false,
+				Enabled: true,
 			},
 		},
 		NodeSelector: VClusterNodeSelector{
@@ -523,15 +524,6 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 		"--tls-san="+VClusterIngressHostname,
 		"--out-kube-config-server="+OutKubeConfigServerArgValue,
 	)
-
-	if uCluster.Spec.Ingress.Services != nil {
-		for _, service := range uCluster.Spec.Ingress.Services {
-			vclusterK3sHelmValues.MapServices.FromVirtual = append(vclusterK3sHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
-				From: service.Namespace + "/" + service.Name,
-				To:   helmReleaseName + "-" + service.Name,
-			})
-		}
-	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
@@ -791,15 +783,6 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 		"--tls-san="+VClusterIngressHostname,
 		"--out-kube-config-server="+OutKubeConfigServerArgValue,
 	)
-
-	if uCluster.Spec.Ingress.Services != nil {
-		for _, service := range uCluster.Spec.Ingress.Services {
-			vclusterHelmValues.MapServices.FromVirtual = append(vclusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
-				From: service.Namespace + "/" + service.Name,
-				To:   helmReleaseName + "-" + service.Name,
-			})
-		}
-	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterHelmValues.Init.Helm = uCluster.Spec.Helm
