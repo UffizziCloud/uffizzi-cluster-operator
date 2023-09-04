@@ -92,16 +92,6 @@ spec:
                 properties:
                   class:
                     type: string
-                  cluster:
-                    default: true
-                    properties:
-                      certManagerTLSEnabled:
-                        type: boolean
-                      ingressAnnotations:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
                   host:
                     type: string
                 type: object

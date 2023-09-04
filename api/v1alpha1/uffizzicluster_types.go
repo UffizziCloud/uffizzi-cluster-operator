@@ -38,20 +38,6 @@ type HelmChart struct {
 	Release HelmReleaseInfo `json:"release"`
 }
 
-type ExposedVClusterService struct {
-	Name                  string            `json:"name"`
-	Namespace             string            `json:"namespace"`
-	Port                  int32             `json:"port"`
-	IngressAnnotations    map[string]string `json:"ingressAnnotations,omitempty"`
-	CertManagerTLSEnabled bool              `json:"certManagerTLSEnabled,omitempty"`
-}
-
-type ExposedVClusterServiceStatus struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-	Host      string `json:"host"`
-}
-
 type VClusterIngressSpec struct {
 	IngressAnnotations    map[string]string `json:"ingressAnnotations,omitempty"`
 	CertManagerTLSEnabled bool              `json:"certManagerTLSEnabled,omitempty"`
@@ -62,8 +48,6 @@ type VClusterIngressSpec struct {
 type UffizziClusterIngress struct {
 	Host  string `json:"host,omitempty"`
 	Class string `json:"class,omitempty"`
-	//+kubebuilder:default:=true
-	Cluster VClusterIngressSpec `json:"cluster,omitempty"`
 }
 
 // UffizziClusterAPIServer defines the API server capabilities of the cluster
