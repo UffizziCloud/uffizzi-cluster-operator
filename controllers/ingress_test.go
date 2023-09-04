@@ -6,37 +6,6 @@ import (
 	"testing"
 )
 
-func TestBuildVClusterIngress(t *testing.T) {
-	// Test inputs
-	helmReleaseName := "test-release"
-	uCluster := &v1alpha1.UffizziCluster{
-		// Populate fields as necessary for your test
-	}
-
-	// Expected outputs
-	expectedName := helmReleaseName + "-ingress"
-	expectedNamespace := uCluster.Namespace
-	expectedAnnotations := map[string]string{}
-
-	// Call the function being tested
-	ingress := BuildVClusterIngress(helmReleaseName, uCluster)
-
-	// Assert that the outputs match the expected results
-	if ingress.ObjectMeta.Name != expectedName {
-		t.Errorf("expected %v, got %v", expectedName, ingress.ObjectMeta.Name)
-	}
-
-	if ingress.ObjectMeta.Namespace != expectedNamespace {
-		t.Errorf("expected %v, got %v", expectedNamespace, ingress.ObjectMeta.Namespace)
-	}
-
-	for k, v := range expectedAnnotations {
-		if ingress.Annotations[k] != v {
-			t.Errorf("expected %v for key %v, got %v", v, k, ingress.Annotations[k])
-		}
-	}
-}
-
 func TestBuildVClusterIngressHost(t *testing.T) {
 	// Test inputs
 	uCluster := &v1alpha1.UffizziCluster{

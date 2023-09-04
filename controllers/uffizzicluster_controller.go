@@ -281,16 +281,6 @@ func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req c
 	return r.deleteHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace)
 }
 
-func (r *UffizziClusterReconciler) createVClusterIngress(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*string, error) {
-	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
-	clusterIngress := BuildVClusterIngress(helmReleaseName, uCluster)
-	ingressHost := BuildVClusterIngressHost(uCluster)
-	if err := controllerutil.SetControllerReference(uCluster, clusterIngress, r.Scheme); err != nil {
-		return nil, errors.Wrap(err, "Failed to create Cluster Ingress")
-	}
-	return &ingressHost, nil
-}
-
 func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
