@@ -525,15 +525,6 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 		"--out-kube-config-server="+OutKubeConfigServerArgValue,
 	)
 
-	if uCluster.Spec.Ingress.Services != nil {
-		for _, service := range uCluster.Spec.Ingress.Services {
-			vclusterK3sHelmValues.MapServices.FromVirtual = append(vclusterK3sHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
-				From: service.Namespace + "/" + service.Name,
-				To:   helmReleaseName + "-" + service.Name,
-			})
-		}
-	}
-
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
 	}
@@ -792,15 +783,6 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 		"--tls-san="+VClusterIngressHostname,
 		"--out-kube-config-server="+OutKubeConfigServerArgValue,
 	)
-
-	if uCluster.Spec.Ingress.Services != nil {
-		for _, service := range uCluster.Spec.Ingress.Services {
-			vclusterHelmValues.MapServices.FromVirtual = append(vclusterHelmValues.MapServices.FromVirtual, VClusterMapServicesFromVirtual{
-				From: service.Namespace + "/" + service.Name,
-				To:   helmReleaseName + "-" + service.Name,
-			})
-		}
-	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterHelmValues.Init.Helm = uCluster.Spec.Helm
