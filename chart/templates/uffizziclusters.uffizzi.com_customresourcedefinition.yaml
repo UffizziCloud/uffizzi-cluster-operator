@@ -189,6 +189,8 @@ spec:
                 required:
                 - enabled
                 type: object
+              sleep:
+                type: boolean
               ttl:
                 type: string
             type: object

@@ -20,8 +20,11 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/fluxcd/pkg/apis/meta"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -73,6 +76,9 @@ var (
 //+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories/finalizers,verbs=update
+
+// add statefulset rbac
+//+kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 
 // add the ingress rbac
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
@@ -269,9 +275,68 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if updatedHelmRelease == nil {
 		return ctrl.Result{}, nil
 	}
+	// ----------------------
+	// UCLUSTER SLEEP
+	// ----------------------
+	// get the stateful set created by the helm chart
+	ucStatefulSet := &appsv1.StatefulSet{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      BuildVClusterHelmReleaseName(uCluster),
+		Namespace: req.NamespacedName.Namespace}, ucStatefulSet); err != nil {
+		logger.Error(err, "Failed to get UffizziCluster StatefulSet")
+		return ctrl.Result{}, err
+	}
+	// get the current replicas
+	currentReplicas := ucStatefulSet.Spec.Replicas
+	// scale the vcluster instance to 0 if the sleep flag is true
+	if uCluster.Spec.Sleep && *currentReplicas > 0 {
+		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 0); err != nil {
+			logger.Error(err, "Failed to scale down UffizziCluster StatefulSet")
+			return ctrl.Result{}, err
+		}
+		logger.Info("UffizziCluster StatefulSet scaled down to 0")
+		err := r.deleteWorkloads(ctx, uCluster)
+		if err != nil {
+			logger.Error(err, "Failed to delete vcluster workloads")
+			return ctrl.Result{}, err
+		}
+		// if the current replicas is 0, then do nothing
+	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
+		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 1); err != nil {
+			logger.Error(err, "Failed to scale up UffizziCluster StatefulSet")
+			return ctrl.Result{}, err
+		}
+		logger.Info("UffizziCluster StatefulSet scaled up to 1")
+	}
 
 	// Requeue the request to check the status
 	return ctrl.Result{Requeue: true}, nil
+}
+
+// scaleStatefulSet scales the stateful set to the given scale
+func (r *UffizziClusterReconciler) scaleStatefulSet(ctx context.Context, ucStatefulSet *appsv1.StatefulSet, scale int) error {
+	// if the current replicas is greater than 0, then scale down to 0
+	replicas := int32(scale)
+	// scale down to 0
+	ucStatefulSet.Spec.Replicas = &replicas
+	return r.Update(ctx, ucStatefulSet)
+}
+
+// deleteWorkloads deletes all the workloads created by the vcluster
+func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *uclusteruffizzicomv1alpha1.UffizziCluster) error {
+	// delete pods with labels
+	podList := &corev1.PodList{}
+	if err := r.List(ctx, podList, client.InNamespace(uc.Namespace), client.MatchingLabels(map[string]string{
+		"vcluster.loft.sh/managed-by": BuildVClusterHelmReleaseName(uc),
+	})); err != nil {
+		return err
+	}
+	for _, pod := range podList.Items {
+		if err := r.Delete(ctx, &pod); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -149,6 +149,7 @@ type UffizziClusterSpec struct {
 	Manifests     *string                      `json:"manifests,omitempty"`
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
+	Sleep         bool                         `json:"sleep,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
