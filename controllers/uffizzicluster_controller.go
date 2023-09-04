@@ -19,12 +19,16 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -81,6 +85,9 @@ var (
 
 // add the ingress rbac
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+
+// add networkpolicy rbac
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
 // add services rbac
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
@@ -165,8 +172,15 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
+		// create egress policy for vcluster which will allow the vcluster to talk to the outside world
+		egressPolicy := r.buildEgressPolicy(uCluster)
+		if err := r.Create(ctx, egressPolicy); err != nil {
+			logger.Error(err, "Failed to create egress policy")
+			return ctrl.Result{Requeue: true}, err
+		}
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
+		// create either a k8s based vcluster or a k3s based vcluster
 		if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
 			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
 			if err != nil {
@@ -181,20 +195,14 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return ctrl.Result{Requeue: true}, err
 			}
 		}
-
+		// if newHelmRelease is still nil, then the upsert vcluster helm release upsert wasn't concluded
 		if newHelmRelease == nil {
 			return ctrl.Result{}, nil
 		}
 
-		// create the ingress for the vcluster
+		// get the ingress hostname for the vcluster
 		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
-		if err != nil {
-			logger.Error(err, "Failed to create ingress to vcluster internal service")
-			return ctrl.Result{}, err
-		}
-
 		uCluster.Status.Host = &vclusterIngressHost
-
 		// reference the HelmRelease in the status
 		uCluster.Status.HelmReleaseRef = &helmReleaseName
 		uCluster.Status.KubeConfig.SecretRef = &meta.SecretKeyReference{
@@ -271,6 +279,61 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Requeue the request to check the status
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *UffizziClusterReconciler) buildEgressPolicy(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) *networkingv1.NetworkPolicy {
+	port443 := intstr.FromInt(443)
+	port80 := intstr.FromInt(80)
+	TCP := corev1.ProtocolTCP
+	uClusterHelmReleaseName := BuildVClusterHelmReleaseName(uCluster)
+	egressPolicy := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-workloads-ingress", uClusterHelmReleaseName),
+			Namespace: uCluster.Namespace,
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			Egress: []networkingv1.NetworkPolicyEgressRule{
+				{
+					Ports: []networkingv1.NetworkPolicyPort{
+						{
+							Port:     &port443,
+							Protocol: &TCP,
+						},
+						{
+							Port:     &port80,
+							Protocol: &TCP,
+						},
+					},
+					To: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"app.kubernetes.io/component": "controller",
+									"app.kubernetes.io/name":      "ingress-nginx",
+								},
+							},
+						},
+						{
+							NamespaceSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"kubernetes.io/metadata.name": "uffizzi",
+								},
+							},
+						},
+					},
+				},
+			},
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"vcluster.loft.sh/managed-by": uClusterHelmReleaseName,
+				},
+			},
+			PolicyTypes: []networkingv1.PolicyType{
+				networkingv1.PolicyTypeEgress,
+			},
+		},
+	}
+	return egressPolicy
 }
 
 func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
