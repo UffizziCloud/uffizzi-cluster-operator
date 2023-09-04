@@ -348,7 +348,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 				},
 			},
 			NetworkPolicy: VClusterNetworkPolicy{
-				Enabled: false,
+				Enabled: true,
 			},
 		},
 		NodeSelector: VClusterNodeSelector{
