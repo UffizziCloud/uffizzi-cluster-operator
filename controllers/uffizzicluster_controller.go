@@ -105,7 +105,10 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 	logger := log.FromContext(ctx)
 
-	// Fetch the UffizziCluster instance in question
+	// ----------------------
+	// UCLUSTER INIT and LIFECYCLE OP TYPE determination
+	// ----------------------
+	// Fetch the UffizziCluster instance in question and then see which kind of event might have been triggered
 	uCluster := &uclusteruffizzicomv1alpha1.UffizziCluster{}
 	if err := r.Get(ctx, req.NamespacedName, uCluster); err != nil {
 		// possibly a delete event
@@ -118,7 +121,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// Handle error
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
+	// if a new ucluster has been created then set the status to have the current ingress spec
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
 		currentSpecBytes, err := json.Marshal(uCluster.Spec)
 		if err != nil {
@@ -127,7 +130,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 		currentSpec = string(currentSpecBytes)
 	}
-
 	// Set default values for the status if it is not already set
 	if len(uCluster.Status.Conditions) == 0 {
 		var (
@@ -152,6 +154,9 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
+	// ----------------------
+	// UCLUSTER HELM CHART and RELATED RESOURCES _CREATION_
+	// ----------------------
 	// Check if there is already exists a VClusterK3S HelmRelease for this UCluster, if not create one
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	helmRelease := &fluxhelmv2beta1.HelmRelease{}
@@ -160,7 +165,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Namespace: uCluster.Namespace,
 		Name:      helmReleaseName,
 	}
-
+	// check if the helm release already exists
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
 	if err != nil && k8serrors.IsNotFound(err) {
 		// create egress policy for vcluster which will allow the vcluster to talk to the outside world
@@ -190,7 +195,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if newHelmRelease == nil {
 			return ctrl.Result{}, nil
 		}
-
 		// get the ingress hostname for the vcluster
 		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
 		uCluster.Status.Host = &vclusterIngressHost
@@ -203,7 +207,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
-
 		logger.Info("Created HelmRelease", "HelmRelease", newHelmRelease.Name)
 	} else if err != nil {
 		logger.Error(err, "Failed to create HelmRelease, unknown error")
@@ -218,14 +221,13 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			uClusterCondition.Message = helmMessage
 			uClusterConditions = append(uClusterConditions, uClusterCondition)
 		}
-
 		uCluster.Status.Conditions = uClusterConditions
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			//logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
 	}
-
+	// create helm repo for loft if it doesn't already exist
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
 		err := r.createLoftHelmRepo(ctx, req)
 		if err != nil && k8serrors.IsAlreadyExists(err) {
@@ -238,7 +240,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			logger.Error(err, "Failed to update the default UffizziCluster lastAppliedConfig")
 			return ctrl.Result{}, err
 		}
-
 		logger.Info("UffizziCluster lastAppliedConfig has been set")
 	} else if lifecycleOpType == LIFECYCLE_OP_TYPE_DELETE {
 		err := r.deleteLoftHelmRepo(ctx, req)
@@ -246,7 +247,9 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			logger.Info("Loft Helm Repo for UffizziCluster already deleted", "NamespacedName", req.NamespacedName)
 		}
 	}
-
+	// ----------------------
+	// UCLUSTER HELM CHART and RELATED RESOURCES _UPDATION_
+	// ----------------------
 	var updatedHelmRelease *fluxhelmv2beta1.HelmRelease
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
 		if currentSpec != lastAppliedSpec {
@@ -263,7 +266,6 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		}
 	}
-
 	if updatedHelmRelease == nil {
 		return ctrl.Result{}, nil
 	}
