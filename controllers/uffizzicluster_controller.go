@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/fluxcd/pkg/apis/meta"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
@@ -176,6 +178,9 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil && k8serrors.IsNotFound(err) {
 		// create egress policy for vcluster which will allow the vcluster to talk to the outside world
 		egressPolicy := r.buildEgressPolicy(uCluster)
+		if err := controllerutil.SetControllerReference(uCluster, egressPolicy, r.Scheme); err != nil {
+			return ctrl.Result{Requeue: true}, errors.Wrap(err, "failed to set controller reference")
+		}
 		if err := r.Create(ctx, egressPolicy); err != nil {
 			logger.Error(err, "Failed to create egress policy")
 			return ctrl.Result{Requeue: true}, err

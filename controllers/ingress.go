@@ -5,5 +5,9 @@ import (
 )
 
 func BuildVClusterIngressHost(uCluster *v1alpha1.UffizziCluster) string {
-	return uCluster.Name + "-" + uCluster.Spec.Ingress.Host
+	host := ""
+	if uCluster.Spec.Ingress.Host != "" {
+		host = uCluster.Name + "-" + uCluster.Spec.Ingress.Host
+	}
+	return host
 }
