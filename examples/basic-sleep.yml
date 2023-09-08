@@ -1,6 +1,6 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: basic-sleep
+  name: basic-sleep-1
 spec:
   sleep: false
