@@ -25,8 +25,12 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
 		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
-		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
+		OutKubeConfigServerArgValue = ""
 	)
+
+	if VClusterIngressHostname != "" {
+		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
+	}
 
 	vclusterK3sHelmValues := VClusterK3S{
 		VCluster: VClusterContainer{
