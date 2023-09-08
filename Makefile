@@ -179,8 +179,8 @@ build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to t
 	sed -i'' -e 's/name: manager-role/name: {{ include "common.names.fullname" . }}-manager-role/' chart/templates/manager-role_clusterrole.yaml
 	sed -i'' -e '/metadata:/a\
 	  labels: {{ include "common.labels.standard" . | nindent 4 }}\
-		app.kubernetes.io/component: rbac\
-		app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
+	    app.kubernetes.io/component: rbac\
+	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
 
 
 ##@ Build Dependencies
