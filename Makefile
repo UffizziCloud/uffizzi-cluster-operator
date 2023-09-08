@@ -167,9 +167,21 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 .PHONY: build-helm-chart
 build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	# update the crd
 	$(KUSTOMIZE) build config/crd > chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
 	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 	sed -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
+	# copy roles config
+	cp config/rbac/role.yaml chart/templates/manager-role_clusterrole.yaml
+	sed -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/manager-role_clusterrole.yaml
+	sed -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
+	sed -i'' -e '/creationTimestamp: null/d' chart/templates/manager-role_clusterrole.yaml
+	sed -i'' -e 's/name: manager-role/name: {{ include "common.names.fullname" . }}-manager-role/' chart/templates/manager-role_clusterrole.yaml
+	sed -i'' -e '/metadata:/a\
+	  labels: {{ include "common.labels.standard" . | nindent 4 }}\
+	    app.kubernetes.io/component: rbac\
+	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
+
 
 ##@ Build Dependencies
 
