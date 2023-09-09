@@ -264,6 +264,8 @@ spec:
                 type: string
               lastAppliedHelmReleaseSpec:
                 type: string
+              lastAwakeTime:
+                type: string
             type: object
         type: object
     served: true
