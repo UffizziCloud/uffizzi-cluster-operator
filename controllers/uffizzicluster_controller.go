@@ -282,8 +282,12 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// UCLUSTER SLEEP
 	// ----------------------
 	if err := r.reconcileSleepState(ctx, uCluster); err != nil {
+		if k8serrors.IsNotFound(err) {
+			logger.Info("vcluster statefulset not found, requeueing")
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+		}
 		logger.Error(err, "Failed to reconcile sleep state")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
 	// Requeue the request to check the helm release status

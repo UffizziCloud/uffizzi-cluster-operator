@@ -16,6 +16,8 @@ const (
 // Reasons a resource is or is not ready.
 const (
 	ReasonInitializing = "Initializing"
+	ReasonSleeping     = "Sleeping"
+	ReasonAwoken       = "Awoken"
 )
 
 func Initializing() metav1.Condition {
@@ -30,10 +32,11 @@ func Initializing() metav1.Condition {
 
 func Sleeping(time metav1.Time) metav1.Condition {
 	return metav1.Condition{
-		Type:               TypeReady,
+		Type:               TypeSleep,
 		Status:             metav1.ConditionTrue,
-		Reason:             ReasonInitializing,
+		Reason:             ReasonSleeping,
 		LastTransitionTime: time,
+		Message:            "UffizziCluster put to sleep manually",
 	}
 }
 
@@ -41,8 +44,9 @@ func Awoken(time metav1.Time) metav1.Condition {
 	return metav1.Condition{
 		Type:               TypeSleep,
 		Status:             metav1.ConditionFalse,
-		Reason:             ReasonInitializing,
+		Reason:             ReasonAwoken,
 		LastTransitionTime: time,
+		Message:            "UffizziCluster awoken manually",
 	}
 }
 
