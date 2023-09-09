@@ -5,7 +5,7 @@ import (
 )
 
 func TestBuildInitializingCondition(t *testing.T) {
-	initCondition := buildInitializingCondition()
+	initCondition := Initializing()
 	if initCondition.Type != "Ready" {
 		t.Errorf("Expected Ready, got %s", initCondition.Type)
 	}

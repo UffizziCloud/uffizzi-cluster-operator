@@ -145,19 +145,21 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if len(uCluster.Status.Conditions) == 0 {
 		var (
 			intialConditions = []metav1.Condition{
-				buildInitializingCondition(),
+				Initializing(),
 			}
 			helmReleaseRef = ""
 			host           = ""
 			kubeConfig     = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
 				SecretRef: &meta.SecretKeyReference{},
 			}
+			lastAwakeTime = metav1.Now().String()
 		)
 		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
 			Conditions:     intialConditions,
 			HelmReleaseRef: &helmReleaseRef,
 			Host:           &host,
 			KubeConfig:     kubeConfig,
+			LastAwakeTime:  &lastAwakeTime,
 		}
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
@@ -228,14 +230,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	} else {
 		lifecycleOpType = LIFECYCLE_OP_TYPE_UPDATE
 		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
-		uClusterConditions := []metav1.Condition{}
-		for _, c := range helmRelease.Status.Conditions {
-			helmMessage := "[HelmRelease] " + c.Message
-			uClusterCondition := c
-			uClusterCondition.Message = helmMessage
-			uClusterConditions = append(uClusterConditions, uClusterCondition)
-		}
-		uCluster.Status.Conditions = uClusterConditions
+		mirrorHelmReleaseConditions(helmRelease, uCluster)
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			//logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
@@ -286,39 +281,51 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// ----------------------
 	// UCLUSTER SLEEP
 	// ----------------------
+	if err := r.reconcileSleepState(ctx, uCluster); err != nil {
+		logger.Error(err, "Failed to reconcile sleep state")
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
+	}
+
+	// Requeue the request to check the helm release status
+	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) error {
 	// get the stateful set created by the helm chart
 	ucStatefulSet := &appsv1.StatefulSet{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      BuildVClusterHelmReleaseName(uCluster),
-		Namespace: req.NamespacedName.Namespace}, ucStatefulSet); err != nil {
-		logger.Error(err, "Failed to get UffizziCluster StatefulSet")
-		return ctrl.Result{}, err
+		Namespace: uCluster.Namespace}, ucStatefulSet); err != nil {
+		return err
 	}
 	// get the current replicas
 	currentReplicas := ucStatefulSet.Spec.Replicas
 	// scale the vcluster instance to 0 if the sleep flag is true
 	if uCluster.Spec.Sleep && *currentReplicas > 0 {
 		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 0); err != nil {
-			logger.Error(err, "Failed to scale down UffizziCluster StatefulSet")
-			return ctrl.Result{}, err
+			return err
 		}
-		logger.Info("UffizziCluster StatefulSet scaled down to 0")
 		err := r.deleteWorkloads(ctx, uCluster)
 		if err != nil {
-			logger.Error(err, "Failed to delete vcluster workloads")
-			return ctrl.Result{}, err
+			return err
 		}
+		sleepingTime := metav1.Now()
+		setCondition(uCluster, Sleeping(sleepingTime))
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
 		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 1); err != nil {
-			logger.Error(err, "Failed to scale up UffizziCluster StatefulSet")
-			return ctrl.Result{}, err
+			return err
 		}
-		logger.Info("UffizziCluster StatefulSet scaled up to 1")
+		// set status for vcluster waking up
+		lastAwakeTime := metav1.Now()
+		lastAwakeTimeString := lastAwakeTime.String()
+		uCluster.Status.LastAwakeTime = &lastAwakeTimeString
+		setCondition(uCluster, Awoken(lastAwakeTime))
 	}
-
-	// Requeue the request to check the status
-	return ctrl.Result{Requeue: true}, nil
+	if err := r.Status().Update(ctx, uCluster); err != nil {
+		return err
+	}
+	return nil
 }
 
 // scaleStatefulSet scales the stateful set to the given scale
