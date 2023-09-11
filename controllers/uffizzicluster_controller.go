@@ -313,7 +313,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		if err != nil {
 			return err
 		}
-		sleepingTime := metav1.Now()
+		sleepingTime := metav1.Now().Rfc3339Copy()
 		setCondition(uCluster, Sleeping(sleepingTime))
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
@@ -321,7 +321,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 			return err
 		}
 		// set status for vcluster waking up
-		lastAwakeTime := metav1.Now()
+		lastAwakeTime := metav1.Now().Rfc3339Copy()
 		lastAwakeTimeString := lastAwakeTime.String()
 		uCluster.Status.LastAwakeTime = &lastAwakeTimeString
 		setCondition(uCluster, Awoken(lastAwakeTime))
