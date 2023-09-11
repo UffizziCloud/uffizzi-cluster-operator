@@ -181,6 +181,7 @@ build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to t
 	    app.kubernetes.io/component: rbac\
 	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
 	# update chart versions
+	yq e -i '.version = "${VERSION}"' chart/Chart.yaml
 	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 	yq e -i '.image.tag = "v${VERSION}"' chart/values.yaml
 
