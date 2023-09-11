@@ -1,6 +1,6 @@
 #include tests/e2e/Makefile
 
-VERSION ?= 1.3.1
+VERSION ?= 1.3.2
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -169,9 +169,8 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	# update the crd
 	$(KUSTOMIZE) build config/crd > chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
-	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 	sed -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
-	# copy roles config
+	# update roles
 	cp config/rbac/role.yaml chart/templates/manager-role_clusterrole.yaml
 	sed -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/manager-role_clusterrole.yaml
 	sed -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
@@ -181,7 +180,9 @@ build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to t
 	  labels: {{ include "common.labels.standard" . | nindent 4 }}\
 	    app.kubernetes.io/component: rbac\
 	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
-
+	# update chart versions
+	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
+	yq e -i '.image.tag = "v${VERSION}"' chart/values.yaml
 
 ##@ Build Dependencies
 
