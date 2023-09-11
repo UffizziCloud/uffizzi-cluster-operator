@@ -303,6 +303,7 @@ spec:
               lastAppliedHelmReleaseSpec:
                 type: string
               lastAwakeTime:
+                format: date-time
                 type: string
             type: object
         type: object

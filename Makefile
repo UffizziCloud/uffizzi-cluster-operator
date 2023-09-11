@@ -1,6 +1,6 @@
 #include tests/e2e/Makefile
 
-VERSION ?= 1.3.2
+VERSION ?= 1.3.3
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")

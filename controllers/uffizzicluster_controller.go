@@ -152,14 +152,14 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			kubeConfig     = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
 				SecretRef: &meta.SecretKeyReference{},
 			}
-			lastAwakeTime = metav1.Now().String()
+			lastAwakeTime = metav1.Now().Rfc3339Copy()
 		)
 		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
 			Conditions:     intialConditions,
 			HelmReleaseRef: &helmReleaseRef,
 			Host:           &host,
 			KubeConfig:     kubeConfig,
-			LastAwakeTime:  &lastAwakeTime,
+			LastAwakeTime:  lastAwakeTime,
 		}
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
@@ -322,8 +322,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		}
 		// set status for vcluster waking up
 		lastAwakeTime := metav1.Now().Rfc3339Copy()
-		lastAwakeTimeString := lastAwakeTime.String()
-		uCluster.Status.LastAwakeTime = &lastAwakeTimeString
+		uCluster.Status.LastAwakeTime = lastAwakeTime
 		setCondition(uCluster, Awoken(lastAwakeTime))
 	}
 	if err := r.Status().Update(ctx, uCluster); err != nil {
