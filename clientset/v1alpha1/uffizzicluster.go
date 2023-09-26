@@ -22,8 +22,14 @@ type UffizziClusterClient struct {
 }
 
 type UffizziClusterProps struct {
-	Name string
-	Spec v1alpha1.UffizziClusterSpec
+	Name        string
+	Spec        v1alpha1.UffizziClusterSpec
+	Annotations map[string]string
+}
+
+type UpdateUffizziClusterProps struct {
+	Spec        v1alpha1.UffizziClusterSpec
+	Annotations map[string]string
 }
 
 func (c *UffizziClusterClient) List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error) {
@@ -59,7 +65,8 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 			APIVersion: "uffizzi.com/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterProps.Name,
+			Name:        clusterProps.Name,
+			Annotations: clusterProps.Annotations,
 		},
 		Spec: clusterProps.Spec,
 	}
@@ -69,6 +76,28 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		Post().
 		Namespace(c.ns).
 		Resource("UffizziClusters").
+		Body(&uffizziCluster).
+		Do(context.TODO()).
+		Into(&result)
+
+	return &result, err
+}
+
+func (c *UffizziClusterClient) Update(name string, updateClusterProps UpdateUffizziClusterProps) (*v1alpha1.UffizziCluster, error) {
+	uffizziCluster := v1alpha1.UffizziCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: updateClusterProps.Annotations,
+		},
+		Spec: updateClusterProps.Spec,
+	}
+
+	result := v1alpha1.UffizziCluster{}
+	err := c.restClient.
+		Put().
+		Namespace(c.ns).
+		Resource("UffizziClusters").
+		Name(name).
 		Body(&uffizziCluster).
 		Do(context.TODO()).
 		Into(&result)
