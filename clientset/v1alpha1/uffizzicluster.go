@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,7 @@ type UffizziClusterInterface interface {
 	List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error)
 	Get(name string, options metav1.GetOptions) (*v1alpha1.UffizziCluster, error)
 	Create(UffizziClusterProps) (*v1alpha1.UffizziCluster, error)
+	Update(name string, updateClusterProps UpdateUffizziClusterProps) error
 	Delete(name string) error
 }
 
@@ -22,8 +24,20 @@ type UffizziClusterClient struct {
 }
 
 type UffizziClusterProps struct {
-	Name string
-	Spec v1alpha1.UffizziClusterSpec
+	Name        string
+	Spec        v1alpha1.UffizziClusterSpec
+	Annotations map[string]string
+}
+
+type UpdateUffizziClusterProps struct {
+	Spec        v1alpha1.UffizziClusterSpec
+	Annotations map[string]string
+}
+
+type JSONPatchOperation struct {
+	Op    string      `json:"op"`
+	Path  string      `json:"path"`
+	Value interface{} `json:"value,omitempty"`
 }
 
 func (c *UffizziClusterClient) List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error) {
@@ -59,7 +73,8 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 			APIVersion: "uffizzi.com/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterProps.Name,
+			Name:        clusterProps.Name,
+			Annotations: clusterProps.Annotations,
 		},
 		Spec: clusterProps.Spec,
 	}
@@ -74,6 +89,55 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		Into(&result)
 
 	return &result, err
+}
+
+func (c *UffizziClusterClient) Update(
+	name string,
+	updateClusterProps UpdateUffizziClusterProps,
+) error {
+	uffizziCluster := &v1alpha1.UffizziCluster{}
+
+	err := c.restClient.
+		Get().
+		Namespace(c.ns).
+		Resource("UffizziClusters").
+		Name(name).
+		Do(context.TODO()).
+		Into(uffizziCluster)
+
+	if err != nil {
+		return err
+	}
+
+	resourceVersion := uffizziCluster.ObjectMeta.ResourceVersion
+
+	uffizziCluster.Spec = updateClusterProps.Spec
+	uffizziCluster.ObjectMeta.Annotations = updateClusterProps.Annotations
+	uffizziCluster.TypeMeta = metav1.TypeMeta{
+		Kind:       "UffizziCluster",
+		APIVersion: "uffizzi.com/v1alpha1",
+	}
+
+	updatedJSON, err := json.Marshal(uffizziCluster)
+	if err != nil {
+		return err
+	}
+
+	result := c.restClient.
+		Put().
+		Namespace(c.ns).
+		Resource("UffizziClusters").
+		Name(name).
+		Body(updatedJSON).
+		Param("resourceVersion", resourceVersion).
+		SetHeader("Content-Type", "application/json").
+		Do(context.TODO())
+
+	if result.Error() != nil {
+		return result.Error()
+	}
+
+	return nil
 }
 
 func (c *UffizziClusterClient) Delete(name string) error {
