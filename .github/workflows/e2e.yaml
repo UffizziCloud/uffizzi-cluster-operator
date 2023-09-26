@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout git repo
         uses: actions/checkout@v3
+      - name: Lint Helm Chart
+        run: helm lint ./chart
       - name: Generate UUID image name
         id: uuid
         run: echo "UUID_OPERATOR=$(uuidgen)" >> $GITHUB_ENV
