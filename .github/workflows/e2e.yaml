@@ -22,7 +22,9 @@ jobs:
       - name: Checkout git repo
         uses: actions/checkout@v3
       - name: Lint Helm Chart
-        run: helm lint ./chart
+        run: |
+          (cd ./chart && helm dep update .)
+          helm lint ./chart --with-subcharts
       - name: Generate UUID image name
         id: uuid
         run: echo "UUID_OPERATOR=$(uuidgen)" >> $GITHUB_ENV
