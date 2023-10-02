@@ -3,10 +3,10 @@ package v1alpha1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
@@ -15,7 +15,7 @@ type UffizziClusterInterface interface {
 	List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error)
 	Get(name string, options metav1.GetOptions) (*v1alpha1.UffizziCluster, error)
 	Create(UffizziClusterProps) (*v1alpha1.UffizziCluster, error)
-	Update(name string, updateClusterProps UpdateUffizziClusterProps) error
+	Patch(name string, patchClusterProps PatchUffizziClusterProps) error
 	Delete(name string) error
 }
 
@@ -30,7 +30,7 @@ type UffizziClusterProps struct {
 	Annotations map[string]string
 }
 
-type UpdateUffizziClusterProps struct {
+type PatchUffizziClusterProps struct {
 	Spec        v1alpha1.UffizziClusterSpec
 	Annotations map[string]string
 }
@@ -92,10 +92,12 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 	return &result, err
 }
 
-func (c *UffizziClusterClient) Update(
+// The sleep mode only works if a patch is applied (not "update")
+func (c *UffizziClusterClient) Patch(
 	name string,
-	updateClusterProps UpdateUffizziClusterProps,
+	patchClusterProps PatchUffizziClusterProps,
 ) error {
+
 	uffizziCluster := &v1alpha1.UffizziCluster{}
 
 	err := c.restClient.
@@ -112,32 +114,37 @@ func (c *UffizziClusterClient) Update(
 
 	resourceVersion := uffizziCluster.ObjectMeta.ResourceVersion
 
-	uffizziCluster.Spec = updateClusterProps.Spec
-	uffizziCluster.ObjectMeta.Annotations = updateClusterProps.Annotations
-	uffizziCluster.TypeMeta = metav1.TypeMeta{
-		Kind:       "UffizziCluster",
-		APIVersion: "uffizzi.com/v1alpha1",
+	patchOps := []JSONPatchOperation{
+		JSONPatchOperation{
+			Op:    "replace",
+			Path:  "/spec/sleep",
+			Value: patchClusterProps.Spec.Sleep,
+		},
+		JSONPatchOperation{
+			Op:    "replace",
+			Path:  "/metadata/annotations",
+			Value: patchClusterProps.Annotations,
+		},
 	}
 
-	fmt.Sprintf("Updated cluster: %v", uffizziCluster)
-
-	updatedJSON, err := json.Marshal(uffizziCluster)
+	patchType := types.JSONPatchType
+	patchBytes, err := json.Marshal(patchOps)
 	if err != nil {
 		return err
 	}
 
-	result := c.restClient.
-		Put().
+	err = c.restClient.
+		Patch(patchType).
 		Namespace(c.ns).
 		Resource("UffizziClusters").
 		Name(name).
-		Body(updatedJSON).
+		Body(patchBytes).
 		Param("resourceVersion", resourceVersion).
-		SetHeader("Content-Type", "application/json").
-		Do(context.TODO())
+		Do(context.TODO()).
+		Error()
 
-	if result.Error() != nil {
-		return result.Error()
+	if err != nil {
+		return err
 	}
 
 	return nil
