@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,6 +118,8 @@ func (c *UffizziClusterClient) Update(
 		Kind:       "UffizziCluster",
 		APIVersion: "uffizzi.com/v1alpha1",
 	}
+
+	fmt.Sprintf("Updated cluster: %v", uffizziCluster)
 
 	updatedJSON, err := json.Marshal(uffizziCluster)
 	if err != nil {
