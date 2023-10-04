@@ -25,14 +25,12 @@ type UffizziClusterClient struct {
 }
 
 type UffizziClusterProps struct {
-	Name        string
-	Spec        v1alpha1.UffizziClusterSpec
-	Annotations map[string]string
+	Name string
+	Spec v1alpha1.UffizziClusterSpec
 }
 
 type PatchUffizziClusterProps struct {
-	Spec        v1alpha1.UffizziClusterSpec
-	Annotations map[string]string
+	Spec v1alpha1.UffizziClusterSpec
 }
 
 type JSONPatchOperation struct {
@@ -74,8 +72,7 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 			APIVersion: "uffizzi.com/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        clusterProps.Name,
-			Annotations: clusterProps.Annotations,
+			Name: clusterProps.Name,
 		},
 		Spec: clusterProps.Spec,
 	}
@@ -119,11 +116,6 @@ func (c *UffizziClusterClient) Patch(
 			Op:    "replace",
 			Path:  "/spec/sleep",
 			Value: patchClusterProps.Spec.Sleep,
-		},
-		JSONPatchOperation{
-			Op:    "replace",
-			Path:  "/metadata/annotations",
-			Value: patchClusterProps.Annotations,
 		},
 	}
 
