@@ -15,7 +15,10 @@ const (
 
 // Reasons a resource is or is not ready.
 const (
+	ReasonDefault      = "Default"
 	ReasonInitializing = "Initializing"
+	ReasonReady        = "Ready"
+	ReasonNotReady     = "NotReady"
 	ReasonSleeping     = "Sleeping"
 	ReasonAwoken       = "Awoken"
 )
@@ -27,6 +30,36 @@ func Initializing() metav1.Condition {
 		Reason:             ReasonInitializing,
 		LastTransitionTime: metav1.Now(),
 		Message:            "UffizziCluster is being initialized",
+	}
+}
+
+func Ready() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeReady,
+		Status:             metav1.ConditionTrue,
+		Reason:             ReasonReady,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster is ready",
+	}
+}
+
+func NotReady() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeReady,
+		Status:             metav1.ConditionFalse,
+		Reason:             ReasonNotReady,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster is not ready",
+	}
+}
+
+func DefaultSleepState() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeSleep,
+		Status:             metav1.ConditionFalse,
+		Reason:             ReasonDefault,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster default sleep state set while initializing",
 	}
 }
 
@@ -50,13 +83,29 @@ func Awoken(time metav1.Time) metav1.Condition {
 	}
 }
 
-func mirrorHelmReleaseConditions(helmRelease *fluxhelmv2beta1.HelmRelease, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) {
+func mirrorNecessaryDependentConditions(helmRelease *fluxhelmv2beta1.HelmRelease, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) {
 	uClusterConditions := []metav1.Condition{}
 	for _, c := range helmRelease.Status.Conditions {
 		helmMessage := "[HelmRelease] " + c.Message
 		uClusterCondition := c
 		uClusterCondition.Message = helmMessage
-		uClusterConditions = append(uClusterConditions, uClusterCondition)
+		// All conditions from the HelmRelease but the ready condition
+		if c.Type != TypeReady {
+			uClusterConditions = append(uClusterConditions, uClusterCondition)
+		} else if uCluster.Spec.Sleep == false {
+			for _, k := range uCluster.Status.Conditions {
+				// only take in the Ready condition if Uffizzi Cluster is initializing
+				// the rest will be used to transition between sleep or awake
+				if k.Type == TypeReady &&
+					k.Status == metav1.ConditionUnknown &&
+					k.Reason == ReasonInitializing {
+					if c.Type == TypeReady &&
+						c.Status == metav1.ConditionTrue {
+						uClusterConditions = append(uClusterConditions, Ready())
+					}
+				}
+			}
+		}
 	}
 	setConditions(uCluster, uClusterConditions...)
 }
