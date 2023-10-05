@@ -179,7 +179,10 @@ type UffizziClusterDistro struct {
 //+kubebuilder:resource:shortName=uc;ucluster
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=='Ready')].status`
+//+kubebuilder:printcolumn:name="Sleep",type=string,JSONPath=`.status.conditions[?(@.type=='Sleep')].status`
 //+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="UptimeSinceLastAwake",type=date,JSONPath=`.status.lastAwakeTime`
 
 // UffizziCluster is the Schema for the UffizziClusters API
 type UffizziCluster struct {

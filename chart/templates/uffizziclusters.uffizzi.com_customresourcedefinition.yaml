@@ -22,9 +22,18 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: Ready
       type: string
+    - jsonPath: .status.conditions[?(@.type=='Sleep')].status
+      name: Sleep
+      type: string
     - jsonPath: .status.host
       name: Host
       type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.lastAwakeTime
+      name: UptimeSinceLastAwake
+      type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:

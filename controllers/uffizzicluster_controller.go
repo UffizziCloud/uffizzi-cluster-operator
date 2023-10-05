@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -146,6 +147,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		var (
 			intialConditions = []metav1.Condition{
 				Initializing(),
+				DefaultSleepState(),
 			}
 			helmReleaseRef = ""
 			host           = ""
@@ -230,7 +232,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	} else {
 		lifecycleOpType = LIFECYCLE_OP_TYPE_UPDATE
 		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
-		mirrorHelmReleaseConditions(helmRelease, uCluster)
+		mirrorNecessaryDependentConditions(helmRelease, uCluster)
 		if err := r.Status().Update(ctx, uCluster); err != nil {
 			//logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
@@ -315,6 +317,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		}
 		sleepingTime := metav1.Now().Rfc3339Copy()
 		setCondition(uCluster, Sleeping(sleepingTime))
+		setCondition(uCluster, NotReady())
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
 		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 1); err != nil {
@@ -323,7 +326,10 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		// set status for vcluster waking up
 		lastAwakeTime := metav1.Now().Rfc3339Copy()
 		uCluster.Status.LastAwakeTime = lastAwakeTime
+		// if the above runs successfully, then set the status to awake
 		setCondition(uCluster, Awoken(lastAwakeTime))
+		r.waitForStatefulSetReady(ctx, ucStatefulSet, 1)
+		setCondition(uCluster, Ready())
 	}
 	if err := r.Status().Update(ctx, uCluster); err != nil {
 		return err
@@ -338,6 +344,22 @@ func (r *UffizziClusterReconciler) scaleStatefulSet(ctx context.Context, ucState
 	// scale down to 0
 	ucStatefulSet.Spec.Replicas = &replicas
 	return r.Update(ctx, ucStatefulSet)
+}
+
+// waitForStatefulSetReady is a goroutine which waits for the stateful set to be ready
+func (r *UffizziClusterReconciler) waitForStatefulSetReady(ctx context.Context, ucStatefulSet *appsv1.StatefulSet, scale int) error {
+	// wait for the StatefulSet to be ready
+	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
+		if err := r.Get(ctx, types.NamespacedName{
+			Name:      ucStatefulSet.Name,
+			Namespace: ucStatefulSet.Namespace}, ucStatefulSet); err != nil {
+			return false, err
+		}
+		if ucStatefulSet.Status.AvailableReplicas == int32(scale) {
+			return true, nil
+		}
+		return false, nil
+	})
 }
 
 // deleteWorkloads deletes all the workloads created by the vcluster
