@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"context"
-	"log"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,8 +63,6 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		},
 		Spec: clusterProps.Spec,
 	}
-
-	log.Printf("image from operator: %v", clusterProps.Spec.Image)
 
 	result := v1alpha1.UffizziCluster{}
 	err := c.restClient.

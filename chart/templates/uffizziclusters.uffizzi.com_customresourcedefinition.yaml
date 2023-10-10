@@ -58,6 +58,8 @@ spec:
                 type: object
               distro:
                 type: string
+              image:
+                type: string
               helm:
                 items:
                   properties:
