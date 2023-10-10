@@ -65,7 +65,7 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		Spec: clusterProps.Spec,
 	}
 
-	log.Printf("spec from params: %v", clusterProps.Spec)
+	log.Printf("image from operator: %v", clusterProps.Spec.Image)
 
 	result := v1alpha1.UffizziCluster{}
 	err := c.restClient.
