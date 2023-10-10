@@ -95,6 +95,8 @@ spec:
                   - release
                   type: object
                 type: array
+              image:
+                type: string
               ingress:
                 description: UffiClusterIngress defines the ingress capabilities of
                   the cluster, the basic host can be setup for all
