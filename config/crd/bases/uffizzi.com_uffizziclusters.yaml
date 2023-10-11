@@ -209,6 +209,8 @@ spec:
                 type: boolean
               ttl:
                 type: string
+            required:
+            - sleep
             type: object
           status:
             description: UffizziClusterStatus defines the observed state of UffizziCluster

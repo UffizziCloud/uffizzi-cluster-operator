@@ -2,9 +2,11 @@ package v1alpha1
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
@@ -13,6 +15,7 @@ type UffizziClusterInterface interface {
 	List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error)
 	Get(name string, options metav1.GetOptions) (*v1alpha1.UffizziCluster, error)
 	Create(UffizziClusterProps) (*v1alpha1.UffizziCluster, error)
+	Patch(name string, patchClusterProps PatchUffizziClusterProps) error
 	Delete(name string) error
 }
 
@@ -24,6 +27,16 @@ type UffizziClusterClient struct {
 type UffizziClusterProps struct {
 	Name string
 	Spec v1alpha1.UffizziClusterSpec
+}
+
+type PatchUffizziClusterProps struct {
+	Spec v1alpha1.UffizziClusterSpec
+}
+
+type JSONPatchOperation struct {
+	Op    string      `json:"op"`
+	Path  string      `json:"path"`
+	Value interface{} `json:"value,omitempty"`
 }
 
 func (c *UffizziClusterClient) List(opts metav1.ListOptions) (*v1alpha1.UffizziClusterList, error) {
@@ -74,6 +87,59 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		Into(&result)
 
 	return &result, err
+}
+
+// The sleep mode only works if a patch is applied (not "update")
+func (c *UffizziClusterClient) Patch(
+	name string,
+	patchClusterProps PatchUffizziClusterProps,
+) error {
+
+	uffizziCluster := &v1alpha1.UffizziCluster{}
+
+	err := c.restClient.
+		Get().
+		Namespace(c.ns).
+		Resource("UffizziClusters").
+		Name(name).
+		Do(context.TODO()).
+		Into(uffizziCluster)
+
+	if err != nil {
+		return err
+	}
+
+	resourceVersion := uffizziCluster.ObjectMeta.ResourceVersion
+
+	patchOps := []JSONPatchOperation{
+		JSONPatchOperation{
+			Op:    "replace",
+			Path:  "/spec/sleep",
+			Value: patchClusterProps.Spec.Sleep,
+		},
+	}
+
+	patchType := types.JSONPatchType
+	patchBytes, err := json.Marshal(patchOps)
+	if err != nil {
+		return err
+	}
+
+	err = c.restClient.
+		Patch(patchType).
+		Namespace(c.ns).
+		Resource("UffizziClusters").
+		Name(name).
+		Body(patchBytes).
+		Param("resourceVersion", resourceVersion).
+		Do(context.TODO()).
+		Error()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *UffizziClusterClient) Delete(name string) error {
