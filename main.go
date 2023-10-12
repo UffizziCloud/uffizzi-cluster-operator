@@ -94,7 +94,7 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
+	// Setup UffizziClusterReconciler
 	if err = (&controllers.UffizziClusterReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

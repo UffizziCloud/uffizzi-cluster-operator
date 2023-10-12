@@ -3,22 +3,24 @@ package controllers
 import (
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Condition types.
 const (
 	// TypeReady resources are believed to be ready to handle work.
-	TypeReady = "Ready"
-	TypeSleep = "Sleep"
+	TypeReady    = "Ready"
+	TypeAPIReady = "APIReady"
+	TypeSleep    = "Sleep"
 )
 
 // Reasons a resource is or is not ready.
 const (
 	ReasonDefault      = "Default"
 	ReasonInitializing = "Initializing"
-	ReasonReady        = "Ready"
-	ReasonNotReady     = "NotReady"
+	ReasonReady        = "APIReady"
+	ReasonNotReady     = "APINotReady"
 	ReasonSleeping     = "Sleeping"
 	ReasonAwoken       = "Awoken"
 )
@@ -33,23 +35,33 @@ func Initializing() metav1.Condition {
 	}
 }
 
-func Ready() metav1.Condition {
+func InitializingAPI() metav1.Condition {
 	return metav1.Condition{
-		Type:               TypeReady,
-		Status:             metav1.ConditionTrue,
-		Reason:             ReasonReady,
+		Type:               TypeAPIReady,
+		Status:             metav1.ConditionUnknown,
+		Reason:             ReasonInitializing,
 		LastTransitionTime: metav1.Now(),
-		Message:            "UffizziCluster is ready",
+		Message:            "UffizziCluster is being initialized",
 	}
 }
 
-func NotReady() metav1.Condition {
+func APIReady() metav1.Condition {
 	return metav1.Condition{
-		Type:               TypeReady,
+		Type:               TypeAPIReady,
+		Status:             metav1.ConditionTrue,
+		Reason:             ReasonReady,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster API is ready",
+	}
+}
+
+func APINotReady() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeAPIReady,
 		Status:             metav1.ConditionFalse,
 		Reason:             ReasonNotReady,
 		LastTransitionTime: metav1.Now(),
-		Message:            "UffizziCluster is not ready",
+		Message:            "UffizziCluster API is not ready",
 	}
 }
 
@@ -83,29 +95,24 @@ func Awoken(time metav1.Time) metav1.Condition {
 	}
 }
 
-func mirrorNecessaryDependentConditions(helmRelease *fluxhelmv2beta1.HelmRelease, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) {
+func mirrorHelmStackConditions(helmRelease *fluxhelmv2beta1.HelmRelease, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) {
 	uClusterConditions := []metav1.Condition{}
 	for _, c := range helmRelease.Status.Conditions {
 		helmMessage := "[HelmRelease] " + c.Message
 		uClusterCondition := c
 		uClusterCondition.Message = helmMessage
-		// All conditions from the HelmRelease but the ready condition
-		if c.Type != TypeReady {
-			uClusterConditions = append(uClusterConditions, uClusterCondition)
-		} else if uCluster.Spec.Sleep == false {
-			for _, k := range uCluster.Status.Conditions {
-				// only take in the Ready condition if Uffizzi Cluster is initializing
-				// the rest will be used to transition between sleep or awake
-				if k.Type == TypeReady &&
-					k.Status == metav1.ConditionUnknown &&
-					k.Reason == ReasonInitializing {
-					if c.Type == TypeReady &&
-						c.Status == metav1.ConditionTrue {
-						uClusterConditions = append(uClusterConditions, Ready())
-					}
-				}
-			}
-		}
+		uClusterConditions = append(uClusterConditions, uClusterCondition)
+	}
+	setConditions(uCluster, uClusterConditions...)
+}
+
+func mirrorStatefulSetConditions(ss *appsv1.StatefulSet, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) {
+	uClusterConditions := []metav1.Condition{}
+	// check if statefulset is ready
+	if ss.Status.Replicas > 0 && ss.Status.ReadyReplicas == ss.Status.AvailableReplicas {
+		uClusterConditions = append(uClusterConditions, APIReady())
+	} else {
+		uClusterConditions = append(uClusterConditions, APINotReady())
 	}
 	setConditions(uCluster, uClusterConditions...)
 }

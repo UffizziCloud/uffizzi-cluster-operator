@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -132,6 +133,10 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
 				"--node-selector=sandbox.gke.io/runtime=gvisor",
 				"--enforce-node-selector",
+			},
+			Limits: ContainerMemoryCPU{
+				CPU:    "1000m",
+				Memory: "1024Mi",
 			},
 		},
 		Sync: VClusterSync{
@@ -263,8 +268,9 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 		if err := r.Create(ctx, newHelmRelease); err != nil {
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
 		}
+		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
-		if err := r.Status().Update(ctx, uCluster); err != nil {
+		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
 		}
 
@@ -292,8 +298,8 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 		APIServer: VClusterK8SAPIServer{
 			Image: "registry.k8s.io/kube-apiserver:v1.26.1",
 			Resources: VClusterContainerResources{
-				Requests: VClusterContainerResourcesRequests{
-					Cpu:    "40m",
+				Requests: ContainerMemoryCPU{
+					CPU:    "40m",
 					Memory: "300Mi",
 				},
 			},
@@ -522,8 +528,9 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 		if err := r.Create(ctx, newHelmRelease); err != nil {
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
 		}
+		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
-		if err := r.Status().Update(ctx, uCluster); err != nil {
+		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
 		}
 
@@ -576,9 +583,10 @@ func (r *UffizziClusterReconciler) updateHelmRelease(newHelmRelease *fluxhelmv2b
 	}
 	updatedSpec := string(updatedSpecBytes)
 	updatedHelmReleaseSpec := string(updatedHelmReleaseSpecBytes)
+	patch := client.MergeFrom(uCluster.DeepCopy())
 	uCluster.Status.LastAppliedConfiguration = &updatedSpec
 	uCluster.Status.LastAppliedHelmReleaseSpec = &updatedHelmReleaseSpec
-	if err := r.Status().Update(ctx, uCluster); err != nil {
+	if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 		return errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedConfig")
 	}
 	return nil

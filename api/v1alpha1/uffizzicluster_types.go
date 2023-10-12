@@ -149,7 +149,7 @@ type UffizziClusterSpec struct {
 	Manifests     *string                      `json:"manifests,omitempty"`
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
-	Sleep         bool                         `json:"sleep"`
+	Sleep         bool                         `json:"sleep,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster
@@ -178,6 +178,7 @@ type UffizziClusterDistro struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:shortName=uc;ucluster
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="APIReady",type=string,JSONPath=`.status.conditions[?(@.type=='APIReady')].status`
 //+kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=='Ready')].status`
 //+kubebuilder:printcolumn:name="Sleep",type=string,JSONPath=`.status.conditions[?(@.type=='Sleep')].status`
 //+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
