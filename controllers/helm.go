@@ -134,6 +134,10 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 				"--node-selector=sandbox.gke.io/runtime=gvisor",
 				"--enforce-node-selector",
 			},
+			Limits: ContainerMemoryCPU{
+				CPU:    "1000m",
+				Memory: "1024Mi",
+			},
 		},
 		Sync: VClusterSync{
 			Ingresses: EnabledBool{
@@ -294,8 +298,8 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 		APIServer: VClusterK8SAPIServer{
 			Image: "registry.k8s.io/kube-apiserver:v1.26.1",
 			Resources: VClusterContainerResources{
-				Requests: VClusterContainerResourcesRequests{
-					Cpu:    "40m",
+				Requests: ContainerMemoryCPU{
+					CPU:    "40m",
 					Memory: "300Mi",
 				},
 			},

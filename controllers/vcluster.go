@@ -54,17 +54,17 @@ type VClusterContainer struct {
 }
 
 type VClusterContainerResources struct {
-	Limits   VClusterContainerResourcesLimits   `json:"limits,omitempty"`
-	Requests VClusterContainerResourcesRequests `json:"requests,omitempty"`
+	Limits   VClusterContainerResourcesLimits `json:"limits,omitempty"`
+	Requests ContainerMemoryCPU               `json:"requests,omitempty"`
 }
 
 type VClusterContainerResourcesLimits struct {
 	Memory string `json:"memory,omitempty"`
 }
 
-type VClusterContainerResourcesRequests struct {
+type ContainerMemoryCPU struct {
 	Memory string `json:"memory,omitempty"`
-	Cpu    string `json:"cpu,omitempty"`
+	CPU    string `json:"cpu,omitempty"`
 }
 
 type VClusterContainerVolumeMounts struct {
@@ -81,8 +81,9 @@ type VClusterInit struct {
 // VClusterSyncer - parameters to create the syncer with
 // https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
 type VClusterSyncer struct {
-	KubeConfigContextName string   `json:"kubeConfigContextName,omitempty"`
-	ExtraArgs             []string `json:"extraArgs,omitempty"`
+	KubeConfigContextName string             `json:"kubeConfigContextName,omitempty"`
+	ExtraArgs             []string           `json:"extraArgs,omitempty"`
+	Limits                ContainerMemoryCPU `json:"limits,omitempty"`
 }
 
 type VClusterPlugins struct {
