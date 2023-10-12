@@ -147,6 +147,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		var (
 			intialConditions = []metav1.Condition{
 				Initializing(),
+				InitializingAPI(),
 				DefaultSleepState(),
 			}
 			helmReleaseRef = ""
@@ -156,6 +157,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 			lastAwakeTime = metav1.Now().Rfc3339Copy()
 		)
+		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
 			Conditions:     intialConditions,
 			HelmReleaseRef: &helmReleaseRef,
@@ -163,7 +165,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			KubeConfig:     kubeConfig,
 			LastAwakeTime:  lastAwakeTime,
 		}
-		if err := r.Status().Update(ctx, uCluster); err != nil {
+		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
 			return ctrl.Result{}, err
 		}
@@ -215,13 +217,14 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 		// get the ingress hostname for the vcluster
 		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
+		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status.Host = &vclusterIngressHost
 		// reference the HelmRelease in the status
 		uCluster.Status.HelmReleaseRef = &helmReleaseName
 		uCluster.Status.KubeConfig.SecretRef = &meta.SecretKeyReference{
 			Name: "vc-" + helmReleaseName,
 		}
-		if err := r.Status().Update(ctx, uCluster); err != nil {
+		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
@@ -232,8 +235,9 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	} else {
 		lifecycleOpType = LIFECYCLE_OP_TYPE_UPDATE
 		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
-		mirrorNecessaryDependentConditions(helmRelease, uCluster)
-		if err := r.Status().Update(ctx, uCluster); err != nil {
+		patch := client.MergeFrom(uCluster.DeepCopy())
+		mirrorHelmStackConditions(helmRelease, uCluster)
+		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			//logger.Error(err, "Failed to update UffizziCluster status")
 			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
@@ -242,12 +246,13 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
 		err := r.createLoftHelmRepo(ctx, req)
 		if err != nil && k8serrors.IsAlreadyExists(err) {
-			logger.Info("Loft Helm Repo for UffizziCluster already exists", "NamespacedName", req.NamespacedName)
+			// logger.Info("Loft Helm Repo for UffizziCluster already exists", "NamespacedName", req.NamespacedName)
 		} else {
 			logger.Info("Loft Helm Repo for UffizziCluster created", "NamespacedName", req.NamespacedName)
 		}
+		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status.LastAppliedConfiguration = &currentSpec
-		if err := r.Status().Update(ctx, uCluster); err != nil {
+		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster lastAppliedConfig")
 			return ctrl.Result{}, err
 		}
@@ -285,15 +290,14 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// ----------------------
 	if err := r.reconcileSleepState(ctx, uCluster); err != nil {
 		if k8serrors.IsNotFound(err) {
-			logger.Info("vcluster statefulset not found, requeueing")
+			// logger.Info("vcluster statefulset not found, requeueing")
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 		}
 		logger.Error(err, "Failed to reconcile sleep state")
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
-	// Requeue the request to check the helm release status
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) error {
@@ -305,6 +309,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		return err
 	}
 	// get the current replicas
+	patch := client.MergeFrom(uCluster.DeepCopy())
 	currentReplicas := ucStatefulSet.Spec.Replicas
 	// scale the vcluster instance to 0 if the sleep flag is true
 	if uCluster.Spec.Sleep && *currentReplicas > 0 {
@@ -317,21 +322,27 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		}
 		sleepingTime := metav1.Now().Rfc3339Copy()
 		setCondition(uCluster, Sleeping(sleepingTime))
-		setCondition(uCluster, NotReady())
+		if err := r.waitForStatefulSetReady(ctx, ucStatefulSet, 0); err == nil {
+			setCondition(uCluster, APINotReady())
+		}
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
 		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 1); err != nil {
 			return err
 		}
+	}
+	// ensure that the statefulset is up if the cluster is not sleeping
+	if !uCluster.Spec.Sleep {
 		// set status for vcluster waking up
 		lastAwakeTime := metav1.Now().Rfc3339Copy()
 		uCluster.Status.LastAwakeTime = lastAwakeTime
 		// if the above runs successfully, then set the status to awake
 		setCondition(uCluster, Awoken(lastAwakeTime))
-		r.waitForStatefulSetReady(ctx, ucStatefulSet, 1)
-		setCondition(uCluster, Ready())
+		if err := r.waitForStatefulSetReady(ctx, ucStatefulSet, 1); err == nil {
+			setCondition(uCluster, APIReady())
+		}
 	}
-	if err := r.Status().Update(ctx, uCluster); err != nil {
+	if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 		return err
 	}
 	return nil

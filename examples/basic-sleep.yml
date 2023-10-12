@@ -1,40 +1,8 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: basic-sleep
+  name: basic-sleep-x-5
 spec:
   ingress:
     host: testns.uclusters.app.qa-gke.uffizzi.com
   sleep: false
-  limitRange:
-    default:
-      cpu: "0.5"
-      ephemeralStorage: 8Gi
-      memory: 1Gi
-    defaultRequest:
-      cpu: "0.1"
-      ephemeralStorage: 1Gi
-      memory: 128Mi
-    enabled: false
-  resourceQuota:
-    count:
-      configMaps: 20
-      endpoints: 10
-      persistentVolumeClaims: 10
-      pods: 20
-      secrets: 20
-      services: 10
-    enabled: false
-    limits:
-      cpu: "0.5"
-      ephemeralStorage: 5Gi
-      memory: 8Gi
-    requests:
-      cpu: "0.5"
-      ephemeralStorage: 5Gi
-      memory: 1Gi
-      storage: 5Gi
-    services:
-      loadBalancers: 3
-      nodePorts: 0
-

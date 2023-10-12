@@ -3,9 +3,11 @@ apiVersion: uffizzi.com/v1alpha1
 metadata:
   name: i132
 spec:
-  distro: k8s
+  distro: k3s
+  apiServer:
+    image: "rancher/k3s:v1.25.14-k3s1"
   ingress:
-    host: i.app.uffizzi.com
+    host: testns.uclusters.app.qa-gke.uffizzi.com
   resourceQuota:
     enabled: false
   limitRange:

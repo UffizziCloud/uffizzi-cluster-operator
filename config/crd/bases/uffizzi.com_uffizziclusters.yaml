@@ -19,6 +19,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='APIReady')].status
+      name: APIReady
+      type: string
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: Ready
       type: string
@@ -209,8 +212,6 @@ spec:
                 type: boolean
               ttl:
                 type: string
-            required:
-            - sleep
             type: object
           status:
             description: UffizziClusterStatus defines the observed state of UffizziCluster
