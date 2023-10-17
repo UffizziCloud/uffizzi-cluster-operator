@@ -316,15 +316,15 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 0); err != nil {
 			return err
 		}
+		if err := r.waitForStatefulSetReady(ctx, ucStatefulSet, 0); err == nil {
+			setCondition(uCluster, APINotReady())
+		}
 		err := r.deleteWorkloads(ctx, uCluster)
 		if err != nil {
 			return err
 		}
 		sleepingTime := metav1.Now().Rfc3339Copy()
 		setCondition(uCluster, Sleeping(sleepingTime))
-		if err := r.waitForStatefulSetReady(ctx, ucStatefulSet, 0); err == nil {
-			setCondition(uCluster, APINotReady())
-		}
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
 		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 1); err != nil {
