@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/uffizzicluster"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	//+kubebuilder:scaffold:imports
@@ -95,7 +95,7 @@ func main() {
 		os.Exit(1)
 	}
 	// Setup UffizziClusterReconciler
-	if err = (&controllers.UffizziClusterReconciler{
+	if err = (&uffizzicluster.UffizziClusterReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
