@@ -3,7 +3,7 @@ package uffizzicluster
 import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 
 type VClusterK3S struct {
-	VCluster        VClusterContainer       `json:"vcluster,omitempty"`
+	VCluster        VClusterK3SAPIServer    `json:"vcluster,omitempty"`
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
@@ -48,8 +48,8 @@ type VClusterK8SAPIServer struct {
 	ServiceAnnotations map[string]string          `json:"serviceAnnotations,omitempty"`
 }
 
-// VClusterContainer - parameters to create the vcluster container with
-type VClusterContainer struct {
+// VClusterK3SAPIServer - parameters to create the vcluster container with
+type VClusterK3SAPIServer struct {
 	Image string `json:"image,omitempty"`
 }
 

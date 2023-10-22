@@ -14,15 +14,141 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
-	return r.createHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace, LOFT_CHART_REPO_URL)
+const (
+	DEFAULT_K3S_VERSION      = "rancher/k3s:v1.27.3-k3s1"
+	UCLUSTER_SYNC_PLUGIN_TAG = "uffizzi/ucluster-sync-plugin:v0.2.4"
+)
+
+func vclusterPluginsConfig() VClusterPlugins {
+	return VClusterPlugins{
+		VClusterPlugin{
+			Image:           UCLUSTER_SYNC_PLUGIN_TAG,
+			ImagePullPolicy: "IfNotPresent",
+			Rbac: VClusterRbac{
+				Role: VClusterRbacRole{
+					ExtraRules: []VClusterRbacRule{
+						{
+							ApiGroups: []string{"networking.k8s.io"},
+							Resources: []string{"ingresses"},
+							Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+						},
+					},
+				},
+				ClusterRole: VClusterRbacClusterRole{
+					ExtraRules: []VClusterRbacRule{
+						{
+							ApiGroups: []string{"apiextensions.k8s.io"},
+							Resources: []string{"customresourcedefinitions"},
+							Verbs:     []string{"patch", "update", "get", "list", "watch"},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
-func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
-	return r.deleteHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace)
+func vclusterSyncerConfig(helmReleaseName string) VClusterSyncer {
+	return VClusterSyncer{
+		KubeConfigContextName: helmReleaseName,
+		ExtraArgs: []string{
+			"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
+			"--node-selector=sandbox.gke.io/runtime=gvisor",
+			"--enforce-node-selector",
+		},
+		Limits: ContainerMemoryCPU{
+			CPU:    "1000m",
+			Memory: "1024Mi",
+		},
+	}
 }
 
-func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+func vclusterSyncConfig() VClusterSync {
+	return VClusterSync{
+		Ingresses: EnabledBool{
+			Enabled: false,
+		},
+	}
+}
+
+func vclusterTolerations() []VClusterToleration {
+	return []VClusterToleration{
+		{
+			Key:      "sandbox.gke.io/runtime",
+			Effect:   "NoSchedule",
+			Operator: "Exists",
+		},
+	}
+}
+
+func vclusterSecurityContext() VClusterSecurityContext {
+	return VClusterSecurityContext{
+		Capabilities: VClusterSecurityContextCapabilities{
+			Drop: []string{"all"},
+		},
+	}
+}
+
+func vclusterIsolation() VClusterIsolation {
+	return VClusterIsolation{
+		Enabled:             true,
+		PodSecurityStandard: "baseline",
+		ResourceQuota: VClusterResourceQuota{
+			Enabled: true,
+			Quota: VClusterResourceQuotaDefiniton{
+				RequestsCpu:                 "2.5",
+				RequestsMemory:              "10Gi",
+				RequestsEphemeralStorage:    "15Gi",
+				RequestsStorage:             "10Gi",
+				LimitsCpu:                   "10",
+				LimitsMemory:                "15Gi",
+				LimitsEphemeralStorage:      "30Gi",
+				ServicesLoadbalancers:       5,
+				ServicesNodePorts:           0,
+				CountEndpoints:              40,
+				CountConfigmaps:             100,
+				CountPersistentVolumeClaims: 40,
+				CountPods:                   40,
+				CountSecrets:                100,
+				CountServices:               40,
+			},
+		},
+		LimitRange: VClusterLimitRange{
+			Enabled: true,
+			Default: LimitRangeResources{
+				Cpu:              "1",
+				Memory:           "512Mi",
+				EphemeralStorage: "8Gi",
+			},
+			DefaultRequest: LimitRangeResources{
+				Cpu:              "100m",
+				Memory:           "128Mi",
+				EphemeralStorage: "3Gi",
+			},
+		},
+		NetworkPolicy: VClusterNetworkPolicy{
+			Enabled: true,
+		},
+	}
+}
+
+func vclusterIngress(VClusterIngressHostname string) VClusterIngress {
+	return VClusterIngress{
+		Enabled: true,
+		Host:    VClusterIngressHostname,
+		Annotations: map[string]string{
+			"app.uffizzi.com/ingress-sync": "true",
+		},
+	}
+}
+
+func vclusterNodeSelector() VClusterNodeSelector {
+	return VClusterNodeSelector{
+		SandboxGKEIORuntime: "gvisor",
+	}
+}
+
+func vclusterConstants(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (string, string, string) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
 		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
@@ -32,118 +158,50 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 	if VClusterIngressHostname != "" {
 		OutKubeConfigServerArgValue = "https://" + VClusterIngressHostname
 	}
+	return helmReleaseName, VClusterIngressHostname, OutKubeConfigServerArgValue
+}
+
+func vclusterK8SAPIServer() VClusterK8SAPIServer {
+	return VClusterK8SAPIServer{
+		Image: "registry.k8s.io/kube-apiserver:v1.26.1",
+		Resources: VClusterContainerResources{
+			Requests: ContainerMemoryCPU{
+				CPU:    "40m",
+				Memory: "300Mi",
+			},
+		},
+	}
+}
+
+func vclusterK3SAPIServer() VClusterK3SAPIServer {
+	return VClusterK3SAPIServer{
+		Image: DEFAULT_K3S_VERSION,
+	}
+}
+
+func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
+	return r.createHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace, LOFT_CHART_REPO_URL)
+}
+
+func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
+	return r.deleteHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace)
+}
+
+func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+	helmReleaseName, VClusterIngressHostname, OutKubeConfigServerArgValue := vclusterConstants(uCluster)
 
 	vclusterK3sHelmValues := VClusterK3S{
-		VCluster: VClusterContainer{
-			Image: "rancher/k3s:v1.27.3-k3s1",
-		},
-		Init:    VClusterInit{},
-		FsGroup: 12345,
-		Ingress: VClusterIngress{
-			Enabled: true,
-			Host:    VClusterIngressHostname,
-			Annotations: map[string]string{
-				"app.uffizzi.com/ingress-sync": "true",
-			},
-		},
-		Isolation: VClusterIsolation{
-			Enabled:             true,
-			PodSecurityStandard: "baseline",
-			ResourceQuota: VClusterResourceQuota{
-				Enabled: true,
-				Quota: VClusterResourceQuotaDefiniton{
-					RequestsCpu:                 "2.5",
-					RequestsMemory:              "10Gi",
-					RequestsEphemeralStorage:    "15Gi",
-					RequestsStorage:             "10Gi",
-					LimitsCpu:                   "10",
-					LimitsMemory:                "15Gi",
-					LimitsEphemeralStorage:      "30Gi",
-					ServicesLoadbalancers:       5,
-					ServicesNodePorts:           0,
-					CountEndpoints:              40,
-					CountConfigmaps:             100,
-					CountPersistentVolumeClaims: 40,
-					CountPods:                   40,
-					CountSecrets:                100,
-					CountServices:               40,
-				},
-			},
-			LimitRange: VClusterLimitRange{
-				Enabled: true,
-				Default: LimitRangeResources{
-					Cpu:              "1",
-					Memory:           "512Mi",
-					EphemeralStorage: "8Gi",
-				},
-				DefaultRequest: LimitRangeResources{
-					Cpu:              "100m",
-					Memory:           "128Mi",
-					EphemeralStorage: "3Gi",
-				},
-			},
-			NetworkPolicy: VClusterNetworkPolicy{
-				Enabled: true,
-			},
-		},
-		NodeSelector: VClusterNodeSelector{
-			SandboxGKEIORuntime: "gvisor",
-		},
-		SecurityContext: VClusterSecurityContext{
-			Capabilities: VClusterSecurityContextCapabilities{
-				Drop: []string{"all"},
-			},
-		},
-		Tolerations: []VClusterToleration{
-			{
-				Key:      "sandbox.gke.io/runtime",
-				Effect:   "NoSchedule",
-				Operator: "Exists",
-			},
-		},
-		Plugin: VClusterPlugins{
-			VClusterPlugin{
-				Image:           "uffizzi/ucluster-sync-plugin:v0.2.4",
-				ImagePullPolicy: "IfNotPresent",
-				Rbac: VClusterRbac{
-					Role: VClusterRbacRole{
-						ExtraRules: []VClusterRbacRule{
-							{
-								ApiGroups: []string{"networking.k8s.io"},
-								Resources: []string{"ingresses"},
-								Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
-							},
-						},
-					},
-					ClusterRole: VClusterRbacClusterRole{
-						ExtraRules: []VClusterRbacRule{
-							{
-								ApiGroups: []string{"apiextensions.k8s.io"},
-								Resources: []string{"customresourcedefinitions"},
-								Verbs:     []string{"patch", "update", "get", "list", "watch"},
-							},
-						},
-					},
-				},
-			},
-		},
-		Syncer: VClusterSyncer{
-			KubeConfigContextName: helmReleaseName,
-			ExtraArgs: []string{
-				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
-				"--node-selector=sandbox.gke.io/runtime=gvisor",
-				"--enforce-node-selector",
-			},
-			Limits: ContainerMemoryCPU{
-				CPU:    "1000m",
-				Memory: "1024Mi",
-			},
-		},
-		Sync: VClusterSync{
-			Ingresses: EnabledBool{
-				Enabled: false,
-			},
-		},
+		VCluster:        vclusterK3SAPIServer(),
+		Init:            VClusterInit{},
+		FsGroup:         12345,
+		Ingress:         vclusterIngress(VClusterIngressHostname),
+		Isolation:       vclusterIsolation(),
+		NodeSelector:    vclusterNodeSelector(),
+		SecurityContext: vclusterSecurityContext(),
+		Tolerations:     vclusterTolerations(),
+		Plugin:          vclusterPluginsConfig(),
+		Syncer:          vclusterSyncerConfig(helmReleaseName),
+		Sync:            vclusterSyncConfig(),
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
@@ -295,115 +353,17 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 	)
 
 	vclusterHelmValues := VClusterK8S{
-		APIServer: VClusterK8SAPIServer{
-			Image: "registry.k8s.io/kube-apiserver:v1.26.1",
-			Resources: VClusterContainerResources{
-				Requests: ContainerMemoryCPU{
-					CPU:    "40m",
-					Memory: "300Mi",
-				},
-			},
-		},
-		Init:    VClusterInit{},
-		FsGroup: 12345,
-		Ingress: VClusterIngress{
-			Enabled: true,
-			Host:    VClusterIngressHostname,
-			Annotations: map[string]string{
-				"app.uffizzi.com/ingress-sync": "true",
-			},
-		},
-		Isolation: VClusterIsolation{
-			Enabled:             true,
-			PodSecurityStandard: "baseline",
-			ResourceQuota: VClusterResourceQuota{
-				Enabled: true,
-				Quota: VClusterResourceQuotaDefiniton{
-					RequestsCpu:                 "10",
-					RequestsMemory:              "20Gi",
-					RequestsEphemeralStorage:    "60Gi",
-					RequestsStorage:             "100Gi",
-					LimitsCpu:                   "20",
-					LimitsMemory:                "40Gi",
-					LimitsEphemeralStorage:      "160Gi",
-					ServicesLoadbalancers:       5,
-					ServicesNodePorts:           0,
-					CountEndpoints:              40,
-					CountConfigmaps:             100,
-					CountPersistentVolumeClaims: 20,
-					CountPods:                   20,
-					CountSecrets:                100,
-					CountServices:               20,
-				},
-			},
-			LimitRange: VClusterLimitRange{
-				Enabled: true,
-				Default: LimitRangeResources{
-					Cpu:              "1",
-					Memory:           "512Mi",
-					EphemeralStorage: "8Gi",
-				},
-				DefaultRequest: LimitRangeResources{
-					Cpu:              "100m",
-					Memory:           "128Mi",
-					EphemeralStorage: "3Gi",
-				},
-			},
-		},
-		NodeSelector: VClusterNodeSelector{
-			SandboxGKEIORuntime: "gvisor",
-		},
-		SecurityContext: VClusterSecurityContext{
-			Capabilities: VClusterSecurityContextCapabilities{
-				Drop: []string{"all"},
-			},
-		},
-		Tolerations: []VClusterToleration{
-			{
-				Key:      "sandbox.gke.io/runtime",
-				Effect:   "NoSchedule",
-				Operator: "Exists",
-			},
-		},
-		Plugin: VClusterPlugins{
-			VClusterPlugin{
-				Image:           "uffizzi/ucluster-sync-plugin:v0.2.4",
-				ImagePullPolicy: "IfNotPresent",
-				Rbac: VClusterRbac{
-					Role: VClusterRbacRole{
-						ExtraRules: []VClusterRbacRule{
-							{
-								ApiGroups: []string{"networking.k8s.io"},
-								Resources: []string{"ingresses"},
-								Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
-							},
-						},
-					},
-					ClusterRole: VClusterRbacClusterRole{
-						ExtraRules: []VClusterRbacRule{
-							{
-								ApiGroups: []string{"apiextensions.k8s.io"},
-								Resources: []string{"customresourcedefinitions"},
-								Verbs:     []string{"patch", "update", "get", "list", "watch"},
-							},
-						},
-					},
-				},
-			},
-		},
-		Syncer: VClusterSyncer{
-			KubeConfigContextName: helmReleaseName,
-			ExtraArgs: []string{
-				"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
-				"--node-selector=sandbox.gke.io/runtime=gvisor",
-				"--enforce-node-selector",
-			},
-		},
-		Sync: VClusterSync{
-			Ingresses: EnabledBool{
-				Enabled: false,
-			},
-		},
+		APIServer:       vclusterK8SAPIServer(),
+		Init:            VClusterInit{},
+		FsGroup:         12345,
+		Ingress:         vclusterIngress(VClusterIngressHostname),
+		Isolation:       vclusterIsolation(),
+		NodeSelector:    vclusterNodeSelector(),
+		SecurityContext: vclusterSecurityContext(),
+		Tolerations:     vclusterTolerations(),
+		Plugin:          vclusterPluginsConfig(),
+		Syncer:          vclusterSyncerConfig(helmReleaseName),
+		Sync:            vclusterSyncConfig(),
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
