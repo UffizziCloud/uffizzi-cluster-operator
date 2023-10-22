@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
-  labels: {{ include "common.labels.standard" . | nindent 4 }}
+  labels:
     app.kubernetes.io/part-of: uffizzi
   name: uffizziclusters.uffizzi.com
 spec:
@@ -60,6 +60,16 @@ spec:
                     type: string
                 type: object
               distro:
+                default: k3s
+                enum:
+                - k3s
+                - k8s
+                type: string
+              externalDatastore:
+                default: etcd
+                enum:
+                - etcd
+                - sqlite
                 type: string
               helm:
                 items:
