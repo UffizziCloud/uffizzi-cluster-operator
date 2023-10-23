@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
+	constants "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
+	etcd "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	"github.com/pkg/errors"
@@ -173,28 +175,32 @@ func vclusterK8SAPIServer() VClusterK8SAPIServer {
 	}
 }
 
-func vclusterK3SAPIServer() VClusterK3SAPIServer {
-	return VClusterK3SAPIServer{
+func vclusterK3SAPIServer(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) VClusterK3SAPIServer {
+	apiserver := VClusterK3SAPIServer{
 		Image: DEFAULT_K3S_VERSION,
 	}
+	if uCluster.Spec.APIServer.Image != "" {
+		apiserver.Image = uCluster.Spec.APIServer.Image
+	}
+	return apiserver
 }
 
 func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
-	return r.createHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace, LOFT_CHART_REPO_URL)
+	return r.createHelmRepo(ctx, constants.LOFT_HELM_REPO, req.Namespace, constants.LOFT_CHART_REPO_URL)
 }
 
 func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
-	return r.deleteHelmRepo(ctx, LOFT_HELM_REPO, req.Namespace)
+	return r.deleteHelmRepo(ctx, constants.LOFT_HELM_REPO, req.Namespace)
 }
 
 func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
-	helmReleaseName, VClusterIngressHostname, OutKubeConfigServerArgValue := vclusterConstants(uCluster)
+	helmReleaseName, vclusterIngressHostname, outKubeConfigServerArgValue := vclusterConstants(uCluster)
 
 	vclusterK3sHelmValues := VClusterK3S{
-		VCluster:        vclusterK3SAPIServer(),
+		VCluster:        vclusterK3SAPIServer(uCluster),
 		Init:            VClusterInit{},
 		FsGroup:         12345,
-		Ingress:         vclusterIngress(VClusterIngressHostname),
+		Ingress:         vclusterIngress(vclusterIngressHostname),
 		Isolation:       vclusterIsolation(),
 		NodeSelector:    vclusterNodeSelector(),
 		SecurityContext: vclusterSecurityContext(),
@@ -204,15 +210,21 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 		Sync:            vclusterSyncConfig(),
 	}
 
-	if uCluster.Spec.APIServer.Image != "" {
-		vclusterK3sHelmValues.VCluster.Image = uCluster.Spec.APIServer.Image
+	if uCluster.Spec.ExternalDatastore == constants.ETCD || uCluster.Spec.ExternalDatastore == "" {
+		vclusterK3sHelmValues.VCluster.Env = []VClusterContainerEnv{{},
+			{
+				Name:  constants.K3S_DATASTORE_ENDPOINT,
+				Value: etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
+			},
+		}
+		vclusterK3sHelmValues.Storage.Persistence = false
 	}
 
 	if uCluster.Spec.Ingress.Host != "" {
 		vclusterK3sHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []VClusterContainerEnv{
 			{
-				Name:  "VCLUSTER_INGRESS_HOST",
-				Value: VClusterIngressHostname,
+				Name:  constants.VCLUSTER_INGRESS_HOSTNAME,
+				Value: vclusterIngressHostname,
 			},
 		}
 	}
@@ -265,8 +277,8 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 	}
 
 	vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
-		"--tls-san="+VClusterIngressHostname,
-		"--out-kube-config-server="+OutKubeConfigServerArgValue,
+		"--tls-san="+vclusterIngressHostname,
+		"--out-kube-config-server="+outKubeConfigServerArgValue,
 	)
 
 	if len(uCluster.Spec.Helm) > 0 {
@@ -291,6 +303,9 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 		ObjectMeta: ctrl.ObjectMeta{
 			Name:      helmReleaseName,
 			Namespace: uCluster.Namespace,
+			Labels: map[string]string{
+				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.VCLUSTER,
+			},
 		},
 		Spec: fluxhelmv2beta1.HelmReleaseSpec{
 			Upgrade: &fluxhelmv2beta1.Upgrade{
@@ -298,11 +313,11 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 			},
 			Chart: fluxhelmv2beta1.HelmChartTemplate{
 				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
-					Chart:   VCLUSTER_CHART_K3S,
-					Version: VCLUSTER_CHART_K3S_VERSION,
+					Chart:   constants.VCLUSTER_CHART_K3S,
+					Version: constants.VCLUSTER_CHART_K3S_VERSION,
 					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
 						Kind:      "HelmRepository",
-						Name:      LOFT_HELM_REPO,
+						Name:      constants.LOFT_HELM_REPO,
 						Namespace: uCluster.Namespace,
 					},
 				},
@@ -453,6 +468,9 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 		ObjectMeta: ctrl.ObjectMeta{
 			Name:      helmReleaseName,
 			Namespace: uCluster.Namespace,
+			Labels: map[string]string{
+				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.VCLUSTER,
+			},
 		},
 		Spec: fluxhelmv2beta1.HelmReleaseSpec{
 			Upgrade: &fluxhelmv2beta1.Upgrade{
@@ -460,11 +478,11 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 			},
 			Chart: fluxhelmv2beta1.HelmChartTemplate{
 				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
-					Chart:   VCLUSTER_CHART_K8S,
-					Version: VCLUSTER_CHART_K8S_VERSION,
+					Chart:   constants.VCLUSTER_CHART_K8S,
+					Version: constants.VCLUSTER_CHART_K8S_VERSION,
 					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
 						Kind:      "HelmRepository",
-						Name:      LOFT_HELM_REPO,
+						Name:      constants.LOFT_HELM_REPO,
 						Namespace: uCluster.Namespace,
 					},
 				},

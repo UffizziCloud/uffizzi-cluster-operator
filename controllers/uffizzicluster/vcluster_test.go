@@ -17,6 +17,7 @@ limitations under the License.
 package uffizzicluster
 
 import (
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
 	"testing"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
@@ -32,7 +33,7 @@ func TestBuildVClusterHelmReleaseName(t *testing.T) {
 	}
 
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
-	expectedHelmReleaseName := UCLUSTER_NAME_PREFIX + uCluster.Name
+	expectedHelmReleaseName := constants.UCLUSTER_NAME_PREFIX + uCluster.Name
 
 	if helmReleaseName != expectedHelmReleaseName {
 		t.Errorf("Expected helmReleaseName to be uffizzi-test, got %s", helmReleaseName)

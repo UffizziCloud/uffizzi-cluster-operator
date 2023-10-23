@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	etcd "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/uffizzicluster"
 	"os"
 
@@ -96,6 +97,14 @@ func main() {
 	}
 	// Setup UffizziClusterReconciler
 	if err = (&uffizzicluster.UffizziClusterReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "UffizziCluster")
+		os.Exit(1)
+	}
+	// Setup UffizziClusterReconciler
+	if err = (&etcd.UffizziClusterEtcdReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
