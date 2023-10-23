@@ -211,7 +211,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 	}
 
 	if uCluster.Spec.ExternalDatastore == constants.ETCD || uCluster.Spec.ExternalDatastore == "" {
-		vclusterK3sHelmValues.VCluster.Env = []VClusterContainerEnv{{},
+		vclusterK3sHelmValues.VCluster.Env = []VClusterContainerEnv{
 			{
 				Name:  constants.K3S_DATASTORE_ENDPOINT,
 				Value: etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
