@@ -2,7 +2,7 @@
 apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: ClusterRole
 metadata:
-labels: {{ include "common.labels.standard" . | nindent 4 }}    app.kubernetes.io/component: rbac    app.kubernetes.io/part-of: uffizzi
+labels: {{ include "common.labels.standard" . | nindent 4 }}	app.kubernetes.io/component: rbac	app.kubernetes.io/part-of: uffizzi
   name: {{ include "common.names.fullname" . }}-manager-role
 rules:
 - apiGroups:
