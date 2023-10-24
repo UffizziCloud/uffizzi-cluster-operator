@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package uffizzicluster
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -45,18 +46,6 @@ type UffizziClusterReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
-
-const (
-	UCLUSTER_NAME_PREFIX       = "uc-"
-	LOFT_HELM_REPO             = "loft"
-	VCLUSTER_CHART_K3S         = "vcluster"
-	VCLUSTER_CHART_K8S         = "vcluster-k8s"
-	VCLUSTER_CHART_K3S_VERSION = "0.15.5"
-	VCLUSTER_CHART_K8S_VERSION = "0.15.5"
-	LOFT_CHART_REPO_URL        = "https://charts.loft.sh"
-	VCLUSTER_K3S_DISTRO        = "k3s"
-	VCLUSTER_K8S_DISTRO        = "k8s"
-)
 
 type LIFECYCLE_OP_TYPE string
 
@@ -98,15 +87,6 @@ var (
 // add secret rbac
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the UffizziCluster object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var (
 		lifecycleOpType LIFECYCLE_OP_TYPE
@@ -197,7 +177,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 		// create either a k8s based vcluster or a k3s based vcluster
-		if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
+		if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO {
 			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create HelmRelease")
@@ -269,7 +249,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	var updatedHelmRelease *fluxhelmv2beta1.HelmRelease
 	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
 		if currentSpec != lastAppliedSpec {
-			if uCluster.Spec.Distro == VCLUSTER_K8S_DISTRO {
+			if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO {
 				if updatedHelmRelease, err = r.upsertVClusterK8sHelmRelease(true, ctx, uCluster); err != nil {
 					logger.Error(err, "Failed to update HelmRelease")
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err

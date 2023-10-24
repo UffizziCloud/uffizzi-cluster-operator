@@ -1,6 +1,16 @@
 #include tests/e2e/Makefile
 
-VERSION ?= 1.3.8
+VERSION ?= 1.4.0
+
+# check if we are using MacOS or LINUX and use that to determine the sed command
+UNAME_S := $(shell uname -s)
+SED := sed
+ifeq ($(UNAME_S),Darwin)
+	SED = gsed
+else
+	SED = sed
+endif
+
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -135,7 +145,7 @@ PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 .PHONY: docker-buildx
 docker-buildx: test ## Build and push docker image for the manager for cross-platform support
 	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
-	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
+	$(SED) -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- docker buildx create --name project-v3-builder
 	docker buildx use project-v3-builder
 	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
@@ -169,14 +179,14 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	# update the crd
 	$(KUSTOMIZE) build config/crd > chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
-	sed -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
+	$(SED) -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
 	# update roles
 	cp config/rbac/role.yaml chart/templates/manager-role_clusterrole.yaml
-	sed -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/manager-role_clusterrole.yaml
-	sed -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
-	sed -i'' -e '/creationTimestamp: null/d' chart/templates/manager-role_clusterrole.yaml
-	sed -i'' -e 's/name: manager-role/name: {{ include "common.names.fullname" . }}-manager-role/' chart/templates/manager-role_clusterrole.yaml
-	sed -i'' -e '/metadata:/a\
+	$(SED) -i'' -e '/creationTimestamp: null/d' chart/templates/manager-role_clusterrole.yaml
+	$(SED) -i'' -e 's/name: manager-role/name: {{ include "common.names.fullname" . }}-manager-role/' chart/templates/manager-role_clusterrole.yaml
+	$(SED) -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
+	$(SED) -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/manager-role_clusterrole.yaml
+	$(SED) -i'' -e '/metadata:/a\
 	  labels: {{ include "common.labels.standard" . | nindent 4 }}\
 	    app.kubernetes.io/component: rbac\
 	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml

@@ -1,9 +1,12 @@
-package controllers
+package uffizzicluster
 
-import "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
+import (
+	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
+)
 
 type VClusterK3S struct {
-	VCluster        VClusterContainer       `json:"vcluster,omitempty"`
+	VCluster        VClusterK3SAPIServer    `json:"vcluster,omitempty"`
 	Init            VClusterInit            `json:"init,omitempty"`
 	Syncer          VClusterSyncer          `json:"syncer,omitempty"`
 	Sync            VClusterSync            `json:"sync,omitempty"`
@@ -15,6 +18,7 @@ type VClusterK3S struct {
 	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
 	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
 	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
+	Storage         VClusterStorage         `json:"storage,omitempty"`
 }
 
 type VClusterK8S struct {
@@ -30,6 +34,7 @@ type VClusterK8S struct {
 	Tolerations     []VClusterToleration    `json:"tolerations,omitempty"`
 	MapServices     VClusterMapServices     `json:"mapServices,omitempty"`
 	Plugin          VClusterPlugins         `json:"plugin,omitempty"`
+	Storage         VClusterStorage         `json:"storage,omitempty"`
 }
 
 type VClusterK8SAPIServer struct {
@@ -48,9 +53,10 @@ type VClusterK8SAPIServer struct {
 	ServiceAnnotations map[string]string          `json:"serviceAnnotations,omitempty"`
 }
 
-// VClusterContainer - parameters to create the vcluster container with
-type VClusterContainer struct {
-	Image string `json:"image,omitempty"`
+// VClusterK3SAPIServer - parameters to create the vcluster container with
+type VClusterK3SAPIServer struct {
+	Image string                 `json:"image,omitempty"`
+	Env   []VClusterContainerEnv `json:"env,omitempty"`
 }
 
 type VClusterContainerResources struct {
@@ -216,7 +222,11 @@ type VClusterToleration struct {
 	Operator string `json:"operator"`
 }
 
+type VClusterStorage struct {
+	Persistence bool `json:"persistence,omitempty"`
+}
+
 func BuildVClusterHelmReleaseName(uCluster *v1alpha1.UffizziCluster) string {
-	helmReleaseName := UCLUSTER_NAME_PREFIX + uCluster.Name
+	helmReleaseName := constants.UCLUSTER_NAME_PREFIX + uCluster.Name
 	return helmReleaseName
 }

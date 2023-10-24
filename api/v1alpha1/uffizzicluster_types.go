@@ -141,6 +141,8 @@ type UffizziClusterResourceCount struct {
 
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
+	//+kubebuilder:default:="k3s"
+	//+kubebuilder:validation:Enum=k3s;k8s
 	Distro        string                       `json:"distro,omitempty"`
 	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
@@ -150,6 +152,9 @@ type UffizziClusterSpec struct {
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 	Sleep         bool                         `json:"sleep,omitempty"`
+	//+kubebuilder:default:="etcd"
+	//+kubebuilder:validation:Enum=etcd;sqlite
+	ExternalDatastore string `json:"externalDatastore,omitempty"`
 }
 
 // UffizziClusterStatus defines the observed state of UffizziCluster

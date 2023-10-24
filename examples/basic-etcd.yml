@@ -1,0 +1,8 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  name: basic-etcd-x-8
+spec:
+  ingress:
+    host: testns2.uclusters.app.qa-gke.uffizzi.com
+  externalDatastore: etcd
