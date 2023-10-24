@@ -187,9 +187,9 @@ build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to t
 	$(SED) -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e '/metadata:/a\
-		labels: {{ include "common.labels.standard" . | nindent 4 }}\
-		app.kubernetes.io/component: rbac\
-		app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
+	  labels: {{ include "common.labels.standard" . | nindent 4 }}\
+	    app.kubernetes.io/component: rbac\
+	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
 	# update chart versions
 	yq e -i '.version = "${VERSION}"' chart/Chart.yaml
 	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
