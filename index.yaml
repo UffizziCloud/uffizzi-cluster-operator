@@ -5,6 +5,52 @@ entries:
       artifacthub.io/category: integration-delivery
       artifacthub.io/prerelease: "false"
     apiVersion: v2
+    appVersion: v1.4.1
+    created: "2023-10-25T12:55:40.959504949Z"
+    dependencies:
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      version: 2.x.x
+    - name: flux
+      repository: https://charts.bitnami.com/bitnami
+      version: 0.3.x
+    description: A Helm chart for deploying the Uffizzi Cluster Operator
+    digest: 9dd2f7c99c86d8319a1f82d82f6da1f43d1deece4c8e548955c0ebdf8d9b062a
+    home: https://uffizzi.com/
+    icon: https://app.uffizzi.com/favicon.png
+    keywords:
+    - devops
+    - uffizzi
+    - continuous-previews
+    - ephemeral
+    - environments
+    - pull-request
+    - merge-request
+    - on-demand
+    - ci
+    - cd
+    - cp
+    maintainers:
+    - email: vibhav.bobade@uffizzi.com
+      name: Vibhav Bobade
+      url: https://github.com/waveywaves
+    - email: info@uffizzi.com
+      name: Uffizzi
+      url: https://uffizzi.com
+    - email: adam.vollrath@uffizzi.com
+      name: Adam Vollrath
+      url: https://github.com/axisofentropy
+    name: uffizzi-cluster-operator
+    sources:
+    - https://github.com/UffizziCloud/uffizzi-cluster-operator
+    type: application
+    urls:
+    - https://github.com/UffizziCloud/uffizzi-cluster-operator/releases/download/uffizzi-cluster-operator-1.4.1/uffizzi-cluster-operator-1.4.1.tgz
+    version: 1.4.1
+  - annotations:
+      artifacthub.io/category: integration-delivery
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
     appVersion: v1.4.0
     created: "2023-10-24T14:50:54.051641482Z"
     dependencies:
@@ -1437,4 +1483,4 @@ entries:
     urls:
     - https://github.com/UffizziCloud/uffizzi-cluster-operator/releases/download/uffizzi-cluster-operator-0.0.7/uffizzi-cluster-operator-0.0.7.tgz
     version: 0.0.7
-generated: "2023-10-24T14:50:54.051980687Z"
+generated: "2023-10-25T12:55:40.959734849Z"
