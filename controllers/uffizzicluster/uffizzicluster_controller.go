@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
+	uffizzicluster "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -128,6 +129,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			intialConditions = []metav1.Condition{
 				Initializing(),
 				InitializingAPI(),
+				InitializingDataStore(),
 				DefaultSleepState(),
 			}
 			helmReleaseRef = ""
@@ -288,16 +290,26 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		Namespace: uCluster.Namespace}, ucStatefulSet); err != nil {
 		return err
 	}
+	// get the etcd stateful set created by the helm chart
+	etcdStatefulSet := &appsv1.StatefulSet{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      uffizzicluster.BuildEtcdHelmReleaseName(uCluster),
+		Namespace: uCluster.Namespace}, etcdStatefulSet); err != nil {
+		return err
+	}
 	// get the current replicas
 	patch := client.MergeFrom(uCluster.DeepCopy())
 	currentReplicas := ucStatefulSet.Spec.Replicas
 	// scale the vcluster instance to 0 if the sleep flag is true
 	if uCluster.Spec.Sleep && *currentReplicas > 0 {
-		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 0); err != nil {
+		if err := r.scaleStatefulSet(ctx, 0, ucStatefulSet, etcdStatefulSet); err != nil {
 			return err
 		}
-		if err := r.waitForStatefulSetReady(ctx, ucStatefulSet, 0); err == nil {
+		if err := r.waitForStatefulSetToScale(ctx, 0, ucStatefulSet); err == nil {
 			setCondition(uCluster, APINotReady())
+		}
+		if err := r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
+			setCondition(uCluster, DataStoreNotReady())
 		}
 		err := r.deleteWorkloads(ctx, uCluster)
 		if err != nil {
@@ -307,7 +319,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		setCondition(uCluster, Sleeping(sleepingTime))
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
-		if err := r.scaleStatefulSet(ctx, ucStatefulSet, 1); err != nil {
+		if err := r.scaleStatefulSet(ctx, 1, etcdStatefulSet, ucStatefulSet); err != nil {
 			return err
 		}
 	}
@@ -318,8 +330,11 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		uCluster.Status.LastAwakeTime = lastAwakeTime
 		// if the above runs successfully, then set the status to awake
 		setCondition(uCluster, Awoken(lastAwakeTime))
-		if err := r.waitForStatefulSetReady(ctx, ucStatefulSet, 1); err == nil {
+		if err := r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
 			setCondition(uCluster, APIReady())
+		}
+		if err := r.waitForStatefulSetToScale(ctx, 1, ucStatefulSet); err == nil {
+			setCondition(uCluster, DataStoreReady())
 		}
 	}
 	if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
@@ -329,16 +344,20 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 }
 
 // scaleStatefulSet scales the stateful set to the given scale
-func (r *UffizziClusterReconciler) scaleStatefulSet(ctx context.Context, ucStatefulSet *appsv1.StatefulSet, scale int) error {
+func (r *UffizziClusterReconciler) scaleStatefulSet(ctx context.Context, scale int, statefulSets ...*appsv1.StatefulSet) error {
 	// if the current replicas is greater than 0, then scale down to 0
 	replicas := int32(scale)
-	// scale down to 0
-	ucStatefulSet.Spec.Replicas = &replicas
-	return r.Update(ctx, ucStatefulSet)
+	for _, ss := range statefulSets {
+		ss.Spec.Replicas = &replicas
+		if err := r.Update(ctx, ss); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// waitForStatefulSetReady is a goroutine which waits for the stateful set to be ready
-func (r *UffizziClusterReconciler) waitForStatefulSetReady(ctx context.Context, ucStatefulSet *appsv1.StatefulSet, scale int) error {
+// waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
+func (r *UffizziClusterReconciler) waitForStatefulSetToScale(ctx context.Context, scale int, ucStatefulSet *appsv1.StatefulSet) error {
 	// wait for the StatefulSet to be ready
 	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
 		if err := r.Get(ctx, types.NamespacedName{
