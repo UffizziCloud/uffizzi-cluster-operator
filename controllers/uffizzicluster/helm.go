@@ -341,12 +341,11 @@ func (r *UffizziClusterReconciler) upsertVClusterK3sHelmRelease(update bool, ctx
 		if err := r.Create(ctx, newHelmRelease); err != nil {
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
 		}
-		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
+		patch := client.MergeFrom(uCluster.DeepCopy())
 		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
 		}
-
 	} else if uCluster.Status.LastAppliedHelmReleaseSpec != nil {
 		// create helm release if there is no existing helm release to update
 		if update && *uCluster.Status.LastAppliedHelmReleaseSpec != newHelmReleaseSpec {
@@ -542,12 +541,12 @@ func (r *UffizziClusterReconciler) updateHelmRelease(newHelmRelease *fluxhelmv2b
 			}
 		}
 	}
-
+	helmReleasePatch := client.MergeFrom(existingHelmRelease.DeepCopy())
 	newHelmRelease.Spec.Upgrade = &fluxhelmv2beta1.Upgrade{
 		Force: true,
 	}
 	existingHelmRelease.Spec = newHelmRelease.Spec
-	if err := r.Update(ctx, existingHelmRelease); err != nil {
+	if err := r.Client.Patch(ctx, existingHelmRelease, helmReleasePatch); err != nil {
 		return errors.Wrap(err, "error while updating helm release")
 	}
 	// update the lastAppliedConfig
@@ -561,10 +560,10 @@ func (r *UffizziClusterReconciler) updateHelmRelease(newHelmRelease *fluxhelmv2b
 	}
 	updatedSpec := string(updatedSpecBytes)
 	updatedHelmReleaseSpec := string(updatedHelmReleaseSpecBytes)
-	patch := client.MergeFrom(uCluster.DeepCopy())
+	uClusterPatch := client.MergeFrom(uCluster.DeepCopy())
 	uCluster.Status.LastAppliedConfiguration = &updatedSpec
 	uCluster.Status.LastAppliedHelmReleaseSpec = &updatedHelmReleaseSpec
-	if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
+	if err := r.Status().Patch(ctx, uCluster, uClusterPatch); err != nil {
 		return errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedConfig")
 	}
 	return nil

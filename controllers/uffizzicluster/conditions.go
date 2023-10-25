@@ -10,19 +10,22 @@ import (
 // Condition types.
 const (
 	// TypeReady resources are believed to be ready to handle work.
-	TypeReady    = "Ready"
-	TypeAPIReady = "APIReady"
-	TypeSleep    = "Sleep"
+	TypeReady          = "Ready"
+	TypeAPIReady       = "APIReady"
+	TypeDataStoreReady = "DataStoreReady"
+	TypeSleep          = "Sleep"
 )
 
 // Reasons a resource is or is not ready.
 const (
-	ReasonDefault      = "Default"
-	ReasonInitializing = "Initializing"
-	ReasonReady        = "APIReady"
-	ReasonNotReady     = "APINotReady"
-	ReasonSleeping     = "Sleeping"
-	ReasonAwoken       = "Awoken"
+	ReasonDefault           = "Default"
+	ReasonInitializing      = "Initializing"
+	ReasonAPIReady          = "APIReady"
+	ReasonAPINotReady       = "APINotReady"
+	ReasonDataStoreReady    = "DataStoreReady"
+	ReasonDataStoreNotReady = "DataStoreNotReady"
+	ReasonSleeping          = "Sleeping"
+	ReasonAwoken            = "Awoken"
 )
 
 func Initializing() metav1.Condition {
@@ -45,13 +48,33 @@ func InitializingAPI() metav1.Condition {
 	}
 }
 
+func InitializingDataStore() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeDataStoreReady,
+		Status:             metav1.ConditionUnknown,
+		Reason:             ReasonInitializing,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster is being initialized",
+	}
+}
+
 func APIReady() metav1.Condition {
 	return metav1.Condition{
 		Type:               TypeAPIReady,
 		Status:             metav1.ConditionTrue,
-		Reason:             ReasonReady,
+		Reason:             ReasonAPIReady,
 		LastTransitionTime: metav1.Now(),
 		Message:            "UffizziCluster API is ready",
+	}
+}
+
+func DataStoreReady() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeDataStoreReady,
+		Status:             metav1.ConditionTrue,
+		Reason:             ReasonDataStoreReady,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster Datastore is ready",
 	}
 }
 
@@ -59,9 +82,19 @@ func APINotReady() metav1.Condition {
 	return metav1.Condition{
 		Type:               TypeAPIReady,
 		Status:             metav1.ConditionFalse,
-		Reason:             ReasonNotReady,
+		Reason:             ReasonAPINotReady,
 		LastTransitionTime: metav1.Now(),
 		Message:            "UffizziCluster API is not ready",
+	}
+}
+
+func DataStoreNotReady() metav1.Condition {
+	return metav1.Condition{
+		Type:               TypeDataStoreReady,
+		Status:             metav1.ConditionFalse,
+		Reason:             ReasonDataStoreNotReady,
+		LastTransitionTime: metav1.Now(),
+		Message:            "UffizziCluster Datastore is not ready",
 	}
 }
 

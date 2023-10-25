@@ -223,7 +223,7 @@ type VClusterToleration struct {
 }
 
 type VClusterStorage struct {
-	Persistence bool `json:"persistence,omitempty"`
+	Persistence bool `json:"persistence"`
 }
 
 func BuildVClusterHelmReleaseName(uCluster *v1alpha1.UffizziCluster) string {
