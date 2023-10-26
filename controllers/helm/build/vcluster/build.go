@@ -1,6 +1,7 @@
 package vcluster
 
 import (
+	"fmt"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
@@ -215,7 +216,11 @@ func syncerConfig(helmReleaseName string) vcluster.Syncer {
 	return vcluster.Syncer{
 		KubeConfigContextName: helmReleaseName,
 		ExtraArgs: []string{
-			"--enforce-toleration=sandbox.gke.io/runtime:NoSchedule",
+			fmt.Sprintf(
+				"--enforce-toleration=%s:%s",
+				constants.SANDBOX_GKE_IO_RUNTIME,
+				string(v1.TaintEffectNoSchedule),
+			),
 			"--node-selector=sandbox.gke.io/runtime=gvisor",
 			"--enforce-node-selector",
 		},
