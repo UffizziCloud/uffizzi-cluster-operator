@@ -18,6 +18,7 @@ type Common struct {
 	MapServices     MapServices     `json:"mapServices,omitempty"`
 	Plugin          Plugins         `json:"plugin,omitempty"`
 	Storage         Storage         `json:"storage,omitempty"`
+	EnableHA        bool            `json:"enableHA,omitempty"`
 }
 
 type K3S struct {

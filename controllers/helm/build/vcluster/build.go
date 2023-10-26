@@ -25,6 +25,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 			},
 		}
 		vclusterK3sHelmValues.Storage.Persistence = false
+		vclusterK3sHelmValues.EnableHA = true
 	}
 
 	if uCluster.Spec.Ingress.Host != "" {
