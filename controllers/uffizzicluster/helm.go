@@ -90,8 +90,8 @@ func (r *UffizziClusterReconciler) upsertVClusterK3SHelmRelease(update bool, ctx
 }
 
 func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
-	vclusterHelmValues, helmReleaseName := vcluster.BuildK8SHelmValues(uCluster)
-	helmValuesJSONObj := build.HelmValuesToJSON(vclusterHelmValues)
+	vclusterK8sHelmValues, helmReleaseName := vcluster.BuildK8SHelmValues(uCluster)
+	helmValuesJSONObj := build.HelmValuesToJSON(vclusterK8sHelmValues)
 
 	// Create a new HelmRelease
 	newHelmRelease := &fluxhelmv2beta1.HelmRelease{

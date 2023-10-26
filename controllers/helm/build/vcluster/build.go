@@ -237,9 +237,9 @@ func syncConfig() vcluster.Sync {
 func tolerations() []vcluster.Toleration {
 	return []vcluster.Toleration{
 		{
-			Key:      "sandbox.gke.io/runtime",
-			Effect:   "NoSchedule",
-			Operator: "Exists",
+			Key:      constants.SANDBOX_GKE_IO_RUNTIME,
+			Effect:   constants.NO_SCHEDULE,
+			Operator: constants.EXISTS,
 		},
 	}
 }

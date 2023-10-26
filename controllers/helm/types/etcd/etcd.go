@@ -3,48 +3,48 @@ package etcd
 import "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types"
 
 type Etcd struct {
-	Global         EtcdGlobal         `json:"global"`
-	ReplicaCount   int                `json:"replicaCount"`
-	ReadinessProbe EtcdReadinessProbe `json:"readinessProbe"`
-	Persistence    EtcdPersistence    `json:"persistence"`
-	Tolerations    []EtcdToleration   `json:"tolerations"`
-	NodeSelector   EtcdNodeSelector   `json:"nodeSelector"`
-	Auth           EtcdAuth           `json:"auth"`
-	Resources      EtcdResources      `json:"resources"`
+	Global         Global         `json:"global"`
+	ReplicaCount   int            `json:"replicaCount"`
+	ReadinessProbe ReadinessProbe `json:"readinessProbe"`
+	Persistence    Persistence    `json:"persistence"`
+	Tolerations    []Toleration   `json:"tolerations"`
+	NodeSelector   NodeSelector   `json:"nodeSelector"`
+	Auth           Auth           `json:"auth"`
+	Resources      Resources      `json:"resources"`
 }
 
-type EtcdGlobal struct {
+type Global struct {
 	StorageClass string `json:"storageClass"`
 }
 
-type EtcdReadinessProbe struct {
+type ReadinessProbe struct {
 	InitialDelaySeconds int `json:"initialDelaySeconds"`
 	PeriodSeconds       int `json:"periodSeconds"`
 }
 
-type EtcdPersistence struct {
+type Persistence struct {
 	Size string `json:"size"`
 }
 
-type EtcdToleration struct {
+type Toleration struct {
 	Effect   string `json:"effect"`
 	Key      string `json:"key"`
 	Operator string `json:"operator"`
 }
 
-type EtcdNodeSelector struct {
+type NodeSelector struct {
 	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime"`
 }
 
-type EtcdAuth struct {
-	Rbac EtcdRbac `json:"rbac"`
+type Auth struct {
+	Rbac Rbac `json:"rbac"`
 }
 
-type EtcdRbac struct {
+type Rbac struct {
 	Create bool `json:"create"`
 }
 
-type EtcdResources struct {
+type Resources struct {
 	Limits   types.ContainerMemoryCPU `json:"limits"`
 	Requests types.ContainerMemoryCPU `json:"requests"`
 }

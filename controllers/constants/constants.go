@@ -22,4 +22,9 @@ const (
 	DEFAULT_K3S_VERSION         = "rancher/k3s:v1.27.3-k3s1"
 	UCLUSTER_SYNC_PLUGIN_TAG    = "uffizzi/ucluster-sync-plugin:v0.2.4"
 	OCI_TYPE                    = "oci"
+	PREMIUM_RWO_STORAGE_CLASS   = "premium-rwo"
+	NO_SCHEDULE                 = "NoSchedule"
+	SANDBOX_GKE_IO_RUNTIME      = "cloud.google.com/gke-sandbox"
+	EXISTS                      = "Exists"
+	GVISOR                      = "gvisor"
 )
