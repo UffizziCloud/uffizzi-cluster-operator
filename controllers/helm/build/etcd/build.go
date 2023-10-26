@@ -4,6 +4,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
 	helmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types"
 	etcdhelmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types/etcd"
+	v1 "k8s.io/api/core/v1"
 )
 
 func BuildETCDHelmValues() etcdhelmtypes.Etcd {
@@ -21,9 +22,9 @@ func BuildETCDHelmValues() etcdhelmtypes.Etcd {
 		},
 		Tolerations: []etcdhelmtypes.Toleration{
 			{
-				Effect:   constants.NO_SCHEDULE,
+				Effect:   string(v1.TaintEffectNoSchedule),
 				Key:      constants.SANDBOX_GKE_IO_RUNTIME,
-				Operator: constants.EXISTS,
+				Operator: string(v1.NodeSelectorOpExists),
 			},
 		},
 		NodeSelector: etcdhelmtypes.NodeSelector{

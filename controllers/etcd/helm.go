@@ -8,7 +8,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/etcd"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -34,8 +34,14 @@ func (r *UffizziClusterEtcdReconciler) createBitnamiHelmRepo(ctx context.Context
 	return r.createHelmRepo(ctx, constants.BITNAMI_HELM_REPO, req.Namespace, constants.BITNAMI_CHART_REPO_URL)
 }
 
-func BuildEtcdHelmRelease(uCluster *v1alpha1.UffizziCluster, helmValuesJSONobj v1.JSON) *fluxhelmv2beta1.HelmRelease {
-	return &fluxhelmv2beta1.HelmRelease{
+func (r *UffizziClusterEtcdReconciler) upsertETCDHelmRelease(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+	etcdHelmValues := etcd.BuildETCDHelmValues()
+	helmValuesJSONObj, err := build.HelmValuesToJSON(etcdHelmValues)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal helm values")
+	}
+
+	hr := &fluxhelmv2beta1.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      BuildEtcdHelmReleaseName(uCluster),
 			Namespace: uCluster.Namespace,
@@ -55,22 +61,16 @@ func BuildEtcdHelmRelease(uCluster *v1alpha1.UffizziCluster, helmValuesJSONobj v
 					},
 				},
 			},
-			Values: &helmValuesJSONobj,
+			Values: &helmValuesJSONObj,
 		},
 	}
-}
-
-func (r *UffizziClusterEtcdReconciler) upsertETCDHelmRelease(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
-	helmValues := etcd.BuildETCDHelmValues()
-	helmValuesJSONObj := build.HelmValuesToJSON(helmValues)
-	hr := BuildEtcdHelmRelease(uCluster, helmValuesJSONObj)
 
 	// add UffizziCluster as the owner of this HelmRelease
 	if err := ctrl.SetControllerReference(uCluster, hr, r.Scheme); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to set controller reference")
 	}
 	if err := r.Create(ctx, hr); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create HelmRelease")
 	}
 	return hr, nil
 }

@@ -26,7 +26,10 @@ func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req c
 
 func (r *UffizziClusterReconciler) upsertVClusterK3SHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	vclusterK3sHelmValues, helmReleaseName := vcluster.BuildK3SHelmValues(uCluster)
-	helmValuesJSONObj := build.HelmValuesToJSON(vclusterK3sHelmValues)
+	helmValuesJSONObj, err := build.HelmValuesToJSON(vclusterK3sHelmValues)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal helm values")
+	}
 
 	// Create a new HelmRelease
 	newHelmRelease := &fluxhelmv2beta1.HelmRelease{
@@ -91,7 +94,10 @@ func (r *UffizziClusterReconciler) upsertVClusterK3SHelmRelease(update bool, ctx
 
 func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
 	vclusterK8sHelmValues, helmReleaseName := vcluster.BuildK8SHelmValues(uCluster)
-	helmValuesJSONObj := build.HelmValuesToJSON(vclusterK8sHelmValues)
+	helmValuesJSONObj, err := build.HelmValuesToJSON(vclusterK8sHelmValues)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal helm values")
+	}
 
 	// Create a new HelmRelease
 	newHelmRelease := &fluxhelmv2beta1.HelmRelease{

@@ -6,6 +6,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types/vcluster"
+	v1 "k8s.io/api/core/v1"
 )
 
 func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string) {
@@ -237,8 +238,8 @@ func tolerations() []vcluster.Toleration {
 	return []vcluster.Toleration{
 		{
 			Key:      constants.SANDBOX_GKE_IO_RUNTIME,
-			Effect:   constants.NO_SCHEDULE,
-			Operator: constants.EXISTS,
+			Effect:   string(v1.TaintEffectNoSchedule),
+			Operator: string(v1.NodeSelectorOpExists),
 		},
 	}
 }
