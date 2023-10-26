@@ -1,4 +1,4 @@
-package uffizzicluster
+package etcd
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func (r *UffizziClusterEtcdReconciler) createHelmRepo(ctx context.Context, name,
 		},
 		Spec: fluxsourcev1.HelmRepositorySpec{
 			URL:  url,
-			Type: "oci",
+			Type: constants.OCI_TYPE,
 		},
 	}
 

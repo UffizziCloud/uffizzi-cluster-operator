@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package uffizzicluster
+package etcd
 
 import (
 	"context"
@@ -69,7 +69,7 @@ func (r *UffizziClusterEtcdReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}, helmRelease)
 		if err != nil {
 			// if the helm release does not exist, create it
-			hr := buildEtcdHelmRelease(uCluster)
+			hr := BuildEtcdHelmRelease(uCluster)
 			// add UffizziCluster as the owner of this HelmRelease
 			if err := ctrl.SetControllerReference(uCluster, hr, r.Scheme); err != nil {
 				logger.Error(err, "unable to set the controller reference")
@@ -87,7 +87,7 @@ func (r *UffizziClusterEtcdReconciler) Reconcile(ctx context.Context, req ctrl.R
 	return ctrl.Result{}, nil
 }
 
-func buildEtcdHelmRelease(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) *fluxhelmv2beta1.HelmRelease {
+func BuildEtcdHelmRelease(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) *fluxhelmv2beta1.HelmRelease {
 	return &fluxhelmv2beta1.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      BuildEtcdHelmReleaseName(uCluster),

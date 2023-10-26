@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Condition types.
+// Condition helm.
 const (
 	// TypeReady resources are believed to be ready to handle work.
 	TypeReady          = "Ready"

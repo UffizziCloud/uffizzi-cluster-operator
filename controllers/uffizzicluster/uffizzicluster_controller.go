@@ -187,7 +187,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		} else {
 			// default to k3s
-			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
+			newHelmRelease, err = r.upsertVClusterK3SHelmRelease(false, ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create HelmRelease")
 				return ctrl.Result{Requeue: true}, err
@@ -257,7 +257,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 				}
 			} else {
-				if updatedHelmRelease, err = r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
+				if updatedHelmRelease, err = r.upsertVClusterK3SHelmRelease(true, ctx, uCluster); err != nil {
 					logger.Error(err, "Failed to update HelmRelease")
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 				}
@@ -387,6 +387,11 @@ func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *uclu
 		}
 	}
 	return nil
+}
+
+func BuildVClusterHelmReleaseName(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {
+	helmReleaseName := constants.UCLUSTER_NAME_PREFIX + uCluster.Name
+	return helmReleaseName
 }
 
 // SetupWithManager sets up the controller with the Manager.
