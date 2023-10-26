@@ -1,6 +1,6 @@
 #include tests/e2e/Makefile
 
-VERSION ?= 1.4.1
+VERSION ?= 1.4.2
 
 # check if we are using MacOS or LINUX and use that to determine the sed command
 UNAME_S := $(shell uname -s)
