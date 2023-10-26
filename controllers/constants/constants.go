@@ -27,4 +27,5 @@ const (
 	SANDBOX_GKE_IO_RUNTIME      = "cloud.google.com/gke-sandbox"
 	EXISTS                      = "Exists"
 	GVISOR                      = "gvisor"
+	VCLUSTER_MANAGED_BY_KEY     = "vcluster.loft.sh/managed-by"
 )

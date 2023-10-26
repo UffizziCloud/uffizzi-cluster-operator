@@ -3,6 +3,7 @@ package uffizzicluster
 import (
 	"fmt"
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,7 +14,7 @@ func (r *UffizziClusterReconciler) buildEgressPolicy(uCluster *uclusteruffizzico
 	port443 := intstr.FromInt(443)
 	port80 := intstr.FromInt(80)
 	TCP := corev1.ProtocolTCP
-	uClusterHelmReleaseName := BuildVClusterHelmReleaseName(uCluster)
+	uClusterHelmReleaseName := vcluster.BuildVClusterHelmReleaseName(uCluster)
 	egressPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-workloads-ingress", uClusterHelmReleaseName),

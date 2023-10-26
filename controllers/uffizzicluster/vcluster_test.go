@@ -18,6 +18,7 @@ package uffizzicluster
 
 import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
 	"testing"
 
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
@@ -32,7 +33,7 @@ func TestBuildVClusterHelmReleaseName(t *testing.T) {
 		},
 	}
 
-	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
+	helmReleaseName := vcluster.BuildVClusterHelmReleaseName(uCluster)
 	expectedHelmReleaseName := constants.UCLUSTER_NAME_PREFIX + uCluster.Name
 
 	if helmReleaseName != expectedHelmReleaseName {

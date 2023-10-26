@@ -6,7 +6,6 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/types/vcluster"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/uffizzicluster"
 )
 
 func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string) {
@@ -312,9 +311,9 @@ func nodeSelector() vcluster.NodeSelector {
 }
 
 func configStrings(uCluster *v1alpha1.UffizziCluster) (string, string, string) {
-	helmReleaseName := uffizzicluster.BuildVClusterHelmReleaseName(uCluster)
+	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
-		VClusterIngressHostname     = uffizzicluster.BuildVClusterIngressHost(uCluster)
+		VClusterIngressHostname     = BuildVClusterIngressHost(uCluster)
 		OutKubeConfigServerArgValue = ""
 	)
 
@@ -359,4 +358,17 @@ func k3SAPIServer(uCluster *v1alpha1.UffizziCluster) vcluster.K3SAPIServer {
 		apiserver.Image = uCluster.Spec.APIServer.Image
 	}
 	return apiserver
+}
+
+func BuildVClusterIngressHost(uCluster *v1alpha1.UffizziCluster) string {
+	host := ""
+	if uCluster.Spec.Ingress.Host != "" {
+		host = uCluster.Name + "-" + uCluster.Spec.Ingress.Host
+	}
+	return host
+}
+
+func BuildVClusterHelmReleaseName(uCluster *v1alpha1.UffizziCluster) string {
+	helmReleaseName := constants.UCLUSTER_NAME_PREFIX + uCluster.Name
+	return helmReleaseName
 }

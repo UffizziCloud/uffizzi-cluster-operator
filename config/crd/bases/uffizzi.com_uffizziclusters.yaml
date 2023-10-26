@@ -50,7 +50,7 @@ spec:
           kind:
             description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#helm-kinds'
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -262,7 +262,7 @@ spec:
                     reason:
                       description: reason contains a programmatic identifier indicating
                         the reason for the condition's last transition. Producers
-                        of specific condition helm may define expected values and
+                        of specific condition types may define expected values and
                         meanings for this field, and whether the values are considered
                         a guaranteed API. The value should be a CamelCase string.
                         This field may not be empty.
