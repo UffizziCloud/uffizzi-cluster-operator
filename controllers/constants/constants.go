@@ -19,4 +19,11 @@ const (
 	VCLUSTER_K8S_DISTRO         = "k8s"
 	K3S_DATASTORE_ENDPOINT      = "K3S_DATASTORE_ENDPOINT"
 	VCLUSTER_INGRESS_HOSTNAME   = "VCLUSTER_INGRESS_HOST"
+	DEFAULT_K3S_VERSION         = "rancher/k3s:v1.27.3-k3s1"
+	UCLUSTER_SYNC_PLUGIN_TAG    = "uffizzi/ucluster-sync-plugin:v0.2.4"
+	OCI_TYPE                    = "oci"
+	PREMIUM_RWO_STORAGE_CLASS   = "premium-rwo"
+	SANDBOX_GKE_IO_RUNTIME      = "cloud.google.com/gke-sandbox"
+	GVISOR                      = "gvisor"
+	VCLUSTER_MANAGED_BY_KEY     = "vcluster.loft.sh/managed-by"
 )

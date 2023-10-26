@@ -1,9 +1,15 @@
-package uffizzicluster
+package etcd
 
 import (
 	"context"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/etcd"
+	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -16,7 +22,7 @@ func (r *UffizziClusterEtcdReconciler) createHelmRepo(ctx context.Context, name,
 		},
 		Spec: fluxsourcev1.HelmRepositorySpec{
 			URL:  url,
-			Type: "oci",
+			Type: constants.OCI_TYPE,
 		},
 	}
 
@@ -26,4 +32,45 @@ func (r *UffizziClusterEtcdReconciler) createHelmRepo(ctx context.Context, name,
 
 func (r *UffizziClusterEtcdReconciler) createBitnamiHelmRepo(ctx context.Context, req ctrl.Request) error {
 	return r.createHelmRepo(ctx, constants.BITNAMI_HELM_REPO, req.Namespace, constants.BITNAMI_CHART_REPO_URL)
+}
+
+func (r *UffizziClusterEtcdReconciler) upsertETCDHelmRelease(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+	etcdHelmValues := etcd.BuildETCDHelmValues()
+	helmValuesJSONObj, err := build.HelmValuesToJSON(etcdHelmValues)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal helm values")
+	}
+
+	hr := &fluxhelmv2beta1.HelmRelease{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      BuildEtcdHelmReleaseName(uCluster),
+			Namespace: uCluster.Namespace,
+			Labels: map[string]string{
+				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.ETCD,
+			},
+		},
+		Spec: fluxhelmv2beta1.HelmReleaseSpec{
+			ReleaseName: BuildEtcdHelmReleaseName(uCluster),
+			Chart: fluxhelmv2beta1.HelmChartTemplate{
+				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
+					Chart:   constants.ETCD_CHART,
+					Version: constants.ETCD_CHART_VERSION,
+					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
+						Kind: "HelmRepository",
+						Name: constants.BITNAMI_HELM_REPO,
+					},
+				},
+			},
+			Values: &helmValuesJSONObj,
+		},
+	}
+
+	// add UffizziCluster as the owner of this HelmRelease
+	if err := ctrl.SetControllerReference(uCluster, hr, r.Scheme); err != nil {
+		return nil, errors.Wrap(err, "failed to set controller reference")
+	}
+	if err := r.Create(ctx, hr); err != nil {
+		return nil, errors.Wrap(err, "failed to create HelmRelease")
+	}
+	return hr, nil
 }

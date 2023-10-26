@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
 	uffizzicluster "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -157,7 +158,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// UCLUSTER HELM CHART and RELATED RESOURCES _CREATION_
 	// ----------------------
 	// Check if there is already exists a VClusterK3S HelmRelease for this UCluster, if not create one
-	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
+	helmReleaseName := vcluster.BuildVClusterHelmReleaseName(uCluster)
 	helmRelease := &fluxhelmv2beta1.HelmRelease{}
 	var newHelmRelease *fluxhelmv2beta1.HelmRelease
 	helmReleaseNamespacedName := client.ObjectKey{
@@ -187,7 +188,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		} else {
 			// default to k3s
-			newHelmRelease, err = r.upsertVClusterK3sHelmRelease(false, ctx, uCluster)
+			newHelmRelease, err = r.upsertVClusterK3SHelmRelease(false, ctx, uCluster)
 			if err != nil {
 				logger.Error(err, "Failed to create HelmRelease")
 				return ctrl.Result{Requeue: true}, err
@@ -198,7 +199,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return ctrl.Result{}, nil
 		}
 		// get the ingress hostname for the vcluster
-		vclusterIngressHost := BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
+		vclusterIngressHost := vcluster.BuildVClusterIngressHost(uCluster) // r.createVClusterIngress(ctx, uCluster)
 		patch := client.MergeFrom(uCluster.DeepCopy())
 		uCluster.Status.Host = &vclusterIngressHost
 		// reference the HelmRelease in the status
@@ -257,7 +258,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 				}
 			} else {
-				if updatedHelmRelease, err = r.upsertVClusterK3sHelmRelease(true, ctx, uCluster); err != nil {
+				if updatedHelmRelease, err = r.upsertVClusterK3SHelmRelease(true, ctx, uCluster); err != nil {
 					logger.Error(err, "Failed to update HelmRelease")
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 				}
@@ -286,7 +287,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 	// get the stateful set created by the helm chart
 	ucStatefulSet := &appsv1.StatefulSet{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Name:      BuildVClusterHelmReleaseName(uCluster),
+		Name:      vcluster.BuildVClusterHelmReleaseName(uCluster),
 		Namespace: uCluster.Namespace}, ucStatefulSet); err != nil {
 		return err
 	}
@@ -377,7 +378,7 @@ func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *uclu
 	// delete pods with labels
 	podList := &corev1.PodList{}
 	if err := r.List(ctx, podList, client.InNamespace(uc.Namespace), client.MatchingLabels(map[string]string{
-		"vcluster.loft.sh/managed-by": BuildVClusterHelmReleaseName(uc),
+		constants.VCLUSTER_MANAGED_BY_KEY: vcluster.BuildVClusterHelmReleaseName(uc),
 	})); err != nil {
 		return err
 	}

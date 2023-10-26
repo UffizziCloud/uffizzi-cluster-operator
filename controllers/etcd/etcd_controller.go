@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package uffizzicluster
+package etcd
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -69,14 +68,8 @@ func (r *UffizziClusterEtcdReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}, helmRelease)
 		if err != nil {
 			// if the helm release does not exist, create it
-			hr := buildEtcdHelmRelease(uCluster)
-			// add UffizziCluster as the owner of this HelmRelease
-			if err := ctrl.SetControllerReference(uCluster, hr, r.Scheme); err != nil {
-				logger.Error(err, "unable to set the controller reference")
-				return ctrl.Result{}, err
-			}
-			if err := r.Create(ctx, hr); err != nil {
-				logger.Error(err, "unable to create the helm release")
+			_, err = r.upsertETCDHelmRelease(ctx, uCluster)
+			if err != nil {
 				return ctrl.Result{}, err
 			}
 		} else {
@@ -85,31 +78,6 @@ func (r *UffizziClusterEtcdReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func buildEtcdHelmRelease(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) *fluxhelmv2beta1.HelmRelease {
-	return &fluxhelmv2beta1.HelmRelease{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      BuildEtcdHelmReleaseName(uCluster),
-			Namespace: uCluster.Namespace,
-			Labels: map[string]string{
-				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.ETCD,
-			},
-		},
-		Spec: fluxhelmv2beta1.HelmReleaseSpec{
-			ReleaseName: BuildEtcdHelmReleaseName(uCluster),
-			Chart: fluxhelmv2beta1.HelmChartTemplate{
-				Spec: fluxhelmv2beta1.HelmChartTemplateSpec{
-					Chart:   constants.ETCD_CHART,
-					Version: constants.ETCD_CHART_VERSION,
-					SourceRef: fluxhelmv2beta1.CrossNamespaceObjectReference{
-						Kind: "HelmRepository",
-						Name: constants.BITNAMI_HELM_REPO,
-					},
-				},
-			},
-		},
-	}
 }
 
 func BuildEtcdHelmReleaseName(uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) string {

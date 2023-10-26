@@ -31,9 +31,9 @@ var (
 	// GroupVersion is group version used to register these objects
 	SchemaGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}
 
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	// SchemeBuilder is used to add go helm to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemaGroupVersion}
 
-	// AddToScheme adds the types in this group-version to the given scheme.
+	// AddToScheme adds the helm in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
