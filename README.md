@@ -11,7 +11,15 @@ A Kubernetes operator for creating fully managed virtual clusters.
 - [ ] Expose Ingress which gives commandline access to the VCluster environment (run vcluster connect in a terminal and give webterminal access ?)
 - [ ] Suspend the VCluster if it is not being used for a certain period of time.
 
-## Requirements
+## Installation
+
+This operator is best installed with Helm as a dependency of the Uffizzi Helm chart: https://github.com/UffizziCloud/uffizzi/tree/develop/charts/uffizzi-app
+
+Alternatively, if you're installing the Uffizzi control plane on a separate cluster, you may install this operator as a dependency of the Uffizzi controller Helm chart: https://github.com/UffizziCloud/uffizzi_controller/tree/uffizzi-controller-2.2.5/charts/uffizzi-controller
+
+Lastly, a Helm chart for the operator itself is provided: https://github.com/UffizziCloud/uffizzi-cluster-operator/tree/main/chart
+
+## Dependencies
 
 ### Flux Components
 We need the Helm Controller and Source Controller which are components of flux cd. Use the following command to install 
@@ -43,18 +51,26 @@ kubectl create -f config/helmreleases/oauth2proxy.yaml
 
 ## Development
 
+We're most often using our shared `qa` cluster for development. Before "taking over", shut down the operator that's active there. If that was installed via the Helm chart, this command will look like this:
+
+```bash
+kubectl scale --replicas=0 deployment uffizzi-uffizzi-cluster-operator --namespace uffizzi
+```
+
+Be sure so scale back up after you're finished testing!
+```bash
+kubectl scale --replicas=1 deployment uffizzi-uffizzi-cluster-operator --namespace uffizzi
+```
+
 To install the CRD for UffizziCluster and run the operator locally, use the following command:
 
 ```bash
 make install && make run
 ```
 
-You also need to have the `fluxcd` binary installed on your system which the operator uses to get the yaml
-to inject in the HelmRelease values.
-
 ## Usage
 
-To create a sample UffizziCluster, use the following command:
+Once installed, use the following command to create a sample UffizziCluster:
 
 ```bash
 kubectl apply -f examples/helm-basic.yml
