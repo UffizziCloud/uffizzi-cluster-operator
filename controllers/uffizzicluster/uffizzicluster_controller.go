@@ -38,7 +38,7 @@ import (
 	controllerruntimesource "sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
 
-	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
+	v1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -103,7 +103,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// UCLUSTER INIT and LIFECYCLE OP TYPE determination
 	// ----------------------
 	// Fetch the UffizziCluster instance in question and then see which kind of event might have been triggered
-	uCluster := &uclusteruffizzicomv1alpha1.UffizziCluster{}
+	uCluster := &v1alpha1.UffizziCluster{}
 	if err := r.Get(ctx, req.NamespacedName, uCluster); err != nil {
 		// possibly a delete event
 		if k8serrors.IsNotFound(err) {
@@ -135,19 +135,20 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 			helmReleaseRef = ""
 			host           = ""
-			kubeConfig     = uclusteruffizzicomv1alpha1.VClusterKubeConfig{
+			kubeConfig     = v1alpha1.VClusterKubeConfig{
 				SecretRef: &meta.SecretKeyReference{},
 			}
 			lastAwakeTime = metav1.Now().Rfc3339Copy()
 		)
 		patch := client.MergeFrom(uCluster.DeepCopy())
-		uCluster.Status = uclusteruffizzicomv1alpha1.UffizziClusterStatus{
+		uCluster.Status = v1alpha1.UffizziClusterStatus{
 			Conditions:     intialConditions,
 			HelmReleaseRef: &helmReleaseRef,
 			Host:           &host,
 			KubeConfig:     kubeConfig,
 			LastAwakeTime:  lastAwakeTime,
 		}
+		uCluster.Status.WorkloadType = getWorkloadType(uCluster)
 		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			logger.Error(err, "Failed to update the default UffizziCluster status")
 			return ctrl.Result{}, err
@@ -160,39 +161,26 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Check if there is already exists a VClusterK3S HelmRelease for this UCluster, if not create one
 	helmReleaseName := vcluster.BuildVClusterHelmReleaseName(uCluster)
 	helmRelease := &fluxhelmv2beta1.HelmRelease{}
+	// check if the helm release already exists
+	// create one if helmRelease doesn't exist
 	var newHelmRelease *fluxhelmv2beta1.HelmRelease
 	helmReleaseNamespacedName := client.ObjectKey{
 		Namespace: uCluster.Namespace,
 		Name:      helmReleaseName,
 	}
-	// check if the helm release already exists
 	err := r.Get(ctx, helmReleaseNamespacedName, helmRelease)
+	// if the helm release does not exist, create it
 	if err != nil && k8serrors.IsNotFound(err) {
 		// create egress policy for vcluster which will allow the vcluster to talk to the outside world
-		egressPolicy := r.buildEgressPolicy(uCluster)
-		if err := controllerutil.SetControllerReference(uCluster, egressPolicy, r.Scheme); err != nil {
-			return ctrl.Result{Requeue: true}, errors.Wrap(err, "failed to set controller reference")
-		}
-		if err := r.Create(ctx, egressPolicy); err != nil {
-			logger.Error(err, "Failed to create egress policy")
-			return ctrl.Result{Requeue: true}, err
+		if result, createEgressError := r.createEgressPolicy(ctx, uCluster); createEgressError != nil {
+			return result, createEgressError
 		}
 		// helm release does not exist so let's create one
 		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
 		// create either a k8s based vcluster or a k3s based vcluster
-		if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO {
-			newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
-			if err != nil {
-				logger.Error(err, "Failed to create HelmRelease")
-				return ctrl.Result{Requeue: true}, err
-			}
-		} else {
-			// default to k3s
-			newHelmRelease, err = r.upsertVClusterK3SHelmRelease(false, ctx, uCluster)
-			if err != nil {
-				logger.Error(err, "Failed to create HelmRelease")
-				return ctrl.Result{Requeue: true}, err
-			}
+		newHelmRelease, result, err := r.createVClusterHelmChart(ctx, uCluster, newHelmRelease)
+		if err != nil {
+			return result, err
 		}
 		// if newHelmRelease is still nil, then the upsert vcluster helm release upsert wasn't concluded
 		if newHelmRelease == nil {
@@ -283,19 +271,58 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) error {
-	// get the stateful set created by the helm chart
-	ucStatefulSet := &appsv1.StatefulSet{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name:      vcluster.BuildVClusterHelmReleaseName(uCluster),
-		Namespace: uCluster.Namespace}, ucStatefulSet); err != nil {
+func (r *UffizziClusterReconciler) createVClusterHelmChart(ctx context.Context, uCluster *v1alpha1.UffizziCluster, newHelmRelease *fluxhelmv2beta1.HelmRelease) (*fluxhelmv2beta1.HelmRelease, ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	var err error = nil
+	if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO {
+		newHelmRelease, err = r.upsertVClusterK8sHelmRelease(false, ctx, uCluster)
+		if err != nil {
+			logger.Error(err, "Failed to create HelmRelease")
+			return nil, ctrl.Result{Requeue: true}, err
+		}
+	} else {
+		// default to k3s
+		newHelmRelease, err = r.upsertVClusterK3SHelmRelease(false, ctx, uCluster)
+		if err != nil {
+			logger.Error(err, "Failed to create HelmRelease")
+			return nil, ctrl.Result{Requeue: true}, err
+		}
+	}
+	return newHelmRelease, ctrl.Result{}, nil
+}
+
+func (r *UffizziClusterReconciler) createEgressPolicy(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	egressPolicy := r.buildEgressPolicy(uCluster)
+	if err := controllerutil.SetControllerReference(uCluster, egressPolicy, r.Scheme); err != nil {
+		return ctrl.Result{Requeue: true}, errors.Wrap(err, "failed to set controller reference")
+	}
+	if err := r.Create(ctx, egressPolicy); err != nil {
+		logger.Error(err, "Failed to create egress policy")
+		return ctrl.Result{Requeue: true}, err
+	}
+	return ctrl.Result{}, nil
+}
+
+// reconcileSleepState reconciles the sleep state of the vcluster
+// it also makes sure that the vcluster is up and running before setting the sleep state
+func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uCluster *v1alpha1.UffizziCluster) error {
+	// get the stateful set or deployment created by the helm chart
+	ucWorkload, err := r.getUffizziClusterWorkload(ctx, uCluster)
+	if err != nil {
 		return err
 	}
+	workloadType := getWorkloadType(uCluster)
+	var ucStatefulSet *appsv1.StatefulSet
+	var ucDeployment *appsv1.Deployment
+	if workloadType == constants.WORKLOAD_TYPE_DEPLOYMENT {
+		// type cast the workload to be a deployment
+		ucDeployment = ucWorkload.(*appsv1.Deployment)
+	}
+	ucStatefulSet = ucWorkload.(*appsv1.StatefulSet)
 	// get the etcd stateful set created by the helm chart
-	etcdStatefulSet := &appsv1.StatefulSet{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name:      uffizzicluster.BuildEtcdHelmReleaseName(uCluster),
-		Namespace: uCluster.Namespace}, etcdStatefulSet); err != nil {
+	etcdStatefulSet, err := r.getEtcdStatefulSet(ctx, uCluster)
+	if err != nil {
 		return err
 	}
 	// get the current replicas
@@ -303,9 +330,6 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 	currentReplicas := ucStatefulSet.Spec.Replicas
 	// scale the vcluster instance to 0 if the sleep flag is true
 	if uCluster.Spec.Sleep && *currentReplicas > 0 {
-		if err := r.scaleStatefulSet(ctx, 0, ucStatefulSet, etcdStatefulSet); err != nil {
-			return err
-		}
 		if err := r.waitForStatefulSetToScale(ctx, 0, ucStatefulSet); err == nil {
 			setCondition(uCluster, APINotReady())
 		}
@@ -320,7 +344,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		setCondition(uCluster, Sleeping(sleepingTime))
 		// if the current replicas is 0, then do nothing
 	} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
-		if err := r.scaleStatefulSet(ctx, 1, etcdStatefulSet, ucStatefulSet); err != nil {
+		if err := r.scaleStatefulSets(ctx, 1, etcdStatefulSet, ucStatefulSet); err != nil {
 			return err
 		}
 	}
@@ -334,7 +358,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		if err := r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
 			setCondition(uCluster, APIReady())
 		}
-		if err := r.waitForStatefulSetToScale(ctx, 1, ucStatefulSet); err == nil {
+		if err := r.waitForStatefulSetToScale(ctx, 1, ucWorkload); err == nil {
 			setCondition(uCluster, DataStoreReady())
 		}
 	}
@@ -344,13 +368,63 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 	return nil
 }
 
-// scaleStatefulSet scales the stateful set to the given scale
-func (r *UffizziClusterReconciler) scaleStatefulSet(ctx context.Context, scale int, statefulSets ...*appsv1.StatefulSet) error {
+func (r *UffizziClusterReconciler) getUffizziClusterWorkload(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (runtime.Object, error) {
+	if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO || uCluster.Spec.ExternalDatastore == constants.ETCD {
+		return r.getUffizziClusterDeployment(ctx, uCluster)
+	}
+	return r.getUffizziClusterStatefulSet(ctx, uCluster)
+}
+
+func (r *UffizziClusterReconciler) getUffizziClusterDeployment(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.Deployment, error) {
+	ucDeployment := &appsv1.Deployment{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      vcluster.BuildVClusterHelmReleaseName(uCluster),
+		Namespace: uCluster.Namespace}, ucDeployment); err != nil {
+		return nil, err
+	}
+	return ucDeployment, nil
+}
+
+func (r *UffizziClusterReconciler) getUffizziClusterStatefulSet(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.StatefulSet, error) {
+	ucStatefulSet := &appsv1.StatefulSet{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      vcluster.BuildVClusterHelmReleaseName(uCluster),
+		Namespace: uCluster.Namespace}, ucStatefulSet); err != nil {
+		return nil, err
+	}
+	return ucStatefulSet, nil
+}
+
+func (r *UffizziClusterReconciler) getEtcdStatefulSet(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.StatefulSet, error) {
+	etcdStatefulSet := &appsv1.StatefulSet{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      uffizzicluster.BuildEtcdHelmReleaseName(uCluster),
+		Namespace: uCluster.Namespace}, etcdStatefulSet); err != nil {
+		return nil, err
+	}
+	return etcdStatefulSet, nil
+}
+
+// scaleStatefulSets scales the stateful set to the given scale
+func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale int, statefulSets ...*appsv1.StatefulSet) error {
 	// if the current replicas is greater than 0, then scale down to 0
 	replicas := int32(scale)
 	for _, ss := range statefulSets {
 		ss.Spec.Replicas = &replicas
 		if err := r.Update(ctx, ss); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// scaleStatefulSets scales the stateful set to the given scale
+func (r *UffizziClusterReconciler) scaleDeployments(ctx context.Context, scale int, deployments ...*appsv1.Deployment) error {
+	// if the current replicas is greater than 0, then scale down to 0
+	replicas := int32(scale)
+	for _, d := range deployments {
+		d.Spec.Replicas = &replicas
+		if err := r.Update(ctx, d); err != nil {
 			return err
 		}
 	}
@@ -373,8 +447,41 @@ func (r *UffizziClusterReconciler) waitForStatefulSetToScale(ctx context.Context
 	})
 }
 
+// waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
+func (r *UffizziClusterReconciler) waitForDeploymentToScale(ctx context.Context, scale int, ucDeployment *appsv1.Deployment) error {
+	// wait for the Deployment to be ready
+	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
+		if err := r.Get(ctx, types.NamespacedName{
+			Name:      ucDeployment.Name,
+			Namespace: ucDeployment.Namespace}, ucDeployment); err != nil {
+			return false, err
+		}
+		if ucDeployment.Status.AvailableReplicas == int32(scale) {
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
+func getWorkloadType(uCluster *v1alpha1.UffizziCluster) string {
+	if uCluster.Spec.ExternalDatastore == constants.ETCD {
+		return constants.WORKLOAD_TYPE_DEPLOYMENT
+	}
+	return constants.WORKLOAD_TYPE_STATEFULSET
+}
+
+func (r *UffizziClusterReconciler) scaleWorkload(workload runtime.Object, scale int) error {
+	// if the current replicas is greater than 0, then scale down to 0
+	if typedWorkload, ok := workload.(*appsv1.StatefulSet); ok {
+		return r.scaleStatefulSets(context.Background(), scale, typedWorkload)
+	} else if typedWorkload, ok := workload.(*appsv1.Deployment); ok {
+		return r.scaleDeployments(context.Background(), scale, typedWorkload)
+	}
+	return nil
+}
+
 // deleteWorkloads deletes all the workloads created by the vcluster
-func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *uclusteruffizzicomv1alpha1.UffizziCluster) error {
+func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *v1alpha1.UffizziCluster) error {
 	// delete pods with labels
 	podList := &corev1.PodList{}
 	if err := r.List(ctx, podList, client.InNamespace(uc.Namespace), client.MatchingLabels(map[string]string{
@@ -393,13 +500,13 @@ func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *uclu
 // SetupWithManager sets up the controller with the Manager.
 func (r *UffizziClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&uclusteruffizzicomv1alpha1.UffizziCluster{}).
+		For(&v1alpha1.UffizziCluster{}).
 		// Watch HelmRelease reconciled by the Helm Controller
 		Watches(
 			&controllerruntimesource.Kind{Type: &fluxhelmv2beta1.HelmRelease{}},
 			&handler.EnqueueRequestForOwner{
 				IsController: true,
-				OwnerType:    &uclusteruffizzicomv1alpha1.UffizziCluster{},
+				OwnerType:    &v1alpha1.UffizziCluster{},
 			}).
 		Complete(r)
 }
