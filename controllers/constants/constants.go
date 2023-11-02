@@ -26,4 +26,6 @@ const (
 	SANDBOX_GKE_IO_RUNTIME      = "sandbox.gke.io/runtime"
 	GVISOR                      = "gvisor"
 	VCLUSTER_MANAGED_BY_KEY     = "vcluster.loft.sh/managed-by"
+	WORKLOAD_TYPE_DEPLOYMENT    = "deployment"
+	WORKLOAD_TYPE_STATEFULSET   = "statefulset"
 )
