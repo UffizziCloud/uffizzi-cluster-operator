@@ -20,16 +20,12 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/constants"
-	uffizzicluster "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
 	"github.com/fluxcd/pkg/apis/meta"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -317,6 +313,8 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 	// get the etcd stateful set created by the helm chart
 	etcdStatefulSet, err := r.getEtcdStatefulSet(ctx, uCluster)
 	// execute sleep reconciliation based on the type of workload
+	// TODO: Abstract the actual sleep reconciliation logic into a separate function so that it can be reused
+	// for different types of workloads, i.e. statefulset, deployment, daemonset
 	switch ucWorkload.(type) {
 	case *appsv1.StatefulSet:
 		ucStatefulSet := ucWorkload.(*appsv1.StatefulSet)
@@ -398,135 +396,6 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 	}
 	if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 		return err
-	}
-	return nil
-}
-
-func (r *UffizziClusterReconciler) getUffizziClusterWorkload(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (runtime.Object, error) {
-	if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO || uCluster.Spec.ExternalDatastore == constants.ETCD {
-		return r.getUffizziClusterDeployment(ctx, uCluster)
-	}
-	return r.getUffizziClusterStatefulSet(ctx, uCluster)
-}
-
-func (r *UffizziClusterReconciler) getUffizziClusterDeployment(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.Deployment, error) {
-	ucDeployment := &appsv1.Deployment{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name:      vcluster.BuildVClusterHelmReleaseName(uCluster),
-		Namespace: uCluster.Namespace}, ucDeployment); err != nil {
-		return nil, err
-	}
-	return ucDeployment, nil
-}
-
-func (r *UffizziClusterReconciler) getUffizziClusterStatefulSet(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.StatefulSet, error) {
-	ucStatefulSet := &appsv1.StatefulSet{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name:      vcluster.BuildVClusterHelmReleaseName(uCluster),
-		Namespace: uCluster.Namespace}, ucStatefulSet); err != nil {
-		return nil, err
-	}
-	return ucStatefulSet, nil
-}
-
-func (r *UffizziClusterReconciler) getEtcdStatefulSet(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.StatefulSet, error) {
-	etcdStatefulSet := &appsv1.StatefulSet{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name:      uffizzicluster.BuildEtcdHelmReleaseName(uCluster),
-		Namespace: uCluster.Namespace}, etcdStatefulSet); err != nil {
-		return nil, err
-	}
-	return etcdStatefulSet, nil
-}
-
-// scaleStatefulSets scales the stateful set to the given scale
-func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale int, statefulSets ...*appsv1.StatefulSet) error {
-	// if the current replicas is greater than 0, then scale down to 0
-	replicas := int32(scale)
-	for _, ss := range statefulSets {
-		ss.Spec.Replicas = &replicas
-		if err := r.Update(ctx, ss); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// scaleStatefulSets scales the stateful set to the given scale
-func (r *UffizziClusterReconciler) scaleDeployments(ctx context.Context, scale int, deployments ...*appsv1.Deployment) error {
-	// if the current replicas is greater than 0, then scale down to 0
-	replicas := int32(scale)
-	for _, d := range deployments {
-		d.Spec.Replicas = &replicas
-		if err := r.Update(ctx, d); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
-func (r *UffizziClusterReconciler) waitForStatefulSetToScale(ctx context.Context, scale int, ucStatefulSet *appsv1.StatefulSet) error {
-	// wait for the StatefulSet to be ready
-	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
-		if err := r.Get(ctx, types.NamespacedName{
-			Name:      ucStatefulSet.Name,
-			Namespace: ucStatefulSet.Namespace}, ucStatefulSet); err != nil {
-			return false, err
-		}
-		if ucStatefulSet.Status.AvailableReplicas == int32(scale) {
-			return true, nil
-		}
-		return false, nil
-	})
-}
-
-// waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
-func (r *UffizziClusterReconciler) waitForDeploymentToScale(ctx context.Context, scale int, ucDeployment *appsv1.Deployment) error {
-	// wait for the Deployment to be ready
-	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
-		if err := r.Get(ctx, types.NamespacedName{
-			Name:      ucDeployment.Name,
-			Namespace: ucDeployment.Namespace}, ucDeployment); err != nil {
-			return false, err
-		}
-		if ucDeployment.Status.AvailableReplicas == int32(scale) {
-			return true, nil
-		}
-		return false, nil
-	})
-}
-
-func getWorkloadType(uCluster *v1alpha1.UffizziCluster) string {
-	if uCluster.Spec.ExternalDatastore == constants.ETCD {
-		return constants.WORKLOAD_TYPE_DEPLOYMENT
-	}
-	return constants.WORKLOAD_TYPE_STATEFULSET
-}
-
-func (r *UffizziClusterReconciler) scaleWorkload(workload runtime.Object, scale int) error {
-	// if the current replicas is greater than 0, then scale down to 0
-	if typedWorkload, ok := workload.(*appsv1.StatefulSet); ok {
-		return r.scaleStatefulSets(context.Background(), scale, typedWorkload)
-	} else if typedWorkload, ok := workload.(*appsv1.Deployment); ok {
-		return r.scaleDeployments(context.Background(), scale, typedWorkload)
-	}
-	return nil
-}
-
-// deleteWorkloads deletes all the workloads created by the vcluster
-func (r *UffizziClusterReconciler) deleteWorkloads(ctx context.Context, uc *v1alpha1.UffizziCluster) error {
-	// delete pods with labels
-	podList := &corev1.PodList{}
-	if err := r.List(ctx, podList, client.InNamespace(uc.Namespace), client.MatchingLabels(map[string]string{
-		constants.VCLUSTER_MANAGED_BY_KEY: vcluster.BuildVClusterHelmReleaseName(uc),
-	})); err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		if err := r.Delete(ctx, &pod); err != nil {
-			return err
-		}
 	}
 	return nil
 }

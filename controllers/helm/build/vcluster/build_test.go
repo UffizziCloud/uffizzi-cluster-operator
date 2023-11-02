@@ -1,8 +1,7 @@
-package uffizzicluster
+package vcluster
 
 import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
@@ -24,7 +23,7 @@ func TestBuildVClusterIngressHost(t *testing.T) {
 	expectedHost := "cluster1-test.com"
 
 	// Call the function being tested
-	host := vcluster.BuildVClusterIngressHost(uCluster)
+	host := BuildVClusterIngressHost(uCluster)
 
 	// Assert that the output matches the expected result
 	if host != expectedHost {
