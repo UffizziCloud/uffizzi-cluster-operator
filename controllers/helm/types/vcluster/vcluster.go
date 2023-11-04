@@ -67,13 +67,13 @@ type ContainerVolumeMounts struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
-// VClusterInit - resources which are created during the init phase of the vcluster
+// Init - resources which are created during the init phase of the vcluster
 type Init struct {
 	Manifests string               `json:"manifests,omitempty"`
 	Helm      []v1alpha1.HelmChart `json:"helm,omitempty"`
 }
 
-// VClusterSyncer - parameters to create the syncer with
+// Syncer - parameters to create the syncer with
 // https://www.vcluster.com/docs/architecture/basics#vcluster-syncer
 type Syncer struct {
 	KubeConfigContextName string                   `json:"kubeConfigContextName,omitempty"`
@@ -179,7 +179,7 @@ type MapServices struct {
 	FromVirtual []MapServicesFromVirtual `json:"fromVirtual"`
 }
 
-// VClusterIsolation - parameters to define the isolation of the cluster
+// Isolation - parameters to define the isolation of the cluster
 type Isolation struct {
 	Enabled             bool          `json:"enabled,omitempty"`
 	PodSecurityStandard string        `json:"podSecurityStandard,omitempty"`
@@ -188,7 +188,7 @@ type Isolation struct {
 	NetworkPolicy       NetworkPolicy `json:"networkPolicy,omitempty"`
 }
 
-// VClusterNodeSelector - parameters to define the node selector of the cluster
+// NodeSelector - parameters to define the node selector of the cluster
 type NodeSelector struct {
 	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime"`
 }
@@ -197,7 +197,7 @@ type SecurityContextCapabilities struct {
 	Drop []string `json:"drop"`
 }
 
-// VClusterSecurityContext - parameters to define the security context of the cluster
+// SecurityContext - parameters to define the security context of the cluster
 type SecurityContext struct {
 	Capabilities           SecurityContextCapabilities `json:"capabilities"`
 	ReadOnlyRootFilesystem bool                        `json:"readOnlyRootFilesystem"`
