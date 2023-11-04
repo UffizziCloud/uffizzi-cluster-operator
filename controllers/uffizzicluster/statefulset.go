@@ -2,6 +2,7 @@ package uffizzicluster
 
 import (
 	"context"
+	"errors"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	uffizzicluster "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
@@ -36,6 +37,9 @@ func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale 
 	// if the current replicas is greater than 0, then scale down to 0
 	replicas := int32(scale)
 	for _, ss := range statefulSets {
+		if ss == nil {
+			return errors.New("statefulSet is nil")
+		}
 		ss.Spec.Replicas = &replicas
 		if err := r.Update(ctx, ss); err != nil {
 			return err
@@ -46,6 +50,9 @@ func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale 
 
 // waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
 func (r *UffizziClusterReconciler) waitForStatefulSetToScale(ctx context.Context, scale int, ucStatefulSet *appsv1.StatefulSet) error {
+	if ucStatefulSet == nil {
+		return errors.New("statefulSet is nil")
+	}
 	// wait for the StatefulSet to be ready
 	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
 		if err := r.Get(ctx, types.NamespacedName{
