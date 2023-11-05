@@ -2,6 +2,7 @@ package uffizzicluster
 
 import (
 	"context"
+	"errors"
 	v1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/helm/build/vcluster"
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,6 +36,9 @@ func (r *UffizziClusterReconciler) scaleDeployments(ctx context.Context, scale i
 
 // waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
 func (r *UffizziClusterReconciler) waitForDeploymentToScale(ctx context.Context, scale int, ucDeployment *appsv1.Deployment) error {
+	if ucDeployment == nil {
+		return errors.New("deployment is nil")
+	}
 	// wait for the Deployment to be ready
 	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
 		if err := r.Get(ctx, types.NamespacedName{

@@ -245,7 +245,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				}
 			} else {
 				if updatedHelmRelease, err = r.upsertVClusterK3SHelmRelease(true, ctx, uCluster); err != nil {
-					logger.Error(err, "Failed to update HelmRelease")
+					logger.Info("Failed to update HelmRelease with error, reconciling", "Error", err.Error())
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 				}
 			}
@@ -262,7 +262,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// logger.Info("vcluster statefulset not found, requeueing")
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 		}
-		logger.Error(err, "Failed to reconcile sleep state")
+		logger.Info("Failed to reconcile sleep state, reconciling", "Error", err.Error())
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
@@ -324,13 +324,17 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		currentReplicas := ucStatefulSet.Spec.Replicas
 		// scale the vcluster instance to 0 if the sleep flag is true
 		if uCluster.Spec.Sleep && *currentReplicas > 0 {
-			if err := r.waitForStatefulSetToScale(ctx, 0, ucStatefulSet); err == nil {
+			var err error
+			if err = r.waitForStatefulSetToScale(ctx, 0, ucStatefulSet); err == nil {
 				setCondition(uCluster, APINotReady())
 			}
-			if err := r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
+			if err = r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
 				setCondition(uCluster, DataStoreNotReady())
 			}
-			err := r.deleteWorkloads(ctx, uCluster)
+			if err != nil {
+				return err
+			}
+			err = r.deleteWorkloads(ctx, uCluster)
 			if err != nil {
 				return err
 			}
@@ -349,11 +353,15 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 			uCluster.Status.LastAwakeTime = lastAwakeTime
 			// if the above runs successfully, then set the status to awake
 			setCondition(uCluster, Awoken(lastAwakeTime))
-			if err := r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
+			var err error
+			if err = r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
 				setCondition(uCluster, APIReady())
 			}
-			if err := r.waitForStatefulSetToScale(ctx, 1, ucStatefulSet); err == nil {
+			if err = r.waitForStatefulSetToScale(ctx, 1, ucStatefulSet); err == nil {
 				setCondition(uCluster, DataStoreReady())
+			}
+			if err != nil {
+				return err
 			}
 		}
 	case *appsv1.Deployment:
@@ -361,13 +369,18 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		currentReplicas := ucDeployment.Spec.Replicas
 		// scale the vcluster instance to 0 if the sleep flag is true
 		if uCluster.Spec.Sleep && *currentReplicas > 0 {
-			if err := r.waitForDeploymentToScale(ctx, 0, ucDeployment); err == nil {
+			var err error
+			if err = r.waitForDeploymentToScale(ctx, 0, ucDeployment); err == nil {
 				setCondition(uCluster, APINotReady())
 			}
-			if err := r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
+			if err = r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
 				setCondition(uCluster, DataStoreNotReady())
 			}
-			err := r.deleteWorkloads(ctx, uCluster)
+			if err != nil {
+				return err
+			}
+
+			err = r.deleteWorkloads(ctx, uCluster)
 			if err != nil {
 				return err
 			}
@@ -386,16 +399,20 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 			uCluster.Status.LastAwakeTime = lastAwakeTime
 			// if the above runs successfully, then set the status to awake
 			setCondition(uCluster, Awoken(lastAwakeTime))
-			if err := r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
+			var err error
+			if err = r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
 				setCondition(uCluster, APIReady())
 			}
-			if err := r.waitForDeploymentToScale(ctx, 1, ucDeployment); err == nil {
+			if err = r.waitForDeploymentToScale(ctx, 1, ucDeployment); err == nil {
 				setCondition(uCluster, DataStoreReady())
+			}
+			if err != nil {
+				return err
 			}
 		}
 
 	default:
-		return errors.New("unknown workload type  for vcluster")
+		return errors.New("unknown workload type for vcluster")
 	}
 	if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 		return err
