@@ -245,7 +245,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				}
 			} else {
 				if updatedHelmRelease, err = r.upsertVClusterK3SHelmRelease(true, ctx, uCluster); err != nil {
-					logger.Error(err, "Failed to update HelmRelease")
+					logger.Info("Failed to update HelmRelease with error, reconciling", "Error", err.Error())
 					return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 				}
 			}
@@ -262,7 +262,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// logger.Info("vcluster statefulset not found, requeueing")
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 		}
-		logger.Error(err, "Failed to reconcile sleep state")
+		logger.Info("Failed to reconcile sleep state, reconciling", "Error", err.Error())
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
