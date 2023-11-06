@@ -12,7 +12,7 @@ import (
 )
 
 func (r *UffizziClusterReconciler) getUffizziClusterWorkload(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (runtime.Object, error) {
-	if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO || uCluster.Spec.ExternalDatastore == constants.ETCD {
+	if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO {
 		return r.getUffizziClusterDeployment(ctx, uCluster)
 	}
 	return r.getUffizziClusterStatefulSet(ctx, uCluster)
