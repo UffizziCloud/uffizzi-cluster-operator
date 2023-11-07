@@ -22,11 +22,11 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		vclusterK3sHelmValues.VCluster.Env = []vcluster.ContainerEnv{
 			{
 				Name:  constants.K3S_DATASTORE_ENDPOINT,
-				Value: etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
+				Value: "http://" + etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
 			},
 		}
-		vclusterK3sHelmValues.Storage.Persistence = false
-		vclusterK3sHelmValues.EnableHA = true
+		vclusterK3sHelmValues.Storage.Persistence = true
+		vclusterK3sHelmValues.EnableHA = false
 	}
 
 	if uCluster.Spec.Ingress.Host != "" {
