@@ -20,7 +20,9 @@ import (
 	"flag"
 	etcd "github.com/UffizziCloud/uffizzi-cluster-operator/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/controllers/uffizzicluster"
+	"k8s.io/utils/pointer"
 	"os"
+	ctrlcfg "sigs.k8s.io/controller-runtime/pkg/config/v1alpha1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -56,14 +58,19 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
+	var (
+		metricsAddr          string
+		probeAddr            string
+		enableLeaderElection bool
+		concurrent           int
+	)
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.IntVar(&concurrent, "concurrent", 5, "The number of concurrent reconciles per controller.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -79,17 +86,12 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "bfbf93f2.uffizzi.com",
-		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
-		// when the Manager ends. This requires the binary to immediately end when the
-		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
-		// speeds up voluntary leader transitions as the new leader don't have to wait
-		// LeaseDuration time first.
-		//
-		// In the default scaffold provided, the program ends immediately after
-		// the manager stops, so would be fine to enable this option. However,
-		// if you are doing or is intended to do any operation such as perform cleanups
-		// after the manager stops then its usage might be unsafe.
-		// LeaderElectionReleaseOnCancel: true,
+		Controller: ctrlcfg.ControllerConfigurationSpec{
+			GroupKindConcurrency: map[string]int{
+				uclusteruffizzicomv1alpha1.SchemaGroupVersion.WithKind("UffizziCluster").String(): concurrent,
+			},
+			RecoverPanic: pointer.Bool(true),
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -108,7 +110,7 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "UffizziCluster")
+		setupLog.Error(err, "unable to create controller", "controller", "UffizziClusterEtcd")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
