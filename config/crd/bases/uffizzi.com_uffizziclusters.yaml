@@ -71,7 +71,7 @@ spec:
                 - k8s
                 type: string
               externalDatastore:
-                default: etcd
+                default: sqlite
                 enum:
                 - etcd
                 - sqlite
