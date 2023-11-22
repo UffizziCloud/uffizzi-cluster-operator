@@ -11,6 +11,13 @@ flux:
     enabled: true
     metrics:
       enabled: false
+    args:
+      - --watch-all-namespaces
+      - --log-level=info
+      - --metrics-addr=:8080
+      - --health-addr=:9440
+      - --log-encoding=json
+      - --enable-leader-election
   sourceController:
     enabled: true
     metrics:
