@@ -184,6 +184,7 @@ type UffizziClusterDistro struct {
 //+kubebuilder:resource:shortName=uc;ucluster
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="APIReady",type=string,JSONPath=`.status.conditions[?(@.type=='APIReady')].status`
+//+kubebuilder:printcolumn:name="DataStoreReady",type=string,JSONPath=`.status.conditions[?(@.type=='DataStoreReady')].status`
 //+kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=='Ready')].status`
 //+kubebuilder:printcolumn:name="Sleep",type=string,JSONPath=`.status.conditions[?(@.type=='Sleep')].status`
 //+kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
