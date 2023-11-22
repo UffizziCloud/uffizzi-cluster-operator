@@ -328,7 +328,11 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 			if err = r.waitForStatefulSetToScale(ctx, 0, ucStatefulSet); err == nil {
 				setCondition(uCluster, APINotReady())
 			}
-			if err = r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
+			if uCluster.Spec.ExternalDatastore == constants.ETCD {
+				if err = r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
+					setCondition(uCluster, DataStoreNotReady())
+				}
+			} else {
 				setCondition(uCluster, DataStoreNotReady())
 			}
 			if err != nil {
@@ -354,11 +358,15 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 			// if the above runs successfully, then set the status to awake
 			setCondition(uCluster, Awoken(lastAwakeTime))
 			var err error
-			if err = r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
-				setCondition(uCluster, APIReady())
+			if uCluster.Spec.ExternalDatastore == constants.ETCD {
+				if err = r.waitForStatefulSetToScale(ctx, 1, etcdStatefulSet); err == nil {
+					setCondition(uCluster, DataStoreReady())
+				}
+			} else {
+				setCondition(uCluster, DataStoreReady())
 			}
 			if err = r.waitForStatefulSetToScale(ctx, 1, ucStatefulSet); err == nil {
-				setCondition(uCluster, DataStoreReady())
+				setCondition(uCluster, APIReady())
 			}
 			if err != nil {
 				return err
