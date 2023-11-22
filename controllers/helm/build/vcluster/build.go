@@ -18,7 +18,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		Common:   common(helmReleaseName, vclusterIngressHostname),
 	}
 
-	if uCluster.Spec.ExternalDatastore == constants.ETCD || uCluster.Spec.ExternalDatastore == "" {
+	if uCluster.Spec.ExternalDatastore == constants.ETCD {
 		vclusterK3sHelmValues.VCluster.Env = []vcluster.ContainerEnv{
 			{
 				Name:  constants.K3S_DATASTORE_ENDPOINT,
