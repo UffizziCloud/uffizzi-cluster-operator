@@ -59,10 +59,10 @@ func init() {
 
 func main() {
 	var (
-		metricsAddr          string
-		probeAddr            string
-		enableLeaderElection bool
-		concurrent           int
+		metricsAddr               string
+		probeAddr                 string
+		enableLeaderElection      bool
+		concurrentReconciliations int
 	)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
@@ -70,7 +70,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.IntVar(&concurrent, "concurrent", 5, "The number of concurrent reconciles per controller.")
+	flag.IntVar(&concurrentReconciliations, "concurrent", 5, "The number of concurrent reconciles per controller.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -88,7 +88,7 @@ func main() {
 		LeaderElectionID:       "bfbf93f2.uffizzi.com",
 		Controller: ctrlcfg.ControllerConfigurationSpec{
 			GroupKindConcurrency: map[string]int{
-				uclusteruffizzicomv1alpha1.SchemaGroupVersion.WithKind("UffizziCluster").String(): concurrent,
+				uclusteruffizzicomv1alpha1.SchemaGroupVersion.WithKind("UffizziCluster").GroupKind().String(): concurrentReconciliations,
 			},
 			RecoverPanic: pointer.Bool(true),
 		},
