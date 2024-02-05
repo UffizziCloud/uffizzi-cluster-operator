@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+var (
+	ErrStatefulSetNil = errors.New("statefulSet is nil")
+)
+
 func (r *UffizziClusterReconciler) getUffizziClusterStatefulSet(ctx context.Context, uCluster *v1alpha1.UffizziCluster) (*appsv1.StatefulSet, error) {
 	ucStatefulSet := &appsv1.StatefulSet{}
 	if err := r.Get(ctx, types.NamespacedName{
@@ -38,7 +42,8 @@ func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale 
 	replicas := int32(scale)
 	for _, ss := range statefulSets {
 		if ss == nil {
-			return errors.New("statefulSet is nil")
+			// TODO: ErrStatefulSetNil should be used here, handle it in the caller
+			continue
 		}
 		ss.Spec.Replicas = &replicas
 		if err := r.Update(ctx, ss); err != nil {
@@ -51,7 +56,7 @@ func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale 
 // waitForStatefulSetToScale is a goroutine which waits for the stateful set to be ready
 func (r *UffizziClusterReconciler) waitForStatefulSetToScale(ctx context.Context, scale int, ucStatefulSet *appsv1.StatefulSet) error {
 	if ucStatefulSet == nil {
-		return errors.New("statefulSet is nil")
+		return ErrStatefulSetNil
 	}
 	// wait for the StatefulSet to be ready
 	return wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
