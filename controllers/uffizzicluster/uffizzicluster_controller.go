@@ -262,7 +262,8 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// logger.Info("vcluster statefulset not found, requeueing")
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 		}
-		logger.Info("Failed to reconcile sleep state, reconciling", "Error", err.Error())
+		// cluster did not sleep
+		logger.Info("Failed to reconcile sleep state, reconciling again", "Error", err.Error())
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
 	}
 
