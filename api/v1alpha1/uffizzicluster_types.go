@@ -152,7 +152,6 @@ type UffizziClusterSpec struct {
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 	Sleep         bool                         `json:"sleep,omitempty"`
-	DisableSleep  bool                         `json:"disableSleep,omitempty"`
 
 	//+kubebuilder:default:="sqlite"
 	//+kubebuilder:validation:Enum=etcd;sqlite
