@@ -67,6 +67,8 @@ spec:
                   image:
                     type: string
                 type: object
+              disableSleep:
+                type: boolean
               distro:
                 default: k3s
                 enum:
