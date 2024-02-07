@@ -67,6 +67,10 @@ func (c *UffizziClusterClient) Get(name string, opts metav1.GetOptions) (*v1alph
 }
 
 func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alpha1.UffizziCluster, error) {
+	autoSleep := clusterProps.AutoSleep
+	if len(clusterProps.AutoSleep) == 0 {
+		autoSleep = "true"
+	}
 	uffizziCluster := v1alpha1.UffizziCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "UffizziCluster",
@@ -75,7 +79,7 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterProps.Name,
 			Annotations: map[string]string{
-				"enterprise.uffizzi.com/http-cluster-sleep": clusterProps.AutoSleep,
+				"enterprise.uffizzi.com/http-cluster-sleep": autoSleep,
 			},
 		},
 		Spec: clusterProps.Spec,
