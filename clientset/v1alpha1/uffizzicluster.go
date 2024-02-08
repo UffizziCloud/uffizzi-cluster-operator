@@ -25,8 +25,9 @@ type UffizziClusterClient struct {
 }
 
 type UffizziClusterProps struct {
-	Name string
-	Spec v1alpha1.UffizziClusterSpec
+	Name        string
+	Annotations map[string]string
+	Spec        v1alpha1.UffizziClusterSpec
 }
 
 type PatchUffizziClusterProps struct {
@@ -72,7 +73,8 @@ func (c *UffizziClusterClient) Create(clusterProps UffizziClusterProps) (*v1alph
 			APIVersion: "uffizzi.com/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterProps.Name,
+			Name:        clusterProps.Name,
+			Annotations: clusterProps.Annotations,
 		},
 		Spec: clusterProps.Spec,
 	}
