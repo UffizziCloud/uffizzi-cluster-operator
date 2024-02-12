@@ -41,13 +41,11 @@ func (r *UffizziClusterReconciler) scaleStatefulSets(ctx context.Context, scale 
 	// if the current replicas is greater than 0, then scale down to 0
 	replicas := int32(scale)
 	for _, ss := range statefulSets {
-		if ss == nil {
-			// TODO: ErrStatefulSetNil should be used here, handle it in the caller
-			continue
-		}
-		ss.Spec.Replicas = &replicas
-		if err := r.Update(ctx, ss); err != nil {
-			return err
+		if ss != nil {
+			ss.Spec.Replicas = &replicas
+			if err := r.Update(ctx, ss); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

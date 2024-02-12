@@ -347,7 +347,12 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 			setCondition(uCluster, Sleeping(sleepingTime))
 			// if the current replicas is 0, then do nothing
 		} else if !uCluster.Spec.Sleep && *currentReplicas == 0 {
-			if err := r.scaleStatefulSets(ctx, 1, etcdStatefulSet, ucStatefulSet); err != nil {
+			statefulSets := []*appsv1.StatefulSet{}
+			statefulSets = append(statefulSets, ucStatefulSet)
+			if uCluster.Spec.ExternalDatastore == constants.ETCD {
+				statefulSets = append(statefulSets, etcdStatefulSet)
+			}
+			if err := r.scaleStatefulSets(ctx, 1, statefulSets...); err != nil {
 				return err
 			}
 		}
