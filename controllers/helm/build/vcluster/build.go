@@ -18,6 +18,8 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		Common:   common(helmReleaseName, vclusterIngressHostname),
 	}
 
+	// keep cluster data intact in case the vcluster scales up or down
+	vclusterK3sHelmValues.Storage.Persistence = true
 	if uCluster.Spec.ExternalDatastore == constants.ETCD {
 		vclusterK3sHelmValues.VCluster.Env = []vcluster.ContainerEnv{
 			{
@@ -25,7 +27,6 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 				Value: "http://" + etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
 			},
 		}
-		vclusterK3sHelmValues.Storage.Persistence = true
 		vclusterK3sHelmValues.EnableHA = false
 	}
 
