@@ -3,10 +3,10 @@ package vcluster
 import (
 	"fmt"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/types"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/types/vcluster"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types/vcluster"
 	v1 "k8s.io/api/core/v1"
 )
 

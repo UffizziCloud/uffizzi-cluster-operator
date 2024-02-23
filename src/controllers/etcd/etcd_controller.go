@@ -19,7 +19,7 @@ package etcd
 import (
 	"context"
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

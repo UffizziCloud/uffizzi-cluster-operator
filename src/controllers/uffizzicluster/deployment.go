@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/build/vcluster"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/build/vcluster"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"

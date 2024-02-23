@@ -1,9 +1,9 @@
 package etcd
 
 import (
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/constants"
-	helmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/types"
-	etcdhelmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/types/etcd"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	helmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
+	etcdhelmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types/etcd"
 	v1 "k8s.io/api/core/v1"
 )
 

@@ -3,9 +3,9 @@ package etcd
 import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/constants"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/build"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/build/etcd"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/build"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/build/etcd"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	"github.com/pkg/errors"

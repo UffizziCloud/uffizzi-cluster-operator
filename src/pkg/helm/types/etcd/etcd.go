@@ -1,7 +1,7 @@
 package etcd
 
 import (
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/types"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
 )
 
 type Etcd struct {

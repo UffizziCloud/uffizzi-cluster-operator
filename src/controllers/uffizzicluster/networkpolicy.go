@@ -3,7 +3,7 @@ package uffizzicluster
 import (
 	"fmt"
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/build/vcluster"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/build/vcluster"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
