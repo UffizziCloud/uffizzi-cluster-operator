@@ -1,5 +1,3 @@
-#include test/e2e/Makefile
-
 VERSION ?= 1.5.6
 
 # check if we are using MacOS or LINUX and use that to determine the sed command
@@ -109,9 +107,15 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-.PHONY: test
-test: manifests generate fmt vet envtest ## Run test.
+##@ Test
+
+.PHONY: e2e-test-without-cluster
+e2e-test-without-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+
+.PHONY: e2e-test-with-cluster
+e2e-test-with-cluster: manifests generate fmt vet envtest ## Run test.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile cover.out
 
 ##@ Build
 
@@ -160,28 +164,28 @@ endif
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+	$(KUSTOMIZE) build src/config/crd | kubectl apply -f -
 
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build src/config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	cd src/config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build src/config/default | kubectl apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build src/config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: build-helm-chart
 build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	# update the crd
-	$(KUSTOMIZE) build config/crd > chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
+	$(KUSTOMIZE) build src/config/crd > chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
 	$(SED) -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/uffizziclusters.uffizzi.com_customresourcedefinition.yaml
 	# update roles
-	cp config/rbac/role.yaml chart/templates/manager-role_clusterrole.yaml
+	cp src/config/rbac/role.yaml chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e '/creationTimestamp: null/d' chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e 's/name: manager-role/name: {{ include "common.names.fullname" . }}-manager-role/' chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
@@ -230,13 +234,13 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	@test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
+	cd src/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	$(KUSTOMIZE) build src/config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
 	operator-sdk bundle validate ./bundle
 
 .PHONY: bundle-build

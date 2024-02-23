@@ -1,7 +1,0 @@
-kind: StatefulSet
-apiVersion: apps/v1
-metadata:
-  name: uc-basic-k3s
-spec:
-  ingress:
-    host: app.qa-gke.uffizzi.com
