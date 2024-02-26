@@ -13,8 +13,6 @@ permissions:
 jobs:
   minikube:
     name: Run E2E tests with Minikube
-    needs:
-      - build-operator
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
