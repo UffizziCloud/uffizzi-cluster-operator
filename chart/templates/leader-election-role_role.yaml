@@ -1,10 +1,10 @@
-apiVersion: {{ include "util.capabilities.rbac.apiVersion" . }}
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: Role
 metadata:
-  labels: {{ include "util.labels.standard" . | nindent 4 }}
+  labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: rbac
     app.kubernetes.io/part-of: uffizzi
-  name: {{ include "util.names.fullname" . }}-leader-election-role
+  name: {{ include "common.names.fullname" . }}-leader-election-role
   namespace: {{ .Release.Namespace | quote }}
 rules:
 - apiGroups:

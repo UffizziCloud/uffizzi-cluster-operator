@@ -1,15 +1,15 @@
-apiVersion: {{ include "util.capabilities.rbac.apiVersion" . }}
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
 kind: ClusterRoleBinding
 metadata:
-  labels: {{ include "util.labels.standard" . | nindent 4 }}
+  labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: rbac
     app.kubernetes.io/part-of: uffizzi
-  name: {{ include "util.names.fullname" . }}-manager-rolebinding
+  name: {{ include "common.names.fullname" . }}-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "util.names.fullname" . }}-manager-role
+  name: {{ include "common.names.fullname" . }}-manager-role
 subjects:
 - kind: ServiceAccount
-  name: {{ include "util.names.fullname" . }}-controller-manager
+  name: {{ include "common.names.fullname" . }}-controller-manager
   namespace: {{ .Release.Namespace | quote }}
