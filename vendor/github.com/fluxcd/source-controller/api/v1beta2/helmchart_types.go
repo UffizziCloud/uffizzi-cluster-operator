@@ -23,7 +23,6 @@ import (
 
 	"github.com/fluxcd/pkg/apis/acl"
 	"github.com/fluxcd/pkg/apis/meta"
-	apiv1 "github.com/fluxcd/source-controller/api/v1"
 )
 
 // HelmChartKind is the string representation of a HelmChart.
@@ -46,9 +45,7 @@ type HelmChartSpec struct {
 	// +required
 	SourceRef LocalHelmChartSourceReference `json:"sourceRef"`
 
-	// Interval at which the HelmChart SourceRef is checked for updates.
-	// This interval is approximate and may be subject to jitter to ensure
-	// efficient use of resources.
+	// Interval is the interval at which to check the Source for updates.
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Pattern="^([0-9]+(\\.[0-9]+)?(ms|s|m|h))+$"
 	// +required
@@ -154,7 +151,7 @@ type HelmChartStatus struct {
 
 	// Artifact represents the output of the last successful reconciliation.
 	// +optional
-	Artifact *apiv1.Artifact `json:"artifact,omitempty"`
+	Artifact *Artifact `json:"artifact,omitempty"`
 
 	meta.ReconcileRequestStatus `json:",inline"`
 }
@@ -187,7 +184,7 @@ func (in HelmChart) GetRequeueAfter() time.Duration {
 
 // GetArtifact returns the latest artifact from the source if present in the
 // status sub-resource.
-func (in *HelmChart) GetArtifact() *apiv1.Artifact {
+func (in *HelmChart) GetArtifact() *Artifact {
 	return in.Status.Artifact
 }
 

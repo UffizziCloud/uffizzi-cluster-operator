@@ -22,7 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/fluxcd/pkg/apis/meta"
-	apiv1 "github.com/fluxcd/source-controller/api/v1"
 )
 
 const (
@@ -97,27 +96,21 @@ type OCIRepositorySpec struct {
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// CertSecretRef can be given the name of a Secret containing
+	// CertSecretRef can be given the name of a secret containing
 	// either or both of
 	//
-	// - a PEM-encoded client certificate (`tls.crt`) and private
-	// key (`tls.key`);
-	// - a PEM-encoded CA certificate (`ca.crt`)
+	//  - a PEM-encoded client certificate (`certFile`) and private
+	//  key (`keyFile`);
+	//  - a PEM-encoded CA certificate (`caFile`)
 	//
-	// and whichever are supplied, will be used for connecting to the
-	// registry. The client cert and key are useful if you are
-	// authenticating with a certificate; the CA cert is useful if
-	// you are using a self-signed server certificate. The Secret must
-	// be of type `Opaque` or `kubernetes.io/tls`.
-	//
-	// Note: Support for the `caFile`, `certFile` and `keyFile` keys have
-	// been deprecated.
+	//  and whichever are supplied, will be used for connecting to the
+	//  registry. The client cert and key are useful if you are
+	//  authenticating with a certificate; the CA cert is useful if
+	//  you are using a self-signed server certificate.
 	// +optional
 	CertSecretRef *meta.LocalObjectReference `json:"certSecretRef,omitempty"`
 
-	// Interval at which the OCIRepository URL is checked for updates.
-	// This interval is approximate and may be subject to jitter to ensure
-	// efficient use of resources.
+	// The interval at which to check for image updates.
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Pattern="^([0-9]+(\\.[0-9]+)?(ms|s|m|h))+$"
 	// +required
@@ -190,28 +183,6 @@ type OCIRepositoryVerification struct {
 	// trusted public keys.
 	// +optional
 	SecretRef *meta.LocalObjectReference `json:"secretRef,omitempty"`
-
-	// MatchOIDCIdentity specifies the identity matching criteria to use
-	// while verifying an OCI artifact which was signed using Cosign keyless
-	// signing. The artifact's identity is deemed to be verified if any of the
-	// specified matchers match against the identity.
-	// +optional
-	MatchOIDCIdentity []OIDCIdentityMatch `json:"matchOIDCIdentity,omitempty"`
-}
-
-// OIDCIdentityMatch specifies options for verifying the certificate identity,
-// i.e. the issuer and the subject of the certificate.
-type OIDCIdentityMatch struct {
-	// Issuer specifies the regex pattern to match against to verify
-	// the OIDC issuer in the Fulcio certificate. The pattern must be a
-	// valid Go regular expression.
-	// +required
-	Issuer string `json:"issuer"`
-	// Subject specifies the regex pattern to match against to verify
-	// the identity subject in the Fulcio certificate. The pattern must
-	// be a valid Go regular expression.
-	// +required
-	Subject string `json:"subject"`
 }
 
 // OCIRepositoryStatus defines the observed state of OCIRepository
@@ -230,7 +201,7 @@ type OCIRepositoryStatus struct {
 
 	// Artifact represents the output of the last successful OCI Repository sync.
 	// +optional
-	Artifact *apiv1.Artifact `json:"artifact,omitempty"`
+	Artifact *Artifact `json:"artifact,omitempty"`
 
 	// ContentConfigChecksum is a checksum of all the configurations related to
 	// the content of the source artifact:
@@ -285,7 +256,7 @@ func (in OCIRepository) GetRequeueAfter() time.Duration {
 
 // GetArtifact returns the latest Artifact from the OCIRepository if present in
 // the status sub-resource.
-func (in *OCIRepository) GetArtifact() *apiv1.Artifact {
+func (in *OCIRepository) GetArtifact() *Artifact {
 	return in.Status.Artifact
 }
 

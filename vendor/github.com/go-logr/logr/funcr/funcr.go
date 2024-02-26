@@ -100,11 +100,6 @@ type Options struct {
 	// details, see docs for Go's time.Layout.
 	TimestampFormat string
 
-	// LogInfoLevel tells funcr what key to use to log the info level.
-	// If not specified, the info level will be logged as "level".
-	// If this is set to "", the info level will not be logged at all.
-	LogInfoLevel *string
-
 	// Verbosity tells funcr which V logs to produce.  Higher values enable
 	// more logs.  Info logs at or below this level will be written, while logs
 	// above this level will be discarded.
@@ -121,17 +116,17 @@ type Options struct {
 	// Equivalent hooks are offered for key-value pairs saved via
 	// logr.Logger.WithValues or Formatter.AddValues (see RenderValuesHook) and
 	// for user-provided pairs (see RenderArgsHook).
-	RenderBuiltinsHook func(kvList []any) []any
+	RenderBuiltinsHook func(kvList []interface{}) []interface{}
 
 	// RenderValuesHook is the same as RenderBuiltinsHook, except that it is
 	// only called for key-value pairs saved via logr.Logger.WithValues.  See
 	// RenderBuiltinsHook for more details.
-	RenderValuesHook func(kvList []any) []any
+	RenderValuesHook func(kvList []interface{}) []interface{}
 
 	// RenderArgsHook is the same as RenderBuiltinsHook, except that it is only
 	// called for key-value pairs passed directly to Info and Error.  See
 	// RenderBuiltinsHook for more details.
-	RenderArgsHook func(kvList []any) []any
+	RenderArgsHook func(kvList []interface{}) []interface{}
 
 	// MaxLogDepth tells funcr how many levels of nested fields (e.g. a struct
 	// that contains a struct, etc.) it may log.  Every time it finds a struct,
@@ -168,7 +163,7 @@ func (l fnlogger) WithName(name string) logr.LogSink {
 	return &l
 }
 
-func (l fnlogger) WithValues(kvList ...any) logr.LogSink {
+func (l fnlogger) WithValues(kvList ...interface{}) logr.LogSink {
 	l.Formatter.AddValues(kvList)
 	return &l
 }
@@ -178,12 +173,12 @@ func (l fnlogger) WithCallDepth(depth int) logr.LogSink {
 	return &l
 }
 
-func (l fnlogger) Info(level int, msg string, kvList ...any) {
+func (l fnlogger) Info(level int, msg string, kvList ...interface{}) {
 	prefix, args := l.FormatInfo(level, msg, kvList)
 	l.write(prefix, args)
 }
 
-func (l fnlogger) Error(err error, msg string, kvList ...any) {
+func (l fnlogger) Error(err error, msg string, kvList ...interface{}) {
 	prefix, args := l.FormatError(err, msg, kvList)
 	l.write(prefix, args)
 }
@@ -218,10 +213,6 @@ func newFormatter(opts Options, outfmt outputFormat) Formatter {
 	if opts.MaxLogDepth == 0 {
 		opts.MaxLogDepth = defaultMaxLogDepth
 	}
-	if opts.LogInfoLevel == nil {
-		opts.LogInfoLevel = new(string)
-		*opts.LogInfoLevel = "level"
-	}
 	f := Formatter{
 		outputFormat: outfmt,
 		prefix:       "",
@@ -236,15 +227,12 @@ func newFormatter(opts Options, outfmt outputFormat) Formatter {
 // implementation. It should be constructed with NewFormatter. Some of
 // its methods directly implement logr.LogSink.
 type Formatter struct {
-	outputFormat    outputFormat
-	prefix          string
-	values          []any
-	valuesStr       string
-	parentValuesStr string
-	depth           int
-	opts            *Options
-	group           string // for slog groups
-	groupDepth      int
+	outputFormat outputFormat
+	prefix       string
+	values       []interface{}
+	valuesStr    string
+	depth        int
+	opts         *Options
 }
 
 // outputFormat indicates which outputFormat to use.
@@ -258,69 +246,40 @@ const (
 )
 
 // PseudoStruct is a list of key-value pairs that gets logged as a struct.
-type PseudoStruct []any
+type PseudoStruct []interface{}
 
 // render produces a log line, ready to use.
-func (f Formatter) render(builtins, args []any) string {
+func (f Formatter) render(builtins, args []interface{}) string {
 	// Empirically bytes.Buffer is faster than strings.Builder for this.
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
 	if f.outputFormat == outputJSON {
-		buf.WriteByte('{') // for the whole line
+		buf.WriteByte('{')
 	}
-
 	vals := builtins
 	if hook := f.opts.RenderBuiltinsHook; hook != nil {
 		vals = hook(f.sanitize(vals))
 	}
 	f.flatten(buf, vals, false, false) // keys are ours, no need to escape
 	continuing := len(builtins) > 0
-
-	if f.parentValuesStr != "" {
+	if len(f.valuesStr) > 0 {
 		if continuing {
-			buf.WriteByte(f.comma())
-		}
-		buf.WriteString(f.parentValuesStr)
-		continuing = true
-	}
-
-	groupDepth := f.groupDepth
-	if f.group != "" {
-		if f.valuesStr != "" || len(args) != 0 {
-			if continuing {
-				buf.WriteByte(f.comma())
+			if f.outputFormat == outputJSON {
+				buf.WriteByte(',')
+			} else {
+				buf.WriteByte(' ')
 			}
-			buf.WriteString(f.quoted(f.group, true)) // escape user-provided keys
-			buf.WriteByte(f.colon())
-			buf.WriteByte('{') // for the group
-			continuing = false
-		} else {
-			// The group was empty
-			groupDepth--
 		}
-	}
-
-	if f.valuesStr != "" {
-		if continuing {
-			buf.WriteByte(f.comma())
-		}
-		buf.WriteString(f.valuesStr)
 		continuing = true
+		buf.WriteString(f.valuesStr)
 	}
-
 	vals = args
 	if hook := f.opts.RenderArgsHook; hook != nil {
 		vals = hook(f.sanitize(vals))
 	}
 	f.flatten(buf, vals, continuing, true) // escape user-provided keys
-
-	for i := 0; i < groupDepth; i++ {
-		buf.WriteByte('}') // for the groups
-	}
-
 	if f.outputFormat == outputJSON {
-		buf.WriteByte('}') // for the whole line
+		buf.WriteByte('}')
 	}
-
 	return buf.String()
 }
 
@@ -333,22 +292,15 @@ func (f Formatter) render(builtins, args []any) string {
 // This function returns a potentially modified version of kvList, which
 // ensures that there is a value for every key (adding a value if needed) and
 // that each key is a string (substituting a key if needed).
-func (f Formatter) flatten(buf *bytes.Buffer, kvList []any, continuing bool, escapeKeys bool) []any {
+func (f Formatter) flatten(buf *bytes.Buffer, kvList []interface{}, continuing bool, escapeKeys bool) []interface{} {
 	// This logic overlaps with sanitize() but saves one type-cast per key,
 	// which can be measurable.
 	if len(kvList)%2 != 0 {
 		kvList = append(kvList, noValue)
 	}
-	copied := false
 	for i := 0; i < len(kvList); i += 2 {
 		k, ok := kvList[i].(string)
 		if !ok {
-			if !copied {
-				newList := make([]any, len(kvList))
-				copy(newList, kvList)
-				kvList = newList
-				copied = true
-			}
 			k = f.nonStringKey(kvList[i])
 			kvList[i] = k
 		}
@@ -356,7 +308,7 @@ func (f Formatter) flatten(buf *bytes.Buffer, kvList []any, continuing bool, esc
 
 		if i > 0 || continuing {
 			if f.outputFormat == outputJSON {
-				buf.WriteByte(f.comma())
+				buf.WriteByte(',')
 			} else {
 				// In theory the format could be something we don't understand.  In
 				// practice, we control it, so it won't be.
@@ -364,36 +316,25 @@ func (f Formatter) flatten(buf *bytes.Buffer, kvList []any, continuing bool, esc
 			}
 		}
 
-		buf.WriteString(f.quoted(k, escapeKeys))
-		buf.WriteByte(f.colon())
+		if escapeKeys {
+			buf.WriteString(prettyString(k))
+		} else {
+			// this is faster
+			buf.WriteByte('"')
+			buf.WriteString(k)
+			buf.WriteByte('"')
+		}
+		if f.outputFormat == outputJSON {
+			buf.WriteByte(':')
+		} else {
+			buf.WriteByte('=')
+		}
 		buf.WriteString(f.pretty(v))
 	}
 	return kvList
 }
 
-func (f Formatter) quoted(str string, escape bool) string {
-	if escape {
-		return prettyString(str)
-	}
-	// this is faster
-	return `"` + str + `"`
-}
-
-func (f Formatter) comma() byte {
-	if f.outputFormat == outputJSON {
-		return ','
-	}
-	return ' '
-}
-
-func (f Formatter) colon() byte {
-	if f.outputFormat == outputJSON {
-		return ':'
-	}
-	return '='
-}
-
-func (f Formatter) pretty(value any) string {
+func (f Formatter) pretty(value interface{}) string {
 	return f.prettyWithFlags(value, 0, 0)
 }
 
@@ -402,7 +343,7 @@ const (
 )
 
 // TODO: This is not fast. Most of the overhead goes here.
-func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
+func (f Formatter) prettyWithFlags(value interface{}, flags uint32, depth int) string {
 	if depth > f.opts.MaxLogDepth {
 		return `"<max-log-depth-exceeded>"`
 	}
@@ -466,12 +407,12 @@ func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
 		}
 		for i := 0; i < len(v); i += 2 {
 			if i > 0 {
-				buf.WriteByte(f.comma())
+				buf.WriteByte(',')
 			}
 			k, _ := v[i].(string) // sanitize() above means no need to check success
 			// arbitrary keys might need escaping
 			buf.WriteString(prettyString(k))
-			buf.WriteByte(f.colon())
+			buf.WriteByte(':')
 			buf.WriteString(f.prettyWithFlags(v[i+1], 0, depth+1))
 		}
 		if flags&flagRawStruct == 0 {
@@ -540,7 +481,7 @@ func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
 				continue
 			}
 			if printComma {
-				buf.WriteByte(f.comma())
+				buf.WriteByte(',')
 			}
 			printComma = true // if we got here, we are rendering a field
 			if fld.Anonymous && fld.Type.Kind() == reflect.Struct && name == "" {
@@ -551,8 +492,10 @@ func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
 				name = fld.Name
 			}
 			// field names can't contain characters which need escaping
-			buf.WriteString(f.quoted(name, false))
-			buf.WriteByte(f.colon())
+			buf.WriteByte('"')
+			buf.WriteString(name)
+			buf.WriteByte('"')
+			buf.WriteByte(':')
 			buf.WriteString(f.prettyWithFlags(v.Field(i).Interface(), 0, depth+1))
 		}
 		if flags&flagRawStruct == 0 {
@@ -577,7 +520,7 @@ func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
 		buf.WriteByte('[')
 		for i := 0; i < v.Len(); i++ {
 			if i > 0 {
-				buf.WriteByte(f.comma())
+				buf.WriteByte(',')
 			}
 			e := v.Index(i)
 			buf.WriteString(f.prettyWithFlags(e.Interface(), 0, depth+1))
@@ -591,7 +534,7 @@ func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
 		i := 0
 		for it.Next() {
 			if i > 0 {
-				buf.WriteByte(f.comma())
+				buf.WriteByte(',')
 			}
 			// If a map key supports TextMarshaler, use it.
 			keystr := ""
@@ -613,7 +556,7 @@ func (f Formatter) prettyWithFlags(value any, flags uint32, depth int) string {
 				}
 			}
 			buf.WriteString(keystr)
-			buf.WriteByte(f.colon())
+			buf.WriteByte(':')
 			buf.WriteString(f.prettyWithFlags(it.Value().Interface(), 0, depth+1))
 			i++
 		}
@@ -671,7 +614,7 @@ func isEmpty(v reflect.Value) bool {
 	return false
 }
 
-func invokeMarshaler(m logr.Marshaler) (ret any) {
+func invokeMarshaler(m logr.Marshaler) (ret interface{}) {
 	defer func() {
 		if r := recover(); r != nil {
 			ret = fmt.Sprintf("<panic: %s>", r)
@@ -732,12 +675,12 @@ func (f Formatter) caller() Caller {
 
 const noValue = "<no-value>"
 
-func (f Formatter) nonStringKey(v any) string {
+func (f Formatter) nonStringKey(v interface{}) string {
 	return fmt.Sprintf("<non-string-key: %s>", f.snippet(v))
 }
 
 // snippet produces a short snippet string of an arbitrary value.
-func (f Formatter) snippet(v any) string {
+func (f Formatter) snippet(v interface{}) string {
 	const snipLen = 16
 
 	snip := f.pretty(v)
@@ -750,7 +693,7 @@ func (f Formatter) snippet(v any) string {
 // sanitize ensures that a list of key-value pairs has a value for every key
 // (adding a value if needed) and that each key is a string (substituting a key
 // if needed).
-func (f Formatter) sanitize(kvList []any) []any {
+func (f Formatter) sanitize(kvList []interface{}) []interface{} {
 	if len(kvList)%2 != 0 {
 		kvList = append(kvList, noValue)
 	}
@@ -761,53 +704,6 @@ func (f Formatter) sanitize(kvList []any) []any {
 		}
 	}
 	return kvList
-}
-
-// startGroup opens a new group scope (basically a sub-struct), which locks all
-// the current saved values and starts them anew.  This is needed to satisfy
-// slog.
-func (f *Formatter) startGroup(group string) {
-	// Unnamed groups are just inlined.
-	if group == "" {
-		return
-	}
-
-	// Any saved values can no longer be changed.
-	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	continuing := false
-
-	if f.parentValuesStr != "" {
-		buf.WriteString(f.parentValuesStr)
-		continuing = true
-	}
-
-	if f.group != "" && f.valuesStr != "" {
-		if continuing {
-			buf.WriteByte(f.comma())
-		}
-		buf.WriteString(f.quoted(f.group, true)) // escape user-provided keys
-		buf.WriteByte(f.colon())
-		buf.WriteByte('{') // for the group
-		continuing = false
-	}
-
-	if f.valuesStr != "" {
-		if continuing {
-			buf.WriteByte(f.comma())
-		}
-		buf.WriteString(f.valuesStr)
-	}
-
-	// NOTE: We don't close the scope here - that's done later, when a log line
-	// is actually rendered (because we have N scopes to close).
-
-	f.parentValuesStr = buf.String()
-
-	// Start collecting new values.
-	f.group = group
-	f.groupDepth++
-	f.valuesStr = ""
-	f.values = nil
 }
 
 // Init configures this Formatter from runtime info, such as the call depth
@@ -831,8 +727,8 @@ func (f Formatter) GetDepth() int {
 // FormatInfo renders an Info log message into strings.  The prefix will be
 // empty when no names were set (via AddNames), or when the output is
 // configured for JSON.
-func (f Formatter) FormatInfo(level int, msg string, kvList []any) (prefix, argsStr string) {
-	args := make([]any, 0, 64) // using a constant here impacts perf
+func (f Formatter) FormatInfo(level int, msg string, kvList []interface{}) (prefix, argsStr string) {
+	args := make([]interface{}, 0, 64) // using a constant here impacts perf
 	prefix = f.prefix
 	if f.outputFormat == outputJSON {
 		args = append(args, "logger", prefix)
@@ -844,18 +740,15 @@ func (f Formatter) FormatInfo(level int, msg string, kvList []any) (prefix, args
 	if policy := f.opts.LogCaller; policy == All || policy == Info {
 		args = append(args, "caller", f.caller())
 	}
-	if key := *f.opts.LogInfoLevel; key != "" {
-		args = append(args, key, level)
-	}
-	args = append(args, "msg", msg)
+	args = append(args, "level", level, "msg", msg)
 	return prefix, f.render(args, kvList)
 }
 
 // FormatError renders an Error log message into strings.  The prefix will be
-// empty when no names were set (via AddNames), or when the output is
+// empty when no names were set (via AddNames),  or when the output is
 // configured for JSON.
-func (f Formatter) FormatError(err error, msg string, kvList []any) (prefix, argsStr string) {
-	args := make([]any, 0, 64) // using a constant here impacts perf
+func (f Formatter) FormatError(err error, msg string, kvList []interface{}) (prefix, argsStr string) {
+	args := make([]interface{}, 0, 64) // using a constant here impacts perf
 	prefix = f.prefix
 	if f.outputFormat == outputJSON {
 		args = append(args, "logger", prefix)
@@ -868,12 +761,12 @@ func (f Formatter) FormatError(err error, msg string, kvList []any) (prefix, arg
 		args = append(args, "caller", f.caller())
 	}
 	args = append(args, "msg", msg)
-	var loggableErr any
+	var loggableErr interface{}
 	if err != nil {
 		loggableErr = err.Error()
 	}
 	args = append(args, "error", loggableErr)
-	return prefix, f.render(args, kvList)
+	return f.prefix, f.render(args, kvList)
 }
 
 // AddName appends the specified name.  funcr uses '/' characters to separate
@@ -888,7 +781,7 @@ func (f *Formatter) AddName(name string) {
 
 // AddValues adds key-value pairs to the set of saved values to be logged with
 // each log line.
-func (f *Formatter) AddValues(kvList []any) {
+func (f *Formatter) AddValues(kvList []interface{}) {
 	// Three slice args forces a copy.
 	n := len(f.values)
 	f.values = append(f.values[:n:n], kvList...)

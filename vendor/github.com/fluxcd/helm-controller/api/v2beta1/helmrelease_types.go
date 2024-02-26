@@ -28,8 +28,6 @@ import (
 
 	"github.com/fluxcd/pkg/apis/kustomize"
 	"github.com/fluxcd/pkg/apis/meta"
-
-	"github.com/fluxcd/helm-controller/api/v2beta2"
 )
 
 const HelmReleaseKind = "HelmRelease"
@@ -72,8 +70,6 @@ type HelmReleaseSpec struct {
 	Chart HelmChartTemplate `json:"chart"`
 
 	// Interval at which to reconcile the Helm release.
-	// This interval is approximate and may be subject to jitter to ensure
-	// efficient use of resources.
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Pattern="^([0-9]+(\\.[0-9]+)?(ms|s|m|h))+$"
 	// +required
@@ -155,15 +151,6 @@ type HelmReleaseSpec struct {
 	//
 	// +optional
 	PersistentClient *bool `json:"persistentClient,omitempty"`
-
-	// DriftDetection holds the configuration for detecting and handling
-	// differences between the manifest in the Helm storage and the resources
-	// currently existing in the cluster.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	DriftDetection *v2beta2.DriftDetection `json:"driftDetection,omitempty"`
 
 	// Install holds the configuration for Helm install actions for this HelmRelease.
 	// +optional
@@ -841,13 +828,6 @@ type Uninstall struct {
 	// a Helm uninstall is performed.
 	// +optional
 	DisableWait bool `json:"disableWait,omitempty"`
-
-	// DeletionPropagation specifies the deletion propagation policy when
-	// a Helm uninstall is performed.
-	// +kubebuilder:default=background
-	// +kubebuilder:validation:Enum=background;foreground;orphan
-	// +optional
-	DeletionPropagation *string `json:"deletionPropagation,omitempty"`
 }
 
 // GetTimeout returns the configured timeout for the Helm uninstall action, or
@@ -857,15 +837,6 @@ func (in Uninstall) GetTimeout(defaultTimeout metav1.Duration) metav1.Duration {
 		return defaultTimeout
 	}
 	return *in.Timeout
-}
-
-// GetDeletionPropagation returns the configured deletion propagation policy
-// for the Helm uninstall action, or 'background'.
-func (in Uninstall) GetDeletionPropagation() string {
-	if in.DeletionPropagation == nil {
-		return "background"
-	}
-	return *in.DeletionPropagation
 }
 
 // HelmReleaseStatus defines the observed state of a HelmRelease.
@@ -916,62 +887,6 @@ type HelmReleaseStatus struct {
 	// state. It is reset after a successful reconciliation.
 	// +optional
 	UpgradeFailures int64 `json:"upgradeFailures,omitempty"`
-
-	// StorageNamespace is the namespace of the Helm release storage for the
-	// current release.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	StorageNamespace string `json:"storageNamespace,omitempty"`
-
-	// History holds the history of Helm releases performed for this HelmRelease
-	// up to the last successfully completed release.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	History v2beta2.Snapshots `json:"history,omitempty"`
-
-	// LastAttemptedGeneration is the last generation the controller attempted
-	// to reconcile.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	LastAttemptedGeneration int64 `json:"lastAttemptedGeneration,omitempty"`
-
-	// LastAttemptedConfigDigest is the digest for the config (better known as
-	// "values") of the last reconciliation attempt.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	LastAttemptedConfigDigest string `json:"lastAttemptedConfigDigest,omitempty"`
-
-	// LastAttemptedReleaseAction is the last release action performed for this
-	// HelmRelease. It is used to determine the active remediation strategy.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	LastAttemptedReleaseAction string `json:"lastAttemptedReleaseAction,omitempty"`
-
-	// LastHandledForceAt holds the value of the most recent force request
-	// value, so a change of the annotation value can be detected.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	LastHandledForceAt string `json:"lastHandledForceAt,omitempty"`
-
-	// LastHandledResetAt holds the value of the most recent reset request
-	// value, so a change of the annotation value can be detected.
-	//
-	// Note: this field is provisional to the v2beta2 API, and not actively used
-	// by v2beta1 HelmReleases.
-	// +optional
-	LastHandledResetAt string `json:"lastHandledResetAt,omitempty"`
 }
 
 // GetHelmChart returns the namespace and name of the HelmChart.
@@ -1030,8 +945,6 @@ func HelmReleaseReady(hr HelmRelease) HelmRelease {
 
 // HelmReleaseAttempted registers an attempt of the given HelmRelease with the given state.
 // and returns the modified HelmRelease and a boolean indicating a state change.
-//
-// Deprecated: in favor of HelmReleaseChanged and HelmReleaseRecordAttempt.
 func HelmReleaseAttempted(hr HelmRelease, revision string, releaseRevision int, valuesChecksum string) (HelmRelease, bool) {
 	changed := hr.Status.LastAttemptedRevision != revision ||
 		hr.Status.LastReleaseRevision != releaseRevision ||
@@ -1041,31 +954,6 @@ func HelmReleaseAttempted(hr HelmRelease, revision string, releaseRevision int, 
 	hr.Status.LastAttemptedValuesChecksum = valuesChecksum
 
 	return hr, changed
-}
-
-// HelmReleaseChanged returns if the HelmRelease has changed compared to the
-// provided values.
-func HelmReleaseChanged(hr HelmRelease, revision string, releaseRevision int, valuesChecksums ...string) bool {
-	return hr.Status.LastAttemptedRevision != revision ||
-		hr.Status.LastReleaseRevision != releaseRevision ||
-		!inStringSlice(hr.Status.LastAttemptedValuesChecksum, valuesChecksums)
-}
-
-// HelmReleaseRecordAttempt returns an attempt of the given HelmRelease with the
-// given state in the Status of the provided object.
-func HelmReleaseRecordAttempt(hr *HelmRelease, revision string, releaseRevision int, valuesChecksum string) {
-	hr.Status.LastAttemptedRevision = revision
-	hr.Status.LastReleaseRevision = releaseRevision
-	hr.Status.LastAttemptedValuesChecksum = valuesChecksum
-}
-
-func inStringSlice(str string, s []string) bool {
-	for _, v := range s {
-		if str == v {
-			return true
-		}
-	}
-	return false
 }
 
 func resetFailureCounts(hr *HelmRelease) {
@@ -1088,7 +976,6 @@ const (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description=""
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",description=""
-// +kubebuilder:deprecatedversion:warning="v2beta1 HelmRelease is deprecated, upgrade to v2beta2"
 
 // HelmRelease is the Schema for the helmreleases API
 type HelmRelease struct {
