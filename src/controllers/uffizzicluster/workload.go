@@ -3,8 +3,8 @@ package uffizzicluster
 import (
 	context "context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/constants"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/build/vcluster"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/build/vcluster"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

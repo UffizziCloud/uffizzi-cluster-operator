@@ -28,6 +28,29 @@ const (
 	ReasonAwoken            = "Awoken"
 )
 
+func GetAllInitializingConditions() []metav1.Condition {
+	return []metav1.Condition{
+		Initializing(),
+		InitializingAPI(),
+		InitializingDataStore(),
+		DefaultSleepState(),
+	}
+}
+
+func GetAllReadyConditions() []metav1.Condition {
+	return []metav1.Condition{
+		APIReady(),
+		DataStoreReady(),
+	}
+}
+
+func GetAllNotReadyConditions() []metav1.Condition {
+	return []metav1.Condition{
+		APINotReady(),
+		DataStoreNotReady(),
+	}
+}
+
 func Initializing() metav1.Condition {
 	return metav1.Condition{
 		Type:               TypeReady,

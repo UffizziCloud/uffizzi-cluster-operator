@@ -18,8 +18,8 @@ package uffizzicluster
 
 import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/constants"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/helm/build/vcluster"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/build/vcluster"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
