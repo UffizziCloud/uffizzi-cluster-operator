@@ -93,6 +93,21 @@ var _ = Describe("UffizziCluster Controller", func() {
 			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
 			GinkgoWriter.Printf(diff.PrintWantGot(d))
 		})
+
+		It("Should be in a Ready State", func() {
+			expectedConditions := []metav1.Condition{}
+			uffizziClusterNSN := createNamespacesName(uc.Name, ns.Name)
+			By("Check if UffizziCluster has the correct Ready conditions")
+			Eventually(func() bool {
+				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+					return false
+				}
+				expectedConditions = uffizzicluster.GetAllReadyConditions()
+				return containsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
+			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
+			GinkgoWriter.Printf(diff.PrintWantGot(d))
+		})
 	})
 })
 
