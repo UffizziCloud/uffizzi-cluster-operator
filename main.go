@@ -63,6 +63,7 @@ func main() {
 		probeAddr                 string
 		enableLeaderElection      bool
 		concurrentReconciliations int
+		k8sProvider               string
 	)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
@@ -71,6 +72,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.IntVar(&concurrentReconciliations, "concurrent", 5, "The number of concurrent reconciles per controller.")
+	flag.StringVar(&k8sProvider, "k8s-provider", "", "The k8s provider to use for the UffizziCluster")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -99,8 +101,9 @@ func main() {
 	}
 	// Setup UffizziClusterReconciler
 	if err = (&uffizzicluster.UffizziClusterReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		KubernetesProvider: k8sProvider,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UffizziCluster")
 		os.Exit(1)

@@ -1,10 +1,10 @@
-apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
+apiVersion: {{ include "util.capabilities.rbac.apiVersion" . }}
 kind: ClusterRole
 metadata:
-  labels: {{ include "common.labels.standard" . | nindent 4 }}
+  labels: {{ include "util.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: kube-rbac-proxy
     app.kubernetes.io/part-of: uffizzi
-  name: {{ include "common.names.fullname" . }}-metrics-reader
+  name: {{ include "util.names.fullname" . }}-metrics-reader
 rules:
 - nonResourceURLs:
   - /metrics

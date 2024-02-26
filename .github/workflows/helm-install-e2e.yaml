@@ -1,4 +1,4 @@
-name: E2E - Helm Chart Deployment and Tests
+name: E2E - Helm Chart Deployment Test
 
 on:
   pull_request:
@@ -119,8 +119,6 @@ jobs:
 
           # kubectl apply -f examples/k3s-manifest-basic.yml
           # kubectl apply -f examples/k8s-manifest-basic.yml
-
-          # kubectl kuttl test
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2

@@ -42,16 +42,9 @@ import (
 // UffizziClusterReconciler reconciles a UffizziCluster object
 type UffizziClusterReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme             *runtime.Scheme
+	KubernetesProvider string
 }
-
-type LIFECYCLE_OP_TYPE string
-
-var (
-	LIFECYCLE_OP_TYPE_CREATE LIFECYCLE_OP_TYPE = "create"
-	LIFECYCLE_OP_TYPE_UPDATE LIFECYCLE_OP_TYPE = "update"
-	LIFECYCLE_OP_TYPE_DELETE LIFECYCLE_OP_TYPE = "delete"
-)
 
 //+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters/status,verbs=get;update;patch
@@ -90,12 +83,12 @@ var (
 
 func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var (
-		lifecycleOpType LIFECYCLE_OP_TYPE
+		lifecycleOpType constants.LIFECYCLE_OP_TYPE
 		currentSpec     string
 		lastAppliedSpec string
 	)
 	// default lifecycle operation
-	lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
+	lifecycleOpType = constants.LIFECYCLE_OP_TYPE_CREATE
 	logger := log.FromContext(ctx)
 
 	// ----------------------
@@ -106,7 +99,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err := r.Get(ctx, req.NamespacedName, uCluster); err != nil {
 		// possibly a delete event
 		if k8serrors.IsNotFound(err) {
-			lifecycleOpType = LIFECYCLE_OP_TYPE_DELETE
+			lifecycleOpType = constants.LIFECYCLE_OP_TYPE_DELETE
 			logger.Info("UffizziCluster deleted", "NamespacedName", req.NamespacedName)
 		} else {
 			logger.Info("Failed to get UffizziCluster", "NamespacedName", req.NamespacedName, "Error", err)
@@ -115,7 +108,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	// if a new ucluster has been created then set the status to have the current ingress spec
-	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
+	if lifecycleOpType == constants.LIFECYCLE_OP_TYPE_CREATE {
 		currentSpecBytes, err := json.Marshal(uCluster.Spec)
 		if err != nil {
 			logger.Error(err, "Failed to marshal current spec")
@@ -174,7 +167,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return result, createEgressError
 		}
 		// helm release does not exist so let's create one
-		lifecycleOpType = LIFECYCLE_OP_TYPE_CREATE
+		lifecycleOpType = constants.LIFECYCLE_OP_TYPE_CREATE
 		// create either a k8s based vcluster or a k3s based vcluster
 		newHelmRelease, result, err := r.createVClusterHelmChart(ctx, uCluster, newHelmRelease)
 		if err != nil {
@@ -202,7 +195,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		logger.Error(err, "Failed to create HelmRelease, unknown error")
 		return ctrl.Result{}, err
 	} else {
-		lifecycleOpType = LIFECYCLE_OP_TYPE_UPDATE
+		lifecycleOpType = constants.LIFECYCLE_OP_TYPE_UPDATE
 		// if helm release already exists then replicate the status conditions onto the uffizzicluster object
 		patch := client.MergeFrom(uCluster.DeepCopy())
 		mirrorHelmStackConditions(helmRelease, uCluster)
@@ -212,7 +205,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 	// create helm repo for loft if it doesn't already exist
-	if lifecycleOpType == LIFECYCLE_OP_TYPE_CREATE {
+	if lifecycleOpType == constants.LIFECYCLE_OP_TYPE_CREATE {
 		err := r.createLoftHelmRepo(ctx, req)
 		if err != nil && k8serrors.IsAlreadyExists(err) {
 			// logger.Info("Loft Helm Repo for UffizziCluster already exists", "NamespacedName", req.NamespacedName)
@@ -226,7 +219,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return ctrl.Result{}, err
 		}
 		logger.Info("UffizziCluster lastAppliedConfig has been set")
-	} else if lifecycleOpType == LIFECYCLE_OP_TYPE_DELETE {
+	} else if lifecycleOpType == constants.LIFECYCLE_OP_TYPE_DELETE {
 		err := r.deleteLoftHelmRepo(ctx, req)
 		if err != nil && k8serrors.IsNotFound(err) {
 			logger.Info("Loft Helm Repo for UffizziCluster already deleted", "NamespacedName", req.NamespacedName)
@@ -236,7 +229,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// UCLUSTER HELM CHART and RELATED RESOURCES _UPDATION_
 	// ----------------------
 	var updatedHelmRelease *fluxhelmv2beta1.HelmRelease
-	if lifecycleOpType == LIFECYCLE_OP_TYPE_UPDATE {
+	if lifecycleOpType == constants.LIFECYCLE_OP_TYPE_UPDATE {
 		if currentSpec != lastAppliedSpec {
 			if uCluster.Spec.Distro == constants.VCLUSTER_K8S_DISTRO {
 				if updatedHelmRelease, err = r.upsertVClusterK8sHelmRelease(true, ctx, uCluster); err != nil {
@@ -257,15 +250,15 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// ----------------------
 	// UCLUSTER SLEEP
 	// ----------------------
-	if err := r.reconcileSleepState(ctx, uCluster); err != nil {
-		if k8serrors.IsNotFound(err) {
-			// logger.Info("vcluster statefulset not found, requeueing")
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
-		}
-		// cluster did not sleep
-		logger.Info("Failed to reconcile sleep state, reconciling again", "Error", err.Error())
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
-	}
+	//if err := r.reconcileSleepState(ctx, uCluster); err != nil {
+	//	if k8serrors.IsNotFound(err) {
+	//		// logger.Info("vcluster statefulset not found, requeueing")
+	//		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+	//	}
+	//	// cluster did not sleep
+	//	logger.Info("Failed to reconcile sleep state, reconciling again", "Error", err.Error())
+	//	return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+	//}
 
 	return ctrl.Result{}, nil
 }

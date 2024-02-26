@@ -12,7 +12,7 @@ version: 1.5.6
 # It is recommended to use it with quotes.
 appVersion: "v1.5.6"
 dependencies:
-  - name: common
+  - name: util
     repository: https://charts.bitnami.com/bitnami
     version: 2.x.x
   - name: flux
