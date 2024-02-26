@@ -63,7 +63,6 @@ func main() {
 		probeAddr                 string
 		enableLeaderElection      bool
 		concurrentReconciliations int
-		k8sProvider               string
 	)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
