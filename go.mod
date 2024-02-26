@@ -2,8 +2,6 @@ module github.com/UffizziCloud/uffizzi-cluster-operator
 
 go 1.21
 
-toolchain go1.21.3
-
 require (
 	github.com/fluxcd/helm-controller/api v0.37.4
 	github.com/fluxcd/pkg/apis/meta v1.3.0
