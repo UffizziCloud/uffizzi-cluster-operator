@@ -24,7 +24,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make test-e2e-with-cluster
+          make e2e-test-with-cluster
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2
