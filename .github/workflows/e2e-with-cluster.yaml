@@ -22,17 +22,10 @@ jobs:
       - name: Setup Minikube
         run: minikube start --driver=docker
 
-      - name: Run tests
+      - name: Install FluxCD
+        run: |
+          flux install --namespace=flux-system --components="source-controller,helm-controller"
+          
+      - name: Run e2e tests
         run: |
           make e2e-test-with-cluster
-
-      - name: Create or Update Comment with Deployment URL
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          comment-id: ${{ steps.notification.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## Uffizzi Ephemeral Environment - Virtual Cluster - E2E Helm Chart
-
-            E2E tests in progress on the `pr-${{ github.event.pull_request.number }}-e2e-helm` cluster.
-          edit-mode: replace
