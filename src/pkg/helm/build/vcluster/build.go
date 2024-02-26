@@ -15,7 +15,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	vclusterK3sHelmValues := vcluster.K3S{
 		VCluster: k3SAPIServer(uCluster),
-		Common:   common(helmReleaseName, vclusterIngressHostname),
+		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Provider),
 	}
 
 	// keep cluster data intact in case the vcluster scales up or down
@@ -107,7 +107,7 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 
 	vclusterHelmValues := vcluster.K8S{
 		APIServer: k8SAPIServer(),
-		Common:    common(helmReleaseName, vclusterIngressHostname),
+		Common:    common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Provider),
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
@@ -213,10 +213,16 @@ func pluginsConfig() vcluster.Plugins {
 	}
 }
 
-func syncerConfig(helmReleaseName string) vcluster.Syncer {
-	return vcluster.Syncer{
+func syncerConfig(helmReleaseName, provider string) vcluster.Syncer {
+	syncer := vcluster.Syncer{
 		KubeConfigContextName: helmReleaseName,
-		ExtraArgs: []string{
+		Limits: types.ContainerMemoryCPU{
+			CPU:    "1000m",
+			Memory: "1024Mi",
+		},
+	}
+	if provider == constants.PROVIDER_GKE {
+		syncer.ExtraArgs = append(syncer.ExtraArgs, []string{
 			fmt.Sprintf(
 				"--enforce-toleration=%s:%s",
 				constants.SANDBOX_GKE_IO_RUNTIME,
@@ -224,12 +230,10 @@ func syncerConfig(helmReleaseName string) vcluster.Syncer {
 			),
 			"--node-selector=sandbox.gke.io/runtime=gvisor",
 			"--enforce-node-selector",
-		},
-		Limits: types.ContainerMemoryCPU{
-			CPU:    "1000m",
-			Memory: "1024Mi",
-		},
+		}...)
+
 	}
+	return syncer
 }
 
 func syncConfig() vcluster.Sync {
@@ -311,7 +315,7 @@ func ingress(VClusterIngressHostname string) vcluster.Ingress {
 	}
 }
 
-func nodeSelector() vcluster.NodeSelector {
+func gkeNodeSelector() vcluster.NodeSelector {
 	return vcluster.NodeSelector{
 		SandboxGKEIORuntime: "gvisor",
 	}
@@ -342,19 +346,24 @@ func k8SAPIServer() vcluster.K8SAPIServer {
 	}
 }
 
-func common(helmReleaseName, vclusterIngressHostname string) vcluster.Common {
-	return vcluster.Common{
+func common(helmReleaseName, vclusterIngressHostname, provider string) vcluster.Common {
+	c := vcluster.Common{
 		Init:            vcluster.Init{},
 		FsGroup:         12345,
 		Ingress:         ingress(vclusterIngressHostname),
 		Isolation:       isolation(),
-		NodeSelector:    nodeSelector(),
 		SecurityContext: securityContext(),
 		Tolerations:     tolerations(),
 		Plugin:          pluginsConfig(),
-		Syncer:          syncerConfig(helmReleaseName),
+		Syncer:          syncerConfig(helmReleaseName, provider),
 		Sync:            syncConfig(),
 	}
+
+	if provider == constants.PROVIDER_GKE {
+		c.NodeSelector = gkeNodeSelector()
+	}
+
+	return c
 }
 
 func k3SAPIServer(uCluster *v1alpha1.UffizziCluster) vcluster.K3SAPIServer {

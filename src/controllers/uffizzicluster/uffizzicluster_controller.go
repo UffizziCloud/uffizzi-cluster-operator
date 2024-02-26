@@ -42,8 +42,7 @@ import (
 // UffizziClusterReconciler reconciles a UffizziCluster object
 type UffizziClusterReconciler struct {
 	client.Client
-	Scheme             *runtime.Scheme
-	KubernetesProvider string
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=uffizzi.com,resources=uffizziclusters,verbs=get;list;watch;create;update;patch;delete
