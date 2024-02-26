@@ -1,4 +1,4 @@
-name: E2E - Helm Chart Deployment Test
+name: EnvTest with Cluster
 
 on:
   pull_request:
