@@ -145,7 +145,7 @@ type UffizziClusterSpec struct {
 	//+kubebuilder:validation:Enum=k3s;k8s
 	Distro string `json:"distro,omitempty"`
 	//+kubebuilder:default:="vanila"
-	//+kubebuilder:validation:Enum=vanila,gke,eks
+	//+kubebuilder:validation:Enum=vanila;gke;eks
 	Provider      string                       `json:"provider,omitempty"`
 	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
