@@ -86,7 +86,7 @@ type UffizziClusterRequestsQuota struct {
 	Memory string `json:"memory,omitempty"`
 	//+kubebuilder:default:="5Gi"
 	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
-	//+kubebuilder:default:="5Gi"
+	//+kubebuilder:default:="10Gi"
 	Storage string `json:"storage,omitempty"`
 }
 

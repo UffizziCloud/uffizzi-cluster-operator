@@ -252,7 +252,7 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// ----------------------
 	if err := r.reconcileSleepState(ctx, uCluster); err != nil {
 		if k8serrors.IsNotFound(err) {
-			logger.Info("vcluster statefulset not found, will check again in the next round")
+			logger.Info("vcluster workload not found, will check again in the next round")
 			return ctrl.Result{}, nil
 		}
 		// cluster did not sleep

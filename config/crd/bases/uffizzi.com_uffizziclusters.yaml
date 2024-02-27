@@ -213,7 +213,7 @@ spec:
                         default: 1Gi
                         type: string
                       storage:
-                        default: 5Gi
+                        default: 10Gi
                         type: string
                     type: object
                   services:
