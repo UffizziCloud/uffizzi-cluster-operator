@@ -120,6 +120,7 @@ var _ = Describe("UffizziCluster Controller", func() {
 		It("Should be in a Sleep State", func() {
 			expectedConditions := []metav1.Condition{
 				uffizzicluster.APINotReady(),
+				uffizzicluster.DataStoreNotReady(),
 			}
 			uffizziClusterNSN := createNamespacesName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
@@ -131,6 +132,42 @@ var _ = Describe("UffizziCluster Controller", func() {
 			}, timeout, pollingTimeout).Should(BeTrue())
 			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
 			GinkgoWriter.Printf(diff.PrintWantGot(d))
+		})
+	})
+
+	Context("When waking a cluster up", func() {
+		It("Should wake the cluster up", func() {
+			By("By waking the UffizziCluster up")
+			uc.Spec.Sleep = false
+			Expect(k8sClient.Update(ctx, uc)).Should(Succeed())
+		})
+
+		It("Should be Awoken", func() {
+			expectedConditions := []metav1.Condition{
+				uffizzicluster.APIReady(),
+				uffizzicluster.DataStoreReady(),
+			}
+			uffizziClusterNSN := createNamespacesName(uc.Name, ns.Name)
+			By("Check if UffizziCluster has the correct Sleep conditions")
+			Eventually(func() bool {
+				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+					return false
+				}
+				return containsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
+			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
+			GinkgoWriter.Printf(diff.PrintWantGot(d))
+		})
+	})
+
+	Context("When deleting UffizziCluster", func() {
+		It("Should delete the UffizziCluster", func() {
+			By("By deleting the UffizziCluster")
+			Expect(k8sClient.Delete(ctx, uc)).Should(Succeed())
+		})
+		It("Should delete the Namespace", func() {
+			By("By deleting the Namespace")
+			Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
 		})
 	})
 })
