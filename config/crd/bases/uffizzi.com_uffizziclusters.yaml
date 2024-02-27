@@ -154,6 +154,13 @@ spec:
                 type: object
               manifests:
                 type: string
+              provider:
+                default: vanila
+                enum:
+                - vanila
+                - gke
+                - eks
+                type: string
               resourceQuota:
                 description: UffizziClusterResourceQuota defines the resource quota
                   which defines the quota of resources a namespace has access to

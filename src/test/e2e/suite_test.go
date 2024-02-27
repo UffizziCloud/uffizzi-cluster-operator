@@ -20,20 +20,15 @@ import (
 	"context"
 	uffizziv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/diff"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
-	"github.com/google/go-cmp/cmp"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"math/rand"
 	"os"
 	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"testing"
-	"time"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -132,19 +127,6 @@ func testingSeed() {
 	rand.Seed(12345)
 }
 
-func stringWithCharset(length int, charset string) string {
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
-
-func randomString(length int) string {
-	return stringWithCharset(length, "abcdefghijklmnopqrstuvwxyz")
-}
-
 // CompareSlices compares two slices for equality. It returns true if both slices have the same elements in the same order.
 func compareSlices[T comparable](slice1, slice2 []T) bool {
 	if len(slice1) != len(slice2) {
@@ -157,27 +139,5 @@ func compareSlices[T comparable](slice1, slice2 []T) bool {
 		}
 	}
 
-	return true
-}
-
-// Checks if the required conditions are present and match in the actual conditions slice.
-// Both requiredConditions and actualConditions are slices of metav1.Condition.
-func containsAllConditions(requiredConditions, actualConditions []metav1.Condition) bool {
-	for _, requiredCondition := range requiredConditions {
-		found := false
-		for _, actualCondition := range actualConditions {
-			if actualCondition.Type == requiredCondition.Type &&
-				actualCondition.Status == requiredCondition.Status {
-				// Add more condition checks here if necessary (e.g., Reason, Message)
-				found = true
-				d := cmp.Diff(requiredConditions, actualConditions)
-				GinkgoWriter.Printf(diff.PrintWantGot(d))
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
 	return true
 }

@@ -190,7 +190,7 @@ type Isolation struct {
 
 // NodeSelector - parameters to define the node selector of the cluster
 type NodeSelector struct {
-	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime"`
+	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime,omitempty"`
 }
 
 type SecurityContextCapabilities struct {
