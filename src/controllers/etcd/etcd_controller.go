@@ -18,11 +18,13 @@ package etcd
 
 import (
 	"context"
+	"fmt"
 	uclusteruffizzicomv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -37,9 +39,6 @@ type UffizziClusterEtcdReconciler struct {
 }
 
 func (r *UffizziClusterEtcdReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// check if the cluster is a k3s cluster
-	// if it is, then we need to create the etcd cluster
-	// default lifecycle operation
 	logger := log.FromContext(ctx)
 
 	// ----------------------
@@ -62,21 +61,21 @@ func (r *UffizziClusterEtcdReconciler) Reconcile(ctx context.Context, req ctrl.R
 		// create a helm release for the etcd cluster
 		// check if the helm release exists
 		helmRelease := &fluxhelmv2beta1.HelmRelease{}
-		err = r.Get(ctx, client.ObjectKey{
+		err = r.Get(ctx, types.NamespacedName{
 			Namespace: uCluster.Namespace,
 			Name:      BuildEtcdHelmReleaseName(uCluster),
 		}, helmRelease)
 		if err != nil {
-			// if the helm release does not exist, create it
-			_, err = r.upsertETCDHelmRelease(ctx, uCluster)
-			if err != nil {
-				return ctrl.Result{}, err
+			if k8serrors.IsNotFound(err) {
+				// if the helm release does not exist, create it
+				if _, err = r.upsertETCDHelmRelease(ctx, uCluster); err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed to create HelmRelease: %w", err)
+				}
+			} else {
+				return ctrl.Result{}, fmt.Errorf("failed to get HelmRelease: %w", err)
 			}
-		} else {
-			return ctrl.Result{}, nil
 		}
 	}
-
 	return ctrl.Result{}, nil
 }
 

@@ -44,6 +44,15 @@ func GetHelmReleaseFromUffizziCluster(uc *v1alpha1.UffizziCluster) *v2beta1.Helm
 	}
 }
 
+func GetETCDHelmReleaseFromUffizziCluster(uc *v1alpha1.UffizziCluster) *v2beta1.HelmRelease {
+	return &v2beta1.HelmRelease{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "uc-etcd-" + uc.Name,
+			Namespace: uc.Namespace,
+		},
+	}
+}
+
 func GetHelmRepositoryFromUffizziCluster(uc *v1alpha1.UffizziCluster) *v1beta2.HelmRepository {
 	return &v1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{

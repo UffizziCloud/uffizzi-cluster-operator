@@ -23,12 +23,34 @@ const (
 	pollingTimeout = "100ms"
 )
 
-var _ = Describe("Basic UffizziCluster Lifecycle", func() {
+var _ = Describe("Basic K3S UffizziCluster Lifecycle", func() {
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
 		Name: "basic",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
-	// run the testUffizziCluster
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})
+
+//
+//var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+//	ctx := context.Background()
+//	testUffizziCluster := TestDefinition{
+//		Name: "basic-etcd",
+//		Spec: v1alpha1.UffizziClusterSpec{
+//			ExternalDatastore: constants.ETCD,
+//		},
+//	}
+//	testUffizziCluster.ExecLifecycleTest(ctx)
+//})
+
+var _ = Describe("Basic Vanila K8S UffizziCluster Lifecycle", func() {
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "basic-k8s",
+		Spec: v1alpha1.UffizziClusterSpec{
+			Distro: "k8s",
+		},
+	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
 })

@@ -19,6 +19,7 @@ package e2e
 import (
 	"context"
 	uffizziv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -103,6 +104,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&uffizzicluster.UffizziClusterReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&etcd.UffizziClusterEtcdReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)

@@ -17,6 +17,7 @@ import (
 
 func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
 	helmRelease := resources.GetHelmReleaseFromUffizziCluster(uc)
+	etcdHelmRelease := resources.GetETCDHelmReleaseFromUffizziCluster(uc)
 	helmRepo := resources.GetHelmRepositoryFromUffizziCluster(uc)
 	defer Context("When deleting UffizziCluster", func() {
 		It("Should delete the UffizziCluster", func() {
@@ -59,6 +60,29 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 			})
 
 		})
+
+		if uc.Spec.ExternalDatastore == constants.ETCD {
+			It("Should create a Bitnami HelmRepository", func() {
+				//
+				By("Checking if the Bitnami HelmRepository was created")
+				Eventually(func() bool {
+					if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.BITNAMI_HELM_REPO, ns.Name), helmRepo); err != nil {
+						return false
+					}
+					return true
+				})
+			})
+			It("Should create a HelmRelease for ETCD", func() {
+				//
+				By("Checking if the HelmRelease for ETCD was created")
+				Eventually(func() bool {
+					if err := k8sClient.Get(ctx, resources.CreateNamespacedName(etcdHelmRelease.Name, ns.Name), etcdHelmRelease); err != nil {
+						return false
+					}
+					return true
+				})
+			})
+		}
 
 		It("Should initialize correctly", func() {
 			expectedConditions := []metav1.Condition{}

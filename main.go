@@ -105,7 +105,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "UffizziCluster")
 		os.Exit(1)
 	}
-	// Setup UffizziClusterReconciler
+	// Setup UffizziClusterEtcdReconciler
 	if err = (&etcd.UffizziClusterEtcdReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
