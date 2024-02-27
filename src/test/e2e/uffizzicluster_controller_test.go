@@ -110,29 +110,29 @@ var _ = Describe("UffizziCluster Controller", func() {
 		})
 	})
 
-	//Context("When putting a cluster to sleep", func() {
-	//	It("Should put the cluster to sleep", func() {
-	//		By("By putting the UffizziCluster to sleep")
-	//		uc.Spec.Sleep = true
-	//		Expect(k8sClient.Update(ctx, uc)).Should(Succeed())
-	//	})
-	//
-	//	It("Should be in a Sleep State", func() {
-	//		expectedConditions := []metav1.Condition{
-	//			uffizzicluster.Sleeping(metav1.Now()),
-	//		}
-	//		uffizziClusterNSN := createNamespacesName(uc.Name, ns.Name)
-	//		By("Check if UffizziCluster has the correct Sleep conditions")
-	//		Eventually(func() bool {
-	//			if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
-	//				return false
-	//			}
-	//			return containsAllConditions(expectedConditions, uc.Status.Conditions)
-	//		}, timeout, pollingTimeout).Should(BeTrue())
-	//		d := cmp.Diff(expectedConditions, uc.Status.Conditions)
-	//		GinkgoWriter.Printf(diff.PrintWantGot(d))
-	//	})
-	//})
+	Context("When putting a cluster to sleep", func() {
+		It("Should put the cluster to sleep", func() {
+			By("By putting the UffizziCluster to sleep")
+			uc.Spec.Sleep = true
+			Expect(k8sClient.Update(ctx, uc)).Should(Succeed())
+		})
+
+		It("Should be in a Sleep State", func() {
+			expectedConditions := []metav1.Condition{
+				uffizzicluster.APINotReady(),
+			}
+			uffizziClusterNSN := createNamespacesName(uc.Name, ns.Name)
+			By("Check if UffizziCluster has the correct Sleep conditions")
+			Eventually(func() bool {
+				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+					return false
+				}
+				return containsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
+			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
+			GinkgoWriter.Printf(diff.PrintWantGot(d))
+		})
+	})
 })
 
 func createNamespacesName(name, namespace string) types.NamespacedName {

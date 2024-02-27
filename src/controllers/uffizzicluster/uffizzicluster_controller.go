@@ -319,10 +319,16 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 		// scale the vcluster instance to 0 if the sleep flag is true
 		if uCluster.Spec.Sleep && *currentReplicas > 0 {
 			var err error
+			if err = r.scaleStatefulSets(ctx, 0, ucStatefulSet); err != nil {
+				return err
+			}
 			if err = r.waitForStatefulSetToScale(ctx, 0, ucStatefulSet); err == nil {
 				setCondition(uCluster, APINotReady())
 			}
 			if uCluster.Spec.ExternalDatastore == constants.ETCD {
+				if err = r.scaleStatefulSets(ctx, 0, etcdStatefulSet); err != nil {
+					return err
+				}
 				if err = r.waitForStatefulSetToScale(ctx, 0, etcdStatefulSet); err == nil {
 					setCondition(uCluster, DataStoreNotReady())
 				}
