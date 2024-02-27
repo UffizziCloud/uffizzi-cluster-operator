@@ -231,7 +231,8 @@ func syncerConfig(helmReleaseName, provider string) vcluster.Syncer {
 			"--node-selector=sandbox.gke.io/runtime=gvisor",
 			"--enforce-node-selector",
 		}...)
-
+	} else {
+		syncer.ExtraArgs = []string{}
 	}
 	return syncer
 }
@@ -244,7 +245,7 @@ func syncConfig() vcluster.Sync {
 	}
 }
 
-func tolerations() []vcluster.Toleration {
+func gkeTolerations() []vcluster.Toleration {
 	return []vcluster.Toleration{
 		{
 			Key:      constants.SANDBOX_GKE_IO_RUNTIME,
@@ -353,7 +354,7 @@ func common(helmReleaseName, vclusterIngressHostname, provider string) vcluster.
 		Ingress:         ingress(vclusterIngressHostname),
 		Isolation:       isolation(),
 		SecurityContext: securityContext(),
-		Tolerations:     tolerations(),
+		Tolerations:     gkeTolerations(),
 		Plugin:          pluginsConfig(),
 		Syncer:          syncerConfig(helmReleaseName, provider),
 		Sync:            syncConfig(),
@@ -361,6 +362,10 @@ func common(helmReleaseName, vclusterIngressHostname, provider string) vcluster.
 
 	if provider == constants.PROVIDER_GKE {
 		c.NodeSelector = gkeNodeSelector()
+		c.Tolerations = gkeTolerations()
+	} else {
+		c.NodeSelector = vcluster.NodeSelector{}
+		c.Tolerations = []vcluster.Toleration{}
 	}
 
 	return c

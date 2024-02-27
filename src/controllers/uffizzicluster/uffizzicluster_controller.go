@@ -249,15 +249,15 @@ func (r *UffizziClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// ----------------------
 	// UCLUSTER SLEEP
 	// ----------------------
-	//if err := r.reconcileSleepState(ctx, uCluster); err != nil {
-	//	if k8serrors.IsNotFound(err) {
-	//		// logger.Info("vcluster statefulset not found, requeueing")
-	//		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
-	//	}
-	//	// cluster did not sleep
-	//	logger.Info("Failed to reconcile sleep state, reconciling again", "Error", err.Error())
-	//	return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
-	//}
+	if err := r.reconcileSleepState(ctx, uCluster); err != nil {
+		if k8serrors.IsNotFound(err) {
+			logger.Info("vcluster statefulset not found, will check again in the next round")
+			return ctrl.Result{}, nil
+		}
+		// cluster did not sleep
+		logger.Info("Failed to reconcile sleep state, reconciling again", "Error", err.Error())
+		return ctrl.Result{}, nil
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -302,6 +302,7 @@ func (r *UffizziClusterReconciler) reconcileSleepState(ctx context.Context, uClu
 	//
 	patch := client.MergeFrom(uCluster.DeepCopy())
 	// get the stateful set or deployment created by the helm chart
+	// k3s is a statefulset, k8s is a helmchart
 	ucWorkload, err := r.getUffizziClusterWorkload(ctx, uCluster)
 	if err != nil {
 		return err

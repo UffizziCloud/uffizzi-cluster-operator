@@ -17,6 +17,7 @@ const (
 	LOFT_CHART_REPO_URL         = "https://charts.loft.sh"
 	VCLUSTER_K3S_DISTRO         = "k3s"
 	VCLUSTER_K8S_DISTRO         = "k8s"
+	PROVIDER_NOTHING            = "vanila"
 	PROVIDER_GKE                = "gke"
 	PROVIDER_EKS                = "eks"
 	K3S_DATASTORE_ENDPOINT      = "K3S_DATASTORE_ENDPOINT"
