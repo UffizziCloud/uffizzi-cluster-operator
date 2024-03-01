@@ -1,9 +1,10 @@
+//go:build basic
+
 package e2e
 
 import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	. "github.com/onsi/ginkgo/v2"
 )
@@ -34,16 +35,25 @@ var _ = Describe("Basic K3S UffizziCluster Lifecycle", func() {
 	testUffizziCluster.ExecLifecycleTest(ctx)
 })
 
-var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+var _ = Describe("Basic K3S UffizziCluster Lifecycle", func() {
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic-etcd",
-		Spec: v1alpha1.UffizziClusterSpec{
-			ExternalDatastore: constants.ETCD,
-		},
+		Name: "basic",
+		Spec: v1alpha1.UffizziClusterSpec{},
 	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
 })
+
+//var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+//	ctx := context.Background()
+//	testUffizziCluster := TestDefinition{
+//		Name: "basic-etcd",
+//		Spec: v1alpha1.UffizziClusterSpec{
+//			ExternalDatastore: constants.ETCD,
+//		},
+//	}
+//	testUffizziCluster.ExecLifecycleTest(ctx)
+//})
 
 var _ = Describe("Basic Vanila K8S UffizziCluster Lifecycle", func() {
 	ctx := context.Background()

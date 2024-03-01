@@ -143,10 +143,9 @@ type UffizziClusterResourceCount struct {
 type UffizziClusterSpec struct {
 	//+kubebuilder:default:="k3s"
 	//+kubebuilder:validation:Enum=k3s;k8s
-	Distro string `json:"distro,omitempty"`
-	//+kubebuilder:default:="vanila"
-	//+kubebuilder:validation:Enum=vanila;gke;eks
-	Provider      string                       `json:"provider,omitempty"`
+	Distro        string                       `json:"distro,omitempty"`
+	NodeSelector  string                       `json:"nodeselector,omitempty"`
+	Toleration    string                       `json:"toleration,omitempty"`
 	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
 	TTL           string                       `json:"ttl,omitempty"`
