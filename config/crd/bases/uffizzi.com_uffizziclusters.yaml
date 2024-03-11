@@ -154,7 +154,7 @@ spec:
                 type: object
               manifests:
                 type: string
-              nodeselector:
+              nodeSelector:
                 additionalProperties:
                   type: string
                 type: object

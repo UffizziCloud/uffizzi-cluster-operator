@@ -21,7 +21,7 @@ func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
 }
 
 const (
-	timeout        = "5m"
+	timeout        = "2m"
 	pollingTimeout = "100ms"
 )
 

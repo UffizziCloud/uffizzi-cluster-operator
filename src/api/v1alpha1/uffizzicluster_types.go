@@ -145,7 +145,7 @@ type UffizziClusterSpec struct {
 	//+kubebuilder:default:="k3s"
 	//+kubebuilder:validation:Enum=k3s;k8s
 	Distro        string                       `json:"distro,omitempty"`
-	NodeSelector  map[string]string            `json:"nodeselector,omitempty"`
+	NodeSelector  map[string]string            `json:"nodeSelector,omitempty"`
 	Toleration    []v1.Toleration              `json:"tolerations,omitempty"`
 	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`

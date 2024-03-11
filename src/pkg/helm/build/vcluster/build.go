@@ -97,6 +97,17 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		)
 	}
 
+	for _, t := range uCluster.Spec.Toleration {
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+t.String())
+	}
+
+	if len(uCluster.Spec.NodeSelector) > 0 {
+		for k, v := range uCluster.Spec.NodeSelector {
+			vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
+		}
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-node-selector")
+	}
+
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
 	}
@@ -226,24 +237,13 @@ func pluginsConfig() vcluster.Plugins {
 	}
 }
 
-func syncerConfig(helmReleaseName string, nodeSelector map[string]string, toleration []v1.Toleration) vcluster.Syncer {
+func syncerConfig(helmReleaseName string) vcluster.Syncer {
 	syncer := vcluster.Syncer{
 		KubeConfigContextName: helmReleaseName,
 		Limits: types.ContainerMemoryCPU{
 			CPU:    "1000m",
 			Memory: "1024Mi",
 		},
-	}
-
-	for _, t := range toleration {
-		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-toleration="+t.String())
-	}
-
-	if len(nodeSelector) > 0 {
-		for k, v := range nodeSelector {
-			syncer.ExtraArgs = append(syncer.ExtraArgs, "--node-selector="+k+"="+v)
-		}
-		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-node-selector")
 	}
 
 	return syncer
@@ -352,7 +352,7 @@ func common(helmReleaseName, vclusterIngressHostname string, nodeSelector map[st
 		SecurityContext: securityContext(),
 		Tolerations:     toleration,
 		Plugin:          pluginsConfig(),
-		Syncer:          syncerConfig(helmReleaseName, nodeSelector, toleration),
+		Syncer:          syncerConfig(helmReleaseName),
 		Sync:            syncConfig(),
 	}
 
