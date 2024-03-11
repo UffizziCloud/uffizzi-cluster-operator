@@ -140,10 +140,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		})
 
 		It("Should be in a Sleep State", func() {
-			expectedConditions := []metav1.Condition{
-				uffizzicluster.APINotReady(),
-				uffizzicluster.DataStoreNotReady(),
-			}
+			expectedConditions := uffizzicluster.GetAllSleepConditions()
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
 			Eventually(func() bool {
@@ -165,10 +162,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		})
 
 		It("Should be Awoken", func() {
-			expectedConditions := []metav1.Condition{
-				uffizzicluster.APIReady(),
-				uffizzicluster.DataStoreReady(),
-			}
+			expectedConditions := uffizzicluster.GetAllAwokenConditions()
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
 			Eventually(func() bool {
