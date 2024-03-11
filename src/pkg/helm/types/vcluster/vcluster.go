@@ -189,11 +189,6 @@ type Isolation struct {
 	NetworkPolicy       NetworkPolicy `json:"networkPolicy,omitempty"`
 }
 
-// NodeSelector - parameters to define the node selector of the cluster
-type NodeSelector struct {
-	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime,omitempty"`
-}
-
 type SecurityContextCapabilities struct {
 	Drop []string `json:"drop"`
 }

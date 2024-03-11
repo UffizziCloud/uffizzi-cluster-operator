@@ -306,12 +306,6 @@ func ingress(VClusterIngressHostname string) vcluster.Ingress {
 	}
 }
 
-func gkeNodeSelector() vcluster.NodeSelector {
-	return vcluster.NodeSelector{
-		SandboxGKEIORuntime: "gvisor",
-	}
-}
-
 func configStrings(uCluster *v1alpha1.UffizziCluster) (string, string, string) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
@@ -345,10 +339,13 @@ func common(helmReleaseName, vclusterIngressHostname string, nodeSelector v1.Nod
 		Isolation:       isolation(),
 		SecurityContext: securityContext(),
 		Tolerations:     toleration,
-		NodeSelector:    nodeSelector,
 		Plugin:          pluginsConfig(),
 		Syncer:          syncerConfig(helmReleaseName, nodeSelector, toleration),
 		Sync:            syncConfig(),
+	}
+	
+	if len(nodeSelector.NodeSelectorTerms) > 0 {
+		c.NodeSelector = nodeSelector
 	}
 
 	return c
