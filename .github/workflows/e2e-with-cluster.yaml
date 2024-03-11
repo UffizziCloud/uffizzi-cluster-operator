@@ -47,7 +47,7 @@ jobs:
       - name: Install FluxCD
         run: |
           curl -s https://fluxcd.io/install.sh | sudo bash
-          flux install --namespace=flux-system --components="source-controller,helm-controller"
+          flux install --toleration-keys=testkey/valuekey --namespace=flux-system --components="source-controller,helm-controller"
 
       - name: Run e2e tests against current tainted cluster
         run: |
