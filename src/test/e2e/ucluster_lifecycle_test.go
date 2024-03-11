@@ -113,7 +113,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
 
-			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
+			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 
 		It("Should be in a Ready State", func() {
@@ -128,7 +128,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
 
-			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
+			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 
@@ -153,7 +153,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
 
-			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
+			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 
@@ -178,7 +178,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
 
-			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
+			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 }

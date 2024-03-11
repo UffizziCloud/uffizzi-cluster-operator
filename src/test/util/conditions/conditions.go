@@ -31,7 +31,7 @@ func ContainsConditionsDecorator(requiredConditions, actualConditions []metav1.C
 				found = didFindQ()
 				break
 			}
-			if i == len(requiredConditions) {
+			if i == len(requiredConditions)-1 {
 				fmt.Printf(CreateConditionsCmpDiff(requiredConditions, actualConditions))
 			}
 		}
