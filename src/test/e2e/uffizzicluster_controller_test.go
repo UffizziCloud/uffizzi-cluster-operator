@@ -15,7 +15,8 @@ type TestDefinition struct {
 
 func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
 	ns := resources.CreateTestNamespace(td.Name)
-	uc := resources.CreateTestUffizziClusterWithSpec(td.Name, ns.Name, td.Spec)
+	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
+	uc.Spec = td.Spec
 	wrapUffizziClusterLifecycleTest(ctx, ns, uc)
 }
 
