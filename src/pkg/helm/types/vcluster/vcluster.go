@@ -13,7 +13,7 @@ type Common struct {
 	Ingress         Ingress         `json:"ingress,omitempty"`
 	FsGroup         int64           `json:"fsgroup,omitempty"`
 	Isolation       Isolation       `json:"isolation,omitempty"`
-	NodeSelector    NodeSelector    `json:"nodeSelector,omitempty"`
+	NodeSelector    v1.NodeSelector `json:"nodeSelector,omitempty"`
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
 	Tolerations     []v1.Toleration `json:"tolerations,omitempty"`
 	MapServices     MapServices     `json:"mapServices,omitempty"`
