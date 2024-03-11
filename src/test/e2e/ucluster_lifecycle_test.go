@@ -29,6 +29,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				return matcher
 			}
 		}
+
 		shouldSucceedQ         = newGoMatcherFlipper(Succeed())
 		shouldBeTrueQ          = newGoMatcherFlipper(BeTrue())
 		containsAllConditionsQ = func() func(requiredConditions, actualConditions []metav1.Condition) bool {
