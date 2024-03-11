@@ -242,16 +242,6 @@ func syncConfig() vcluster.Sync {
 	}
 }
 
-func gkeTolerations() []vcluster.Toleration {
-	return []vcluster.Toleration{
-		{
-			Key:      constants.SANDBOX_GKE_IO_RUNTIME,
-			Effect:   string(v1.TaintEffectNoSchedule),
-			Operator: string(v1.NodeSelectorOpExists),
-		},
-	}
-}
-
 func securityContext() vcluster.SecurityContext {
 	return vcluster.SecurityContext{
 		Capabilities: vcluster.SecurityContextCapabilities{
@@ -259,7 +249,6 @@ func securityContext() vcluster.SecurityContext {
 		},
 	}
 }
-
 func isolation() vcluster.Isolation {
 	return vcluster.Isolation{
 		Enabled:             true,
@@ -351,7 +340,7 @@ func common(helmReleaseName, vclusterIngressHostname string, nodeselector map[st
 		Ingress:         ingress(vclusterIngressHostname),
 		Isolation:       isolation(),
 		SecurityContext: securityContext(),
-		Tolerations:     gkeTolerations(),
+		Tolerations:     toleration,
 		Plugin:          pluginsConfig(),
 		Syncer:          syncerConfig(helmReleaseName, nodeselector, toleration),
 		Sync:            syncConfig(),

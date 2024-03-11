@@ -3,6 +3,7 @@ package vcluster
 import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Common struct {
@@ -14,7 +15,7 @@ type Common struct {
 	Isolation       Isolation       `json:"isolation,omitempty"`
 	NodeSelector    NodeSelector    `json:"nodeSelector,omitempty"`
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
-	Tolerations     []Toleration    `json:"tolerations,omitempty"`
+	Tolerations     []v1.Toleration `json:"tolerations,omitempty"`
 	MapServices     MapServices     `json:"mapServices,omitempty"`
 	Plugin          Plugins         `json:"plugin,omitempty"`
 	Storage         Storage         `json:"storage,omitempty"`
@@ -35,8 +36,8 @@ type K8SAPIServer struct {
 	Image              string             `json:"image,omitempty"`
 	ExtraArgs          []string           `json:"extraArgs,omitempty"`
 	Replicas           int32              `json:"replicas,omitempty"`
-	NodeSelector       NodeSelector       `json:"nodeSelector,omitempty"`
-	Tolerations        []Toleration       `json:"tolerations,omitempty"`
+	NodeSelector       v1.NodeSelector    `json:"nodeSelector,omitempty"`
+	Tolerations        []v1.Toleration    `json:"tolerations,omitempty"`
 	Labels             map[string]string  `json:"labels,omitempty"`
 	Annotations        map[string]string  `json:"annotations,omitempty"`
 	PodAnnotations     map[string]string  `json:"podAnnotations,omitempty"`
@@ -203,12 +204,6 @@ type SecurityContext struct {
 	ReadOnlyRootFilesystem bool                        `json:"readOnlyRootFilesystem"`
 	RunAsNonRoot           bool                        `json:"runAsNonRoot"`
 	RunAsUser              int64                       `json:"runAsUser"`
-}
-
-type Toleration struct {
-	Effect   string `json:"effect"`
-	Key      string `json:"key"`
-	Operator string `json:"operator"`
 }
 
 type Storage struct {
