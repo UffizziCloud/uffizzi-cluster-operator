@@ -29,12 +29,6 @@ func CreateTestUffizziCluster(name, ns string) *v1alpha1.UffizziCluster {
 	}
 }
 
-func CreateTestUffizziClusterWithSpec(name, ns string, spec v1alpha1.UffizziClusterSpec) *v1alpha1.UffizziCluster {
-	uc := CreateTestUffizziCluster(name, ns)
-	uc.Spec = spec
-	return uc
-}
-
 func GetHelmReleaseFromUffizziCluster(uc *v1alpha1.UffizziCluster) *v2beta1.HelmRelease {
 	return &v2beta1.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{

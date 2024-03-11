@@ -22,6 +22,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/utils/exec"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -46,12 +47,6 @@ import (
 // These test use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-type UffizziClusterE2E struct {
-	IsTainted          bool
-	UseExistingCluster bool
-	K8SManager         ctrl.Manager
-}
-
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
@@ -60,6 +55,24 @@ var (
 	cancel    context.CancelFunc
 	e2e       UffizziClusterE2E
 )
+
+type UffizziClusterE2E struct {
+	IsTainted          bool
+	UseExistingCluster bool
+	K8SManager         ctrl.Manager
+}
+
+type TestDefinition struct {
+	Name string
+	Spec uffizziv1alpha1.UffizziClusterSpec
+}
+
+func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
+	ns := resources.CreateTestNamespace(td.Name)
+	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
+	uc.Spec = td.Spec
+	wrapUffizziClusterLifecycleTest(ctx, ns, uc)
+}
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
