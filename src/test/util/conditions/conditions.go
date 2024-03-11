@@ -1,32 +1,45 @@
 package conditions
 
 import (
+	"fmt"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/diff"
 	"github.com/google/go-cmp/cmp"
-	"github.com/onsi/ginkgo/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Checks if the required conditions are present and match in the actual conditions slice.
 // Both requiredConditions and actualConditions are slices of metav1.Condition.
 func ContainsConditionsDecorator(requiredConditions, actualConditions []metav1.Condition, flip bool) bool {
+	var foundQ = func(og bool) bool {
+		if flip {
+			return !og
+		}
+		return og
+	}
+	var didFindQ = func() bool {
+		return foundQ(true)
+	}
+	var notFoundQ = func() bool {
+		return !foundQ(true)
+	}
 	for _, requiredCondition := range requiredConditions {
-		found := false && flip
-		for _, actualCondition := range actualConditions {
+		found := notFoundQ()
+		for i, actualCondition := range actualConditions {
 			if actualCondition.Type == requiredCondition.Type &&
 				actualCondition.Status == requiredCondition.Status {
 				// Add more condition checks here if necessary (e.g., Reason, Message)
-				found = true
-				d := cmp.Diff(requiredConditions, actualConditions)
-				ginkgo.GinkgoWriter.Printf(diff.PrintWantGot(d))
+				found = didFindQ()
 				break
+			}
+			if i == len(requiredConditions) {
+				fmt.Printf(CreateConditionsCmpDiff(requiredConditions, actualConditions))
 			}
 		}
 		if !found {
-			return false && flip
+			return notFoundQ()
 		}
 	}
-	return true && flip
+	return didFindQ()
 }
 
 // Return true if zero condtions match between required and actual conditions
