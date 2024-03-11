@@ -26,7 +26,6 @@ const (
 )
 
 // basic clusters with no configuration
-
 var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {

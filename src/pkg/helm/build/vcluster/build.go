@@ -278,7 +278,7 @@ func isolation() vcluster.Isolation {
 				RequestsStorage:             "10Gi",
 				LimitsCpu:                   "20",
 				LimitsMemory:                "30Gi",
-				LimitsEphemeralStorage:      "60Gi",
+				LimitsEphemeralStorage:      "80Gi",
 				ServicesLoadbalancers:       100,
 				ServicesNodePorts:           0,
 				CountEndpoints:              100,
