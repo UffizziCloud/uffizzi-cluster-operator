@@ -169,10 +169,17 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 		vclusterHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
-		"--tls-san="+vclusterIngressHostname,
-		"--out-kube-config-server="+outKubeConfigServerArgValue,
-	)
+	if vclusterIngressHostname != "" {
+		vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
+			"--tls-san="+vclusterIngressHostname,
+		)
+	}
+
+	if outKubeConfigServerArgValue != "" {
+		vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
+			"--out-kube-config-server="+outKubeConfigServerArgValue,
+		)
+	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterHelmValues.Init.Helm = uCluster.Spec.Helm
@@ -227,7 +234,7 @@ func syncerConfig(helmReleaseName string, nodeSelector map[string]string, tolera
 
 	if len(nodeSelector) > 0 {
 		for k, v := range nodeSelector {
-			syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-node-selector="+k+"="+v)
+			syncer.ExtraArgs = append(syncer.ExtraArgs, "--node-selector="+k+"="+v)
 		}
 		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-node-selector")
 	}
