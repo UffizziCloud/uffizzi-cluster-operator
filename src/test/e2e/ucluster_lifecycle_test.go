@@ -15,24 +15,25 @@ import (
 )
 
 func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster, flip bool) {
+	var
+
+
 	var (
-		timeout         = "5m"
-		pollingTimeout  = "100ms"
-		helmRelease     = resources.GetHelmReleaseFromUffizziCluster(uc)
-		etcdHelmRelease = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
-		helmRepo        = resources.GetHelmRepositoryFromUffizziCluster(uc)
-		shouldSucceedQ  = func() types.GomegaMatcher {
-			if flip {
-				return Not(Succeed())
+		timeout                = "5m"
+		pollingTimeout         = "100ms"
+		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
+		etcdHelmRelease        = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
+		helmRepo               = resources.GetHelmRepositoryFromUffizziCluster(uc)
+		newGoMatcherFlipper = func(matcher types.GomegaMatcher) func() types.GomegaMatcher {
+			return func() types.GomegaMatcher {
+				if flip {
+					return Not(matcher)
+				}
+				return matcher
 			}
-			return Succeed()
 		}
-		shouldBeTrueQ = func() types.GomegaMatcher {
-			if flip {
-				return BeFalse()
-			}
-			return BeTrue()
-		}
+		shouldSucceedQ         = newGoMatcherFlipper(Succeed())
+		shouldBeTrueQ          = newGoMatcherFlipper(BeTrue())
 		containsAllConditionsQ = func() func(requiredConditions, actualConditions []metav1.Condition) bool {
 			if flip {
 				return conditions.ContainsNoConditions
@@ -190,3 +191,4 @@ func deleteTestNamespace(name string) error {
 		},
 	})
 }
+
