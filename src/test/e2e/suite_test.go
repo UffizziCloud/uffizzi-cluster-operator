@@ -103,7 +103,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	e2e.StartReconcilerWithArgs(1)
+	go e2e.StartReconcilerWithArgs(1)
 })
 
 var _ = AfterSuite(func() {
@@ -141,8 +141,6 @@ func (e2e *UffizziClusterE2E) StartReconcilerWithArgs(concurrent int) {
 	defer GinkgoRecover()
 	err = e2e.K8SManager.Start(ctx)
 	Expect(err).ToNot(HaveOccurred(), "failed to run manager")
-
-	go e2e.K8SManager.Start(ctx)
 }
 
 func NewTestK8SManager(concurrent int) ctrl.Manager {
