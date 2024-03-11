@@ -85,10 +85,17 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		vclusterK3sHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
-		"--tls-san="+vclusterIngressHostname,
-		"--out-kube-config-server="+outKubeConfigServerArgValue,
-	)
+	if vclusterIngressHostname != "" {
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
+			"--tls-san="+vclusterIngressHostname,
+		)
+	}
+
+	if outKubeConfigServerArgValue != "" {
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
+			"--out-kube-config-server="+outKubeConfigServerArgValue,
+		)
+	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
