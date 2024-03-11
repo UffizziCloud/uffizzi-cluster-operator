@@ -6,7 +6,6 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types/vcluster"
-	v1 "k8s.io/api/core/v1"
 )
 
 func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string) {
@@ -14,7 +13,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	vclusterK3sHelmValues := vcluster.K3S{
 		VCluster: k3SAPIServer(uCluster),
-		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Toleration),
+		Common:   common(helmReleaseName, vclusterIngressHostname),
 	}
 
 	// keep cluster data intact in case the vcluster scales up or down
@@ -124,7 +123,7 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 
 	vclusterHelmValues := vcluster.K8S{
 		APIServer: k8SAPIServer(),
-		Common:    common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Toleration),
+		Common:    common(helmReleaseName, vclusterIngressHostname),
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
@@ -343,18 +342,13 @@ func k8SAPIServer() vcluster.K8SAPIServer {
 	}
 }
 
-func common(helmReleaseName, vclusterIngressHostname string, toleration []v1.Toleration) vcluster.Common {
-	vclusterTolerations := []vcluster.Toleration{}
-	for _, t := range toleration {
-		vclusterTolerations = append(vclusterTolerations, vcluster.Toleration(t))
-	}
+func common(helmReleaseName, vclusterIngressHostname string) vcluster.Common {
 	c := vcluster.Common{
 		Init:            vcluster.Init{},
 		FsGroup:         12345,
 		Ingress:         ingress(vclusterIngressHostname),
 		Isolation:       isolation(),
 		SecurityContext: securityContext(),
-		Tolerations:     vclusterTolerations,
 		Plugin:          pluginsConfig(),
 		Syncer:          syncerConfig(helmReleaseName),
 		Sync:            syncConfig(),

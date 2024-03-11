@@ -14,7 +14,6 @@ type Common struct {
 	FsGroup         int64           `json:"fsgroup,omitempty"`
 	Isolation       Isolation       `json:"isolation,omitempty"`
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
-	Tolerations     []Toleration    `json:"tolerations,omitempty"`
 	MapServices     MapServices     `json:"mapServices,omitempty"`
 	Plugin          Plugins         `json:"plugin,omitempty"`
 	Storage         Storage         `json:"storage,omitempty"`
