@@ -15,15 +15,12 @@ import (
 )
 
 func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster, flip bool) {
-	var
-
-
 	var (
-		timeout                = "5m"
-		pollingTimeout         = "100ms"
-		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
-		etcdHelmRelease        = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
-		helmRepo               = resources.GetHelmRepositoryFromUffizziCluster(uc)
+		timeout             = "5m"
+		pollingTimeout      = "100ms"
+		helmRelease         = resources.GetHelmReleaseFromUffizziCluster(uc)
+		etcdHelmRelease     = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
+		helmRepo            = resources.GetHelmRepositoryFromUffizziCluster(uc)
 		newGoMatcherFlipper = func(matcher types.GomegaMatcher) func() types.GomegaMatcher {
 			return func() types.GomegaMatcher {
 				if flip {
@@ -191,4 +188,3 @@ func deleteTestNamespace(name string) error {
 		},
 	})
 }
-
