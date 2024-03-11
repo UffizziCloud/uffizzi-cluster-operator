@@ -9,33 +9,20 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster, flip bool) {
+func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
 	var (
-		timeout             = "5m"
-		pollingTimeout      = "100ms"
-		helmRelease         = resources.GetHelmReleaseFromUffizziCluster(uc)
-		etcdHelmRelease     = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
-		helmRepo            = resources.GetHelmRepositoryFromUffizziCluster(uc)
-		newGoMatcherFlipper = func(matcher types.GomegaMatcher) func() types.GomegaMatcher {
-			return func() types.GomegaMatcher {
-				if flip {
-					return Not(matcher)
-				}
-				return matcher
-			}
-		}
-
-		shouldSucceedQ         = newGoMatcherFlipper(Succeed())
-		shouldBeTrueQ          = newGoMatcherFlipper(BeTrue())
+		timeout                = "5m"
+		pollingTimeout         = "100ms"
+		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
+		etcdHelmRelease        = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
+		helmRepo               = resources.GetHelmRepositoryFromUffizziCluster(uc)
+		shouldSucceedQ         = Succeed
+		shouldBeTrueQ          = BeTrue
 		containsAllConditionsQ = func() func(requiredConditions, actualConditions []metav1.Condition) bool {
-			if flip {
-				return conditions.ContainsNoConditions
-			}
 			return conditions.ContainsAllConditions
 		}
 	)

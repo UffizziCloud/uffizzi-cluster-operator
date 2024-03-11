@@ -13,10 +13,10 @@ type TestDefinition struct {
 	Spec v1alpha1.UffizziClusterSpec
 }
 
-func (td *TestDefinition) ExecLifecycleTest(ctx context.Context, expectedOutput bool) {
+func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
 	ns := resources.CreateTestNamespace(td.Name)
 	uc := resources.CreateTestUffizziClusterWithSpec(td.Name, ns.Name, td.Spec)
-	wrapUffizziClusterLifecycleTest(ctx, ns, uc, expectedOutput)
+	wrapUffizziClusterLifecycleTest(ctx, ns, uc)
 }
 
 const (
@@ -37,7 +37,7 @@ var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 		Name: "basic-test",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx, !e2e.IsTainted)
+	testUffizziCluster.ExecLifecycleTest(ctx)
 })
 
 //
@@ -77,7 +77,7 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 			},
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx, true)
+	testUffizziCluster.ExecLifecycleTest(ctx)
 })
 
 // TODO: k3s with etcd
