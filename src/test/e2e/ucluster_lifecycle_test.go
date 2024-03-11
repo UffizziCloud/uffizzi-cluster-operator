@@ -9,20 +9,31 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster, expectedOutput bool) {
+func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster, flip bool) {
 	var (
-		timeout                = "5m"
-		pollingTimeout         = "100ms"
-		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
-		etcdHelmRelease        = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
-		helmRepo               = resources.GetHelmRepositoryFromUffizziCluster(uc)
-		shouldSucceedQ         = Succeed()
-		shouldBeTrueQ          = BeTrue()
-		containsAllConditionsQ = func(flip bool) func(requiredConditions, actualConditions []metav1.Condition) bool {
+		timeout         = "5m"
+		pollingTimeout  = "100ms"
+		helmRelease     = resources.GetHelmReleaseFromUffizziCluster(uc)
+		etcdHelmRelease = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
+		helmRepo        = resources.GetHelmRepositoryFromUffizziCluster(uc)
+		shouldSucceedQ  = func() types.GomegaMatcher {
+			if flip {
+				return Not(Succeed())
+			}
+			return Succeed()
+		}
+		shouldBeTrueQ = func() types.GomegaMatcher {
+			if flip {
+				return BeFalse()
+			}
+			return BeTrue()
+		}
+		containsAllConditionsQ = func() func(requiredConditions, actualConditions []metav1.Condition) bool {
 			if flip {
 				return conditions.ContainsNoConditions
 			}
@@ -30,20 +41,15 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		}
 	)
 
-	if !expectedOutput {
-		shouldSucceedQ = Not(Succeed())
-		shouldBeTrueQ = Not(BeTrue())
-	}
-
 	// defer deletion of the uffizzi cluster and namespace
 	defer Context("When deleting UffizziCluster", func() {
 		It("Should delete the UffizziCluster", func() {
 			By("By deleting the UffizziCluster")
-			Expect(k8sClient.Delete(ctx, uc)).Should(shouldSucceedQ)
+			Expect(k8sClient.Delete(ctx, uc)).Should(shouldSucceedQ())
 		})
 		It("Should delete the Namespace", func() {
 			By("By deleting the Namespace")
-			Expect(deleteTestNamespace(ns.Name)).Should(shouldSucceedQ)
+			Expect(deleteTestNamespace(ns.Name)).Should(shouldSucceedQ())
 		})
 	})
 
@@ -51,11 +57,11 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		It("Should create a UffizziCluster", func() {
 			//
 			By("By Creating Namespace for the UffizziCluster")
-			Expect(k8sClient.Create(ctx, ns)).Should(shouldSucceedQ)
+			Expect(k8sClient.Create(ctx, ns)).Should(shouldSucceedQ())
 
 			//
 			By("By creating a new UffizziCluster")
-			Expect(k8sClient.Create(ctx, uc)).Should(shouldSucceedQ)
+			Expect(k8sClient.Create(ctx, uc)).Should(shouldSucceedQ())
 		})
 
 		It("Should create a HelmRelease and HelmRepository", func() {
@@ -110,8 +116,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 					return false
 				}
 				expectedConditions = uffizzicluster.GetAllInitializingConditions()
-				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
+				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
@@ -125,8 +131,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 					return false
 				}
 				expectedConditions = uffizzicluster.GetAllReadyConditions()
-				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
+				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
@@ -136,7 +142,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		It("Should put the cluster to sleep", func() {
 			By("By putting the UffizziCluster to sleep")
 			uc.Spec.Sleep = true
-			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ)
+			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
 		})
 
 		It("Should be in a Sleep State", func() {
@@ -147,8 +153,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
+				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
@@ -158,7 +164,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		It("Should wake the cluster up", func() {
 			By("By waking the UffizziCluster up")
 			uc.Spec.Sleep = false
-			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ)
+			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
 		})
 
 		It("Should be Awoken", func() {
@@ -169,8 +175,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
+				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
