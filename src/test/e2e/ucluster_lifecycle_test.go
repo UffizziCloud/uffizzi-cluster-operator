@@ -6,9 +6,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/diff"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
-	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -114,8 +112,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				expectedConditions = uffizzicluster.GetAllInitializingConditions()
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
-			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
-			GinkgoWriter.Printf(diff.PrintWantGot(d))
+
+			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 
 		It("Should be in a Ready State", func() {
@@ -129,8 +127,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				expectedConditions = uffizzicluster.GetAllReadyConditions()
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
-			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
-			GinkgoWriter.Printf(diff.PrintWantGot(d))
+
+			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 
@@ -154,8 +152,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				}
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
-			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
-			GinkgoWriter.Printf(diff.PrintWantGot(d))
+
+			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 
@@ -179,8 +177,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				}
 				return containsAllConditionsQ(expectedOutput)(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ)
-			d := cmp.Diff(expectedConditions, uc.Status.Conditions)
-			GinkgoWriter.Printf(diff.PrintWantGot(d))
+
+			GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 }
