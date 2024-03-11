@@ -156,18 +156,18 @@ stop-test-k3d-tainted: ## Stop the k3d cluster with a tainted node for testing.
 
 .PHONY: test-e2e-without-cluster
 test-e2e-without-cluster: manifests generate fmt vet envtest ## Run test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile=coverage.txt
 
 .PHONY: test-e2e-with-cluster
 test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile cover.out -v
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile=coverage.txt -v
 
 .PHONY: test-e2e-with-cluster-local
 test-e2e-with-cluster-local: start-test-minikube test-e2e-with-cluster stop-test-minikube## Run test.
 
 .PHONY: test-e2e-with-tainted-cluster
 test-e2e-with-tainted-cluster: manifests generate fmt vet envtest ## Run test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true E2E_ARG_IS_TAINTED=true go test ./... -coverprofile cover.out -v
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true E2E_ARG_IS_TAINTED=true go test ./... -coverprofile=coverage.txt -v
 
 .PHONY: test-e2e-with-tainted-cluster-local
 test-e2e-with-tainted-cluster-local: start-test-minikube-tainted test-e2e-with-tainted-cluster stop-test-minikube ## Run test.
