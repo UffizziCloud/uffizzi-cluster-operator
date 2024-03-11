@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   minikube-default:
-    name: Run e2e tests against minikube
+    name: Run e2e tests against Minikube
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +27,7 @@ jobs:
           make test-e2e-with-cluster-local
 
   minikube-tainted:
-    name: Run e2e tests against minikube (tainted)
+    name: Run e2e tests against Minikube (TAINTED)
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
