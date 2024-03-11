@@ -207,5 +207,5 @@ type Storage struct {
 type Toleration v1.Toleration
 
 func (t Toleration) Notation() string {
-	return t.Key + "=" + t.Value + ":" + string(t.Operator)
+	return t.Key + "=" + t.Value + ":" + string(t.Effect)
 }
