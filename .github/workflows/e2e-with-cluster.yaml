@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   minikube-default:
-    name: Run E2E tests with Minikube
+    name: Run e2e tests against minikube
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
@@ -22,17 +22,17 @@ jobs:
       - name: Setup Minikube
         run: minikube start --driver=docker
 
-      - name: Install FluxCD
+      - name: Install fluxcd
         run: |
           curl -s https://fluxcd.io/install.sh | sudo bash
           flux install --namespace=flux-system --components="source-controller,helm-controller"
           
-      - name: Run e2e tests
+      - name: Run e2e tests against current cluster
         run: |
           make e2e-test-with-cluster
 
   minikube-tainted:
-    name: Run E2E tests with Minikube
+    name: Run e2e tests against minikube (tainted)
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +49,6 @@ jobs:
           curl -s https://fluxcd.io/install.sh | sudo bash
           flux install --namespace=flux-system --components="source-controller,helm-controller"
 
-      - name: Run e2e tests against tainted cluster
+      - name: Run e2e tests against current tainted cluster
         run: |
           make test-e2e-with-tainted-cluster

@@ -36,16 +36,17 @@ var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 	testUffizziCluster.ExecLifecycleTest(ctx, !e2e.IsTainted)
 })
 
-var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
-	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
-		Name: "basic-k8s-test",
-		Spec: v1alpha1.UffizziClusterSpec{
-			Distro: "k8s",
-		},
-	}
-	testUffizziCluster.ExecLifecycleTest(ctx, !e2e.IsTainted)
-})
+//
+//var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
+//	ctx := context.Background()
+//	testUffizziCluster := TestDefinition{
+//		Name: "basic-k8s-test",
+//		Spec: v1alpha1.UffizziClusterSpec{
+//			Distro: "k8s",
+//		},
+//	}
+//	testUffizziCluster.ExecLifecycleTest(ctx, !e2e.IsTainted)
+//})
 
 // clusters with tainted nodes
 

@@ -103,8 +103,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	// set the k8s manager which the tests will use
-	e2e.K8SManager = NewTestK8SManager(1)
+	e2e.StartReconcilerWithArgs(1)
 })
 
 var _ = AfterSuite(func() {
