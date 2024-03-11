@@ -44,11 +44,11 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 	defer Context("When deleting UffizziCluster", func() {
 		It("Should delete the UffizziCluster", func() {
 			By("By deleting the UffizziCluster")
-			Expect(k8sClient.Delete(ctx, uc)).Should(shouldSucceedQ())
+			Expect(k8sClient.Delete(ctx, uc)).Should(Succeed())
 		})
 		It("Should delete the Namespace", func() {
 			By("By deleting the Namespace")
-			Expect(deleteTestNamespace(ns.Name)).Should(shouldSucceedQ())
+			Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
 		})
 	})
 
