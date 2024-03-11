@@ -203,7 +203,7 @@ func pluginsConfig() vcluster.Plugins {
 						{
 							ApiGroups: []string{"apiextensions.k8s.io"},
 							Resources: []string{"customresourcedefinitions"},
-							Verbs:     []string{"patch", "update", "get", "list", "watch"},
+							Verbs:     []/toleratring{"patch", "update", "get", "list", "watch"},
 						},
 					},
 				},

@@ -136,7 +136,7 @@ stop-test-minikube: ## Stop the minikube cluster for testing.
 .PHONY: start-test-minikube-tainted
 start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
 	minikube start --driver=docker
-	kubectl taint nodes minikube testkey=testvalue:NoSchedule
+	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
 	$(MAKE) install-fluxcd-controllers-with-toleration
 
 .PHONY : stop-test-k3d
