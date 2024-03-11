@@ -70,7 +70,7 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 						MatchExpressions: []v1.NodeSelectorRequirement{
 							{
 								Key:      "testkey",
-								Operator: "Equal",
+								Operator: v1.NodeSelectorOpIn,
 								Values:   []string{"testvalue"},
 							},
 						},

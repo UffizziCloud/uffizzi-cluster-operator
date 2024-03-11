@@ -225,8 +225,14 @@ func syncerConfig(helmReleaseName string, nodeSelector v1.NodeSelector, tolerati
 		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-toleration="+t.String())
 	}
 
-	if len(nodeSelector.NodeSelectorTerms) > 0 {
-		syncer.ExtraArgs = append(syncer.ExtraArgs, "--node-selector="+nodeSelector.String(), "--enforce-node-selector")
+	nsts := nodeSelector.NodeSelectorTerms
+	if len(nsts) > 0 {
+		for _, nst := range nsts {
+			for _, me := range nst.MatchExpressions {
+				syncer.ExtraArgs = append(syncer.ExtraArgs, "--node-selector="+me.String())
+			}
+		}
+		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-node-selector")
 	}
 
 	return syncer
