@@ -9,9 +9,9 @@ import (
 
 // Checks if the required conditions are present and match in the actual conditions slice.
 // Both requiredConditions and actualConditions are slices of metav1.Condition.
-func ContainsAllConditions(requiredConditions, actualConditions []metav1.Condition) bool {
+func ContainsConditionsDecorator(requiredConditions, actualConditions []metav1.Condition, flip bool) bool {
 	for _, requiredCondition := range requiredConditions {
-		found := false
+		found := false && flip
 		for _, actualCondition := range actualConditions {
 			if actualCondition.Type == requiredCondition.Type &&
 				actualCondition.Status == requiredCondition.Status {
@@ -23,8 +23,18 @@ func ContainsAllConditions(requiredConditions, actualConditions []metav1.Conditi
 			}
 		}
 		if !found {
-			return false
+			return false && flip
 		}
 	}
-	return true
+	return true && flip
+}
+
+// Return true if zero condtions match between required and actual conditions
+func ContainsAllConditions(requiredConditions, actualConditions []metav1.Condition) bool {
+	return ContainsConditionsDecorator(requiredConditions, actualConditions, true)
+}
+
+// Return true if zero condtions match between required and actual conditions
+func ContainsNoConditions(requiredConditions, actualConditions []metav1.Condition) bool {
+	return ContainsConditionsDecorator(requiredConditions, actualConditions, false)
 }

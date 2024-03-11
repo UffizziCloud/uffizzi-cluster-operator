@@ -212,7 +212,7 @@ func pluginsConfig() vcluster.Plugins {
 	}
 }
 
-func syncerConfig(helmReleaseName, nodeselector, toleration string) vcluster.Syncer {
+func syncerConfig(helmReleaseName string, nodeselector map[string]string, toleration []v1.Toleration) vcluster.Syncer {
 	syncer := vcluster.Syncer{
 		KubeConfigContextName: helmReleaseName,
 		Limits: types.ContainerMemoryCPU{
@@ -220,11 +220,16 @@ func syncerConfig(helmReleaseName, nodeselector, toleration string) vcluster.Syn
 			Memory: "1024Mi",
 		},
 	}
-	if toleration != "" {
-		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-toleration="+toleration)
+
+	for _, t := range toleration {
+		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-toleration="+t.String())
 	}
-	if nodeselector != "" {
-		syncer.ExtraArgs = append(syncer.ExtraArgs, "--node-selector="+nodeselector, "--enforce-node-selector")
+
+	for k, v := range nodeselector {
+		syncer.ExtraArgs = append(syncer.ExtraArgs, "--node-selector="+k+"="+v)
+	}
+	if len(nodeselector) > 0 {
+		syncer.ExtraArgs = append(syncer.ExtraArgs, "--enforce-node-selector")
 	}
 	return syncer
 }
@@ -339,7 +344,7 @@ func k8SAPIServer() vcluster.K8SAPIServer {
 	}
 }
 
-func common(helmReleaseName, vclusterIngressHostname, nodeselector, toleration string) vcluster.Common {
+func common(helmReleaseName, vclusterIngressHostname string, nodeselector map[string]string, toleration []v1.Toleration) vcluster.Common {
 	c := vcluster.Common{
 		Init:            vcluster.Init{},
 		FsGroup:         12345,
@@ -350,14 +355,6 @@ func common(helmReleaseName, vclusterIngressHostname, nodeselector, toleration s
 		Plugin:          pluginsConfig(),
 		Syncer:          syncerConfig(helmReleaseName, nodeselector, toleration),
 		Sync:            syncConfig(),
-	}
-
-	if provider == constants.NODESELECTOR_GKE {
-		c.NodeSelector = gkeNodeSelector()
-		c.Tolerations = gkeTolerations()
-	} else {
-		c.NodeSelector = vcluster.NodeSelector{}
-		c.Tolerations = []vcluster.Toleration{}
 	}
 
 	return c

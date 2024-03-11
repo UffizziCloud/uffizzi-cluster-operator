@@ -107,15 +107,51 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: install-flux-prereq
+install-flux-prereq: ## Install the fluxcd if not preset
+    which flux || curl -s https://fluxcd.io/install.sh | sudo bash
+
+.PHONY: install-fluxcd-controllers
+install-fluxcd-controllers: install-flux-prereq ## Install the fluxcd controllers.
+	flux install --namespace=flux-system --components="source-controller,helm-controller"
+
+.PHONY: start-test-k3d
+start-test-k3d: ## Start a k3d cluster for testing.
+	k3d cluster create basic || true
+	$(MAKE) install-fluxcd-controllers
+
+.PHONY : stop-test-k3d
+stop-test-k3d: ## Stop the k3d cluster for testing.
+	k3d cluster delete basic
+
+.PHONY: start-test-k3d-tainted
+start-test-k3d-tainted: ## Start a k3d cluster with a tainted node for testing.
+	k3d cluster create tainted --node-taint="testkey=testvalue:NoSchedule" || true
+	$(MAKE) install-fluxcd-controllers
+
+.PHONY : stop-test-k3d-tainted
+stop-test-k3d-tainted: ## Stop the k3d cluster with a tainted node for testing.
+	k3d cluster delete tainted
+
 ##@ Test
 
-.PHONY: e2e-test-without-cluster
-e2e-test-without-cluster: manifests generate fmt vet envtest ## Run test.
+.PHONY: test-e2e-without-cluster
+test-e2e-without-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
-.PHONY: e2e-test-with-cluster
-e2e-test-with-cluster: manifests generate fmt vet envtest ## Run test.
+.PHONY: test-e2e-with-cluster
+test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile cover.out -v
+
+.PHONY: test-e2e-with-cluster-local
+test-e2e-with-cluster-local: start-test-k3d test-e2e-with-cluster stop-test-k3d## Run test.
+
+.PHONY: test-e2e-with-tainted-cluster
+test-e2e-with-tainted-cluster: manifests generate fmt vet envtest ## Run test.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true E2E_ARG_IS_TAINTED=true go test ./... -coverprofile cover.out -v
+
+.PHONY: test-e2e-with-tainted-cluster-local
+test-e2e-with-tainted-cluster-local: start-test-k3d-tainted test-e2e-with-tainted-cluster stop-test-k3d-tainted ## Run test.
 
 ##@ Build
 

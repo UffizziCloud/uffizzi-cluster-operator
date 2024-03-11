@@ -21,14 +21,17 @@ import (
 	uffizziv1alpha1 "github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/utils/exec"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
 	"math/rand"
 	"os"
 	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlcfg "sigs.k8s.io/controller-runtime/pkg/config/v1alpha1"
 	"testing"
 
 	"k8s.io/client-go/kubernetes/scheme"
@@ -43,13 +46,19 @@ import (
 // These test use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
+type UffizziClusterE2E struct {
+	IsTainted          bool
+	UseExistingCluster bool
+	K8SManager         ctrl.Manager
+}
+
 var (
-	cfg                *rest.Config
-	k8sClient          client.Client
-	testEnv            *envtest.Environment
-	ctx                context.Context
-	cancel             context.CancelFunc
-	useExistingCluster = getEnvtestRemote()
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+	e2e       UffizziClusterE2E
 )
 
 func TestAPIs(t *testing.T) {
@@ -58,22 +67,19 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Controller Suite")
 }
 
-// write a function to get the value of the ENVTEST_REMOTE environment variable
-func getEnvtestRemote() bool {
-	if os.Getenv("ENVTEST_REMOTE") == "true" {
-		return true
-	}
-	return false
-}
-
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+	e2e = UffizziClusterE2E{
+
+		IsTainted:          getTaintedTestClusterEnvVar(),
+		UseExistingCluster: getEnvtestRemoteEnvVar(),
+	}
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
-		UseExistingCluster:    &useExistingCluster,
+		UseExistingCluster:    &e2e.UseExistingCluster,
 	}
 
 	var err error
@@ -97,29 +103,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	ctx, cancel = context.WithCancel(context.TODO())
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
-	})
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&uffizzicluster.UffizziClusterReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&etcd.UffizziClusterEtcdReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	go func() {
-		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
-		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
-	}()
+	// set the k8s manager which the tests will use
+	e2e.K8SManager = NewTestK8SManager(1)
 })
 
 var _ = AfterSuite(func() {
@@ -134,17 +119,71 @@ func testingSeed() {
 	rand.Seed(12345)
 }
 
+// Kubectl executes a Kubectl command.
+func (e2e *UffizziClusterE2E) Kubectl(args ...string) (string, string, error) {
+	// run kubectl with args and return stdout, stderr, and error
+	return exec.CmdWithContext(context.TODO(), exec.PrintCfg(), "kubectl", args...)
+}
+
+func (e2e *UffizziClusterE2E) StartReconcilerWithArgs(concurrent int) {
+	e2e.K8SManager = NewTestK8SManager(concurrent)
+	err := (&uffizzicluster.UffizziClusterReconciler{
+		Client: e2e.K8SManager.GetClient(),
+		Scheme: e2e.K8SManager.GetScheme(),
+	}).SetupWithManager(e2e.K8SManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&etcd.UffizziClusterEtcdReconciler{
+		Client: e2e.K8SManager.GetClient(),
+		Scheme: e2e.K8SManager.GetScheme(),
+	}).SetupWithManager(e2e.K8SManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	defer GinkgoRecover()
+	err = e2e.K8SManager.Start(ctx)
+	Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+
+	go e2e.K8SManager.Start(ctx)
+}
+
+func NewTestK8SManager(concurrent int) ctrl.Manager {
+	ctx, cancel = context.WithCancel(context.TODO())
+	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: scheme.Scheme,
+		Controller: ctrlcfg.ControllerConfigurationSpec{
+			GroupKindConcurrency: map[string]int{
+				uffizziv1alpha1.SchemaGroupVersion.WithKind("UffizziCluster").GroupKind().String(): concurrent,
+			},
+			RecoverPanic: pointer.Bool(true),
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
+	return k8sManager
+}
+
 // CompareSlices compares two slices for equality. It returns true if both slices have the same elements in the same order.
 func compareSlices[T comparable](slice1, slice2 []T) bool {
 	if len(slice1) != len(slice2) {
 		return false
 	}
-
 	for i, v := range slice1 {
 		if v != slice2[i] {
 			return false
 		}
 	}
-
 	return true
+}
+
+func getEnvtestRemoteEnvVar() bool {
+	if os.Getenv("ENVTEST_REMOTE") == "true" {
+		return true
+	}
+	return false
+}
+
+func getTaintedTestClusterEnvVar() bool {
+	if os.Getenv("E2E_ARG_IS_TAINTED") == "true" {
+		return true
+	}
+	return false
 }

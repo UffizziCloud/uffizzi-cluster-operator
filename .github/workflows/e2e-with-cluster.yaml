@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 jobs:
-  minikube:
+  minikube-default:
     name: Run E2E tests with Minikube
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
@@ -30,3 +30,25 @@ jobs:
       - name: Run e2e tests
         run: |
           make e2e-test-with-cluster
+
+  minikube-tainted:
+    name: Run E2E tests with Minikube
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Minikube
+        run: | 
+          minikube start --driver=docker
+          kubectl taint nodes minikube testkey=testvalue:NoSchedule
+
+      - name: Install FluxCD
+        run: |
+          curl -s https://fluxcd.io/install.sh | sudo bash
+          flux install --namespace=flux-system --components="source-controller,helm-controller"
+
+      - name: Run e2e tests against tainted cluster
+        run: |
+          make test-e2e-with-tainted-cluster
