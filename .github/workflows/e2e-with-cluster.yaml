@@ -19,17 +19,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Minikube
-        run: minikube start --driver=docker
-
-      - name: Install fluxcd
-        run: |
-          curl -s https://fluxcd.io/install.sh | sudo bash
-          flux install --namespace=flux-system --components="source-controller,helm-controller"
-          
       - name: Run e2e tests against current cluster
         run: |
-          make test-e2e-with-cluster
+          make test-e2e-with-cluster-local
 
   minikube-tainted:
     name: Run e2e tests against minikube (tainted)
@@ -39,16 +31,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Minikube
-        run: | 
-          minikube start --driver=docker
-          kubectl taint nodes minikube testkey=testvalue:NoSchedule
-
-      - name: Install FluxCD
-        run: |
-          curl -s https://fluxcd.io/install.sh | sudo bash
-          flux install --toleration-keys=testkey/valuekey --namespace=flux-system --components="source-controller,helm-controller"
-
       - name: Run e2e tests against current tainted cluster
         run: |
-          make test-e2e-with-tainted-cluster
+          make test-e2e-with-tainted-cluster-local

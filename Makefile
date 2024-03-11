@@ -115,10 +115,29 @@ install-flux-prereq: ## Install the fluxcd if not preset
 install-fluxcd-controllers: install-flux-prereq ## Install the fluxcd controllers.
 	flux install --namespace=flux-system --components="source-controller,helm-controller"
 
+.PHONE: install-fluxcd-controllers-with-toleration
+install-fluxcd-controllers-with-toleration: install-flux-prereq ## Install the fluxcd controllers with toleration.
+	flux install --namespace=flux-system --components="source-controller,helm-controller" --toleration="testkey=testvalue:NoSchedule"
+
 .PHONY: start-test-k3d
 start-test-k3d: ## Start a k3d cluster for testing.
 	k3d cluster create basic || true
 	$(MAKE) install-fluxcd-controllers
+
+.PHONY: start-test-minikube
+start-test-minikube: ## Start a minikube cluster for testing.
+	minikube start --driver=docker
+	$(MAKE) install-fluxcd-controllers
+
+.PHONY: stop-test-minikube
+stop-test-minikube: ## Stop the minikube cluster for testing.
+	minikube stop
+
+.PHONY: start-test-minikube-tainted
+start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
+	minikube start --driver=docker
+	kubectl taint nodes minikube testkey=testvalue:NoSchedule
+	$(MAKE) install-fluxcd-controllers-with-toleration
 
 .PHONY : stop-test-k3d
 stop-test-k3d: ## Stop the k3d cluster for testing.
@@ -144,14 +163,14 @@ test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile cover.out -v
 
 .PHONY: test-e2e-with-cluster-local
-test-e2e-with-cluster-local: start-test-k3d test-e2e-with-cluster stop-test-k3d## Run test.
+test-e2e-with-cluster-local: start-test-minikube test-e2e-with-cluster stop-test-minikube## Run test.
 
 .PHONY: test-e2e-with-tainted-cluster
 test-e2e-with-tainted-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true E2E_ARG_IS_TAINTED=true go test ./... -coverprofile cover.out -v
 
 .PHONY: test-e2e-with-tainted-cluster-local
-test-e2e-with-tainted-cluster-local: start-test-k3d-tainted test-e2e-with-tainted-cluster stop-test-k3d-tainted ## Run test.
+test-e2e-with-tainted-cluster-local: start-test-minikube-tainted test-e2e-with-tainted-cluster stop-test-minikube ## Run test.
 
 ##@ Build
 
