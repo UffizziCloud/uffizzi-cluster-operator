@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	. "github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
@@ -34,7 +35,7 @@ var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic-test",
+		Name: "basic-k3s-test",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
@@ -66,7 +67,7 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "nodeselector-toleration-test",
+		Name: "k3s-nodeselector-toleration-test",
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelector: map[string]string{
 				"testkey": "testvalue",
@@ -86,13 +87,13 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 
 // TODO: k3s with etcd
 
-//var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
-//	ctx := context.Background()
-//	testUffizziCluster := TestDefinition{
-//		Name: "basic-etcd",
-//		Spec: v1alpha1.UffizziClusterSpec{
-//			ExternalDatastore: constants.ETCD,
-//		},
-//	}
-//	testUffizziCluster.ExecLifecycleTest(ctx)
-//})
+var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "k3s-etcd-test",
+		Spec: v1alpha1.UffizziClusterSpec{
+			ExternalDatastore: constants.ETCD,
+		},
+	}
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})

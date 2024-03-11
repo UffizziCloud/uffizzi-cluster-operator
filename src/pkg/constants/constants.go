@@ -24,6 +24,7 @@ const (
 	UCLUSTER_SYNC_PLUGIN_TAG    = "uffizzi/ucluster-sync-plugin:v0.2.4"
 	OCI_TYPE                    = "oci"
 	PREMIUM_RWO_STORAGE_CLASS   = "premium-rwo"
+	STANDARD_STORAGE_CLASS      = "standard"
 	SANDBOX_GKE_IO_RUNTIME      = "sandbox.gke.io/runtime"
 	GVISOR                      = "gvisor"
 	VCLUSTER_MANAGED_BY_KEY     = "vcluster.loft.sh/managed-by"

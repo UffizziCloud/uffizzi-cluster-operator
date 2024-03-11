@@ -274,8 +274,8 @@ func isolation() vcluster.Isolation {
 			Quota: vcluster.ResourceQuotaDefiniton{
 				RequestsCpu:                 "2.5",
 				RequestsMemory:              "10Gi",
-				RequestsEphemeralStorage:    "15Gi",
-				RequestsStorage:             "10Gi",
+				RequestsEphemeralStorage:    "50Gi",
+				RequestsStorage:             "20Gi",
 				LimitsCpu:                   "20",
 				LimitsMemory:                "30Gi",
 				LimitsEphemeralStorage:      "80Gi",

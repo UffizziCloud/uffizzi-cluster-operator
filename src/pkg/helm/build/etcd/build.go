@@ -9,7 +9,7 @@ import (
 func BuildETCDHelmValues() etcdhelmtypes.Etcd {
 	return etcdhelmtypes.Etcd{
 		Global: etcdhelmtypes.Global{
-			StorageClass: constants.PREMIUM_RWO_STORAGE_CLASS,
+			StorageClass: constants.STANDARD_STORAGE_CLASS,
 		},
 		ReplicaCount: 1,
 		ReadinessProbe: etcdhelmtypes.ReadinessProbe{
