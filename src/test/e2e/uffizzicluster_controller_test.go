@@ -64,18 +64,8 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 	testUffizziCluster := TestDefinition{
 		Name: "nodeselector-toleration-test",
 		Spec: v1alpha1.UffizziClusterSpec{
-			NodeSelector: v1.NodeSelector{
-				NodeSelectorTerms: []v1.NodeSelectorTerm{
-					{
-						MatchExpressions: []v1.NodeSelectorRequirement{
-							{
-								Key:      "testkey",
-								Operator: v1.NodeSelectorOpIn,
-								Values:   []string{"testvalue"},
-							},
-						},
-					},
-				},
+			NodeSelector: map[string]string{
+				"testkey": "testvalue",
 			},
 			Toleration: []v1.Toleration{
 				{
