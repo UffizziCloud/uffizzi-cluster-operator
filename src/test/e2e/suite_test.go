@@ -103,7 +103,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	go e2e.StartReconcilerWithArgs(1)
+	go e2e.StartReconcilerWithArgs(5)
 })
 
 var _ = AfterSuite(func() {
