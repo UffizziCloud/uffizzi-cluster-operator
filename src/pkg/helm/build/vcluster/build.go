@@ -14,7 +14,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	vclusterK3sHelmValues := vcluster.K3S{
 		VCluster: k3SAPIServer(uCluster),
-		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.NodeSelector, uCluster.Spec.Toleration),
+		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Toleration),
 	}
 
 	// keep cluster data intact in case the vcluster scales up or down
@@ -98,7 +98,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 	}
 
 	for _, t := range uCluster.Spec.Toleration {
-		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+t.String())
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.Toleration(t).Notation())
 	}
 
 	if len(uCluster.Spec.NodeSelector) > 0 {
@@ -124,7 +124,7 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 
 	vclusterHelmValues := vcluster.K8S{
 		APIServer: k8SAPIServer(),
-		Common:    common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.NodeSelector, uCluster.Spec.Toleration),
+		Common:    common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Toleration),
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
@@ -343,14 +343,18 @@ func k8SAPIServer() vcluster.K8SAPIServer {
 	}
 }
 
-func common(helmReleaseName, vclusterIngressHostname string, nodeSelector map[string]string, toleration []v1.Toleration) vcluster.Common {
+func common(helmReleaseName, vclusterIngressHostname string, toleration []v1.Toleration) vcluster.Common {
+	vclusterTolerations := []vcluster.Toleration{}
+	for _, t := range toleration {
+		vclusterTolerations = append(vclusterTolerations, vcluster.Toleration(t))
+	}
 	c := vcluster.Common{
 		Init:            vcluster.Init{},
 		FsGroup:         12345,
 		Ingress:         ingress(vclusterIngressHostname),
 		Isolation:       isolation(),
 		SecurityContext: securityContext(),
-		Tolerations:     toleration,
+		Tolerations:     vclusterTolerations,
 		Plugin:          pluginsConfig(),
 		Syncer:          syncerConfig(helmReleaseName),
 		Sync:            syncConfig(),

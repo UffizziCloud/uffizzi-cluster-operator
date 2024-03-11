@@ -14,7 +14,7 @@ type Common struct {
 	FsGroup         int64           `json:"fsgroup,omitempty"`
 	Isolation       Isolation       `json:"isolation,omitempty"`
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
-	Tolerations     []v1.Toleration `json:"tolerations,omitempty"`
+	Tolerations     []Toleration    `json:"tolerations,omitempty"`
 	MapServices     MapServices     `json:"mapServices,omitempty"`
 	Plugin          Plugins         `json:"plugin,omitempty"`
 	Storage         Storage         `json:"storage,omitempty"`
@@ -202,4 +202,10 @@ type SecurityContext struct {
 
 type Storage struct {
 	Persistence bool `json:"persistence"`
+}
+
+type Toleration v1.Toleration
+
+func (t Toleration) Notation() string {
+	return t.Key + ":" + string(t.Operator) + ":" + t.Value
 }
