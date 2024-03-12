@@ -140,6 +140,13 @@ type UffizziClusterResourceCount struct {
 	Endpoints int `json:"endpoints,omitempty"`
 }
 
+type UffizziClusterStorage struct {
+	//+kubebuilder:default:=true
+	Persistence bool `json:"persistence,omitempty"`
+	//+kubebuilder:default:="5Gi"
+	Size string `json:"size,omitempty"`
+}
+
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
 	//+kubebuilder:default:="k3s"
@@ -154,6 +161,7 @@ type UffizziClusterSpec struct {
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 	Sleep         bool                         `json:"sleep,omitempty"`
+	Storage       *UffizziClusterStorage       `json:"storage,omitempty"`
 	//+kubebuilder:default:="sqlite"
 	//+kubebuilder:validation:Enum=etcd;sqlite
 	ExternalDatastore string `json:"externalDatastore,omitempty"`

@@ -200,7 +200,8 @@ type SecurityContext struct {
 }
 
 type Storage struct {
-	Persistence bool `json:"persistence"`
+	Persistence bool   `json:"persistence"`
+	Size        string `json:"size"`
 }
 
 type Toleration v1.Toleration
