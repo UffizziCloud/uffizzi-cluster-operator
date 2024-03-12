@@ -159,6 +159,9 @@ stop-test-k3d-tainted: ## Stop the k3d cluster with a tainted node for testing.
 
 ##@ Test
 
+.PHONY: test
+test: test-e2e-without-cluster
+
 .PHONY: test-e2e-without-cluster
 test-e2e-without-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile=coverage.txt
