@@ -113,11 +113,11 @@ install-flux-prereq: ## Install the fluxcd if not preset
 
 .PHONY: install-fluxcd-controllers
 install-fluxcd-controllers: install-flux-prereq ## Install the fluxcd controllers.
-	flux install --namespace=flux-system --components="source-controller,helm-controller"
+	flux install --namespace=flux-system --components="source-controller,helm-controller" --network-policy=false --insecure-skip-tls-verify
 
 .PHONE: install-fluxcd-controllers-with-toleration
 install-fluxcd-controllers-with-toleration: install-flux-prereq ## Install the fluxcd controllers with toleration.
-	flux install --namespace=flux-system --components="source-controller,helm-controller" --toleration-keys="testkey"
+	flux install --namespace=flux-system --components="source-controller,helm-controller" --toleration-keys="testkey" --network-policy=false --insecure-skip-tls-verify
 
 .PHONY: start-test-k3d
 start-test-k3d: ## Start a k3d cluster for testing.
