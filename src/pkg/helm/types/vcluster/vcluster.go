@@ -16,7 +16,6 @@ type Common struct {
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
 	MapServices     MapServices     `json:"mapServices,omitempty"`
 	Plugin          Plugins         `json:"plugin,omitempty"`
-	EnableHA        bool            `json:"enableHA,omitempty"`
 }
 
 type K3S struct {

@@ -23,7 +23,6 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 				Value: "http://" + etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
 			},
 		}
-		vclusterK3sHelmValues.EnableHA = false
 	}
 
 	if uCluster.Spec.Ingress.Host != "" {
