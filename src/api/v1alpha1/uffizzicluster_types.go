@@ -142,7 +142,7 @@ type UffizziClusterResourceCount struct {
 
 type UffizziClusterStorage struct {
 	//+kubebuilder:default:=true
-	Persistence bool `json:"persistence,omitempty"`
+	Persistence *bool `json:"persistence,omitempty"`
 	//+kubebuilder:default:="5Gi"
 	Size string `json:"size,omitempty"`
 }

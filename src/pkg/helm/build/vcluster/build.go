@@ -106,8 +106,16 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	// keep cluster data intact in case the vcluster scales up or down
 	vclusterK3sHelmValues.Syncer.Storage = vcluster.Storage{
-		Persistence: uCluster.Spec.Storage.Persistence,
-		Size:        uCluster.Spec.Storage.Size,
+		Persistence: true,
+		Size:        "5Gi",
+	}
+
+	if uCluster.Spec.Storage.Persistence != nil {
+		vclusterK3sHelmValues.Syncer.Storage.Persistence = true
+	}
+
+	if uCluster.Spec.Storage.Size != "" {
+		vclusterK3sHelmValues.Syncer.Storage.Size = uCluster.Spec.Storage.Size
 	}
 
 	if len(uCluster.Spec.Helm) > 0 {
