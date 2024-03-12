@@ -121,7 +121,7 @@ install-fluxcd-controllers-with-toleration: install-flux-prereq ## Install the f
 
 .PHONY: start-test-k3d
 start-test-k3d: ## Start a k3d cluster for testing.
-	k3d cluster create basic || true
+	k3d cluster create basic --k3s-arg="--disable=traefik@server:0" || true
 	$(MAKE) install-fluxcd-controllers
 
 .PHONY: start-test-minikube
@@ -149,8 +149,9 @@ stop-test-k3d: ## Stop the k3d cluster for testing.
 .PHONY: start-test-k3d-tainted
 start-test-k3d-tainted: ## Start a k3d cluster with a tainted node for testing.
 	k3d cluster create my-cluster --agents 1 \
-      --k3s-arg "--kubelet-arg=node-labels=testkey=testvalue@agent:0" \
-      --k3s-arg "--kubelet-arg=taints=testkey=testvalue:NoSchedule@agent:0" || true
+      --k3s-arg="--kubelet-arg=node-labels=testkey=testvalue@agent:0" \
+      --k3s-arg="--kubelet-arg=taints=testkey=testvalue:NoSchedule@agent:0" \
+      --k3s-arg="--disable=traefik@server:0" || true
 	$(MAKE) install-fluxcd-controllers
 
 .PHONY : stop-test-k3d-tainted
