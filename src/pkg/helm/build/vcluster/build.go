@@ -113,9 +113,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	if uCluster.Spec.Storage != nil {
 		storage := uCluster.Spec.Storage
-		if storage.Persistence != nil {
-			vclusterK3sHelmValues.Syncer.Storage.Persistence = *storage.Persistence
-		}
+		vclusterK3sHelmValues.Syncer.Storage.Persistence = storage.Persistence
 		if len(uCluster.Spec.Storage.Size) > 0 {
 			vclusterK3sHelmValues.Syncer.Storage.Size = uCluster.Spec.Storage.Size
 		}
