@@ -1,4 +1,4 @@
-VERSION ?= 1.5.6
+VERSION ?= 1.6.0
 
 # check if we are using MacOS or LINUX and use that to determine the sed command
 UNAME_S := $(shell uname -s)
