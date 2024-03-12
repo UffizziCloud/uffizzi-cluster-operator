@@ -7,15 +7,17 @@ import (
 )
 
 type Common struct {
-	Init            Init            `json:"init,omitempty"`
-	Syncer          Syncer          `json:"syncer,omitempty"`
-	Sync            Sync            `json:"sync,omitempty"`
-	Ingress         Ingress         `json:"ingress,omitempty"`
-	FsGroup         int64           `json:"fsgroup,omitempty"`
-	Isolation       Isolation       `json:"isolation,omitempty"`
-	SecurityContext SecurityContext `json:"securityContext,omitempty"`
-	MapServices     MapServices     `json:"mapServices,omitempty"`
-	Plugin          Plugins         `json:"plugin,omitempty"`
+	Init            Init              `json:"init,omitempty"`
+	Syncer          Syncer            `json:"syncer,omitempty"`
+	Sync            Sync              `json:"sync,omitempty"`
+	Ingress         Ingress           `json:"ingress,omitempty"`
+	NodeSelector    map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations     []v1.Toleration   `json:"tolerations,omitempty"`
+	FsGroup         int64             `json:"fsgroup,omitempty"`
+	Isolation       Isolation         `json:"isolation,omitempty"`
+	SecurityContext SecurityContext   `json:"securityContext,omitempty"`
+	MapServices     MapServices       `json:"mapServices,omitempty"`
+	Plugin          Plugins           `json:"plugin,omitempty"`
 }
 
 type K3S struct {
