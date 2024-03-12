@@ -52,14 +52,6 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 
 		It("Should create a HelmRelease and HelmRepository", func() {
 			//
-			By("Checking if the HelmRelease was created")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, resources.CreateNamespacedName(helmRelease.Name, ns.Name), helmRelease); err != nil {
-					return false
-				}
-				return true
-			})
-			//
 			By("Checking if the Loft HelmRepository was created")
 			Eventually(func() bool {
 				if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.LOFT_HELM_REPO, ns.Name), helmRepo); err != nil {
@@ -67,7 +59,14 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				}
 				return true
 			})
-
+			//
+			By("Checking if the HelmRelease was created")
+			Eventually(func() bool {
+				if err := k8sClient.Get(ctx, resources.CreateNamespacedName(helmRelease.Name, ns.Name), helmRelease); err != nil {
+					return false
+				}
+				return true
+			})
 		})
 
 		if uc.Spec.ExternalDatastore == constants.ETCD {
