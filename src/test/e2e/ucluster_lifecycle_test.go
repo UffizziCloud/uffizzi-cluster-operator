@@ -7,6 +7,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
+	"github.com/fluxcd/pkg/apis/meta"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -52,10 +53,15 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 
 		It("Should create a HelmRelease and HelmRepository", func() {
 			//
-			By("Checking if the Loft HelmRepository was created")
+			By("Checking if the Loft HelmRepository was created and the repository is ready")
 			Eventually(func() bool {
 				if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.LOFT_HELM_REPO, ns.Name), helmRepo); err != nil {
 					return false
+				}
+				for _, c := range helmRepo.Status.Conditions {
+					if c.Type == meta.ReadyCondition {
+						return c.Status == metav1.ConditionTrue
+					}
 				}
 				return true
 			})
