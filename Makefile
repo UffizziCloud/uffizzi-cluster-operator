@@ -140,8 +140,8 @@ start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for
 	minikube start --driver=docker
 	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
 	kubectl label nodes minikube testkey=testvalue || true
-	kubectl get deployments --all-namespaces -o name | xargs -I {} kubectl patch {} --patch-file ./.github/kubectl-patch/nodeselector-toleration.yaml
-	kubectl get statefulsets --all-namespaces -o name | xargs -I {} kubectl patch {} --patch-file ./.github/kubectl-patch/nodeselector-toleration.yaml
+	kubectl get deployments --all-namespaces -o jsonpath="{.items[*].metadata.name}" | xargs -n 1 -I {} kubectl patch deployment {} --patch-file="./.github/kubectl-patch/nodeselector-toleration.yaml"
+	kubectl get statefulsets --all-namespaces -o jsonpath="{.items[*].metadata.name}" | xargs -n 1 -I {} kubectl patch statefulset {} --patch-file="./.github/kubectl-patch/nodeselector-toleration.yaml"
 	$(MAKE) install-fluxcd-controllers-with-toleration
 
 .PHONY : stop-test-k3d
