@@ -148,7 +148,9 @@ stop-test-k3d: ## Stop the k3d cluster for testing.
 
 .PHONY: start-test-k3d-tainted
 start-test-k3d-tainted: ## Start a k3d cluster with a tainted node for testing.
-	k3d cluster create tainted --node-taint="testkey=testvalue:NoSchedule" || true
+	k3d cluster create my-cluster --agents 1 \
+      --k3s-arg "--kubelet-arg=node-labels=testkey=testvalue@agent:0" \
+      --k3s-arg "--kubelet-arg=taints=testkey=testvalue:NoSchedule@agent:0" || true
 	$(MAKE) install-fluxcd-controllers
 
 .PHONY : stop-test-k3d-tainted
