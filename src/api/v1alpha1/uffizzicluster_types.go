@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"github.com/fluxcd/pkg/apis/meta"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -86,7 +87,7 @@ type UffizziClusterRequestsQuota struct {
 	Memory string `json:"memory,omitempty"`
 	//+kubebuilder:default:="5Gi"
 	EphemeralStorage string `json:"ephemeralStorage,omitempty"`
-	//+kubebuilder:default:="5Gi"
+	//+kubebuilder:default:="10Gi"
 	Storage string `json:"storage,omitempty"`
 }
 
@@ -139,23 +140,28 @@ type UffizziClusterResourceCount struct {
 	Endpoints int `json:"endpoints,omitempty"`
 }
 
+type UffizziClusterStorage struct {
+	//+kubebuilder:default:=true
+	Persistence bool `json:"persistence,omitempty"`
+	//+kubebuilder:default:="5Gi"
+	Size string `json:"size,omitempty"`
+}
+
 // UffizziClusterSpec defines the desired state of UffizziCluster
 type UffizziClusterSpec struct {
 	//+kubebuilder:default:="k3s"
 	//+kubebuilder:validation:Enum=k3s;k8s
-	Distro string `json:"distro,omitempty"`
-	//+kubebuilder:default:="vanila"
-	//+kubebuilder:validation:Enum=vanila;gke;eks
-	Provider      string                       `json:"provider,omitempty"`
+	Distro        string                       `json:"distro,omitempty"`
+	NodeSelector  map[string]string            `json:"nodeSelector,omitempty"`
+	Toleration    []v1.Toleration              `json:"tolerations,omitempty"`
 	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
 	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
-	TTL           string                       `json:"ttl,omitempty"`
 	Helm          []HelmChart                  `json:"helm,omitempty"`
 	Manifests     *string                      `json:"manifests,omitempty"`
 	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
 	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
 	Sleep         bool                         `json:"sleep,omitempty"`
-
+	Storage       *UffizziClusterStorage       `json:"storage,omitempty"`
 	//+kubebuilder:default:="sqlite"
 	//+kubebuilder:validation:Enum=etcd;sqlite
 	ExternalDatastore string `json:"externalDatastore,omitempty"`

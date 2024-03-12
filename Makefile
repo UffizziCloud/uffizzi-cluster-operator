@@ -93,7 +93,7 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=src/config/crd/bases
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -107,15 +107,75 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: install-flux-prereq
+install-flux-prereq: ## Install the fluxcd if not preset
+    which flux || curl -s https://fluxcd.io/install.sh | sudo bash
+
+.PHONY: install-fluxcd-controllers
+install-fluxcd-controllers: install-flux-prereq ## Install the fluxcd controllers.
+	flux install --namespace=flux-system --components="source-controller,helm-controller" --network-policy=false --insecure-skip-tls-verify
+
+.PHONE: install-fluxcd-controllers-with-toleration
+install-fluxcd-controllers-with-toleration: install-flux-prereq ## Install the fluxcd controllers with toleration.
+	flux install --namespace=flux-system --components="source-controller,helm-controller" --toleration-keys="testkey" --network-policy=false --insecure-skip-tls-verify
+
+.PHONY: start-test-k3d
+start-test-k3d: ## Start a k3d cluster for testing.
+	k3d cluster create basic agents=1
+	$(MAKE) install-fluxcd-controllers
+
+.PHONY: start-test-minikube
+start-test-minikube: ## Start a minikube cluster for testing.
+	minikube start --addons default-storageclass,storage-provisioner --driver=docker
+	kubectl taint nodes minikube testkey- || true
+	kubectl label nodes minikube testkey- || true
+	$(MAKE) install-fluxcd-controllers
+
+.PHONY: stop-test-minikube
+stop-test-minikube: ## Stop the minikube cluster for testing.
+	minikube stop
+
+.PHONY: start-test-minikube-tainted
+start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
+	minikube start --addons default-storageclass,storage-provisioner,hostpat --driver=docker
+	sh ./hack/minikube-patch-pod-tolerations.sh
+	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
+	kubectl label nodes minikube testkey=testvalue || true
+	$(MAKE) install-fluxcd-controllers-with-toleration
+	sh ./hack/minikube-patch-workload-tolerations.sh
+
+.PHONY : stop-test-k3d
+stop-test-k3d: ## Stop the k3d cluster for testing.
+	k3d cluster delete basic
+
+.PHONY: start-test-k3d-tainted
+start-test-k3d-tainted: ## Start a k3d cluster with a tainted node for testing.
+	k3d cluster create tainted --agents=1 --k3s-arg="--kubelet-arg=node-labels=testkey=testvalue@agent:0" --k3s-arg="--kubelet-arg=taints=testkey=testvalue:NoSchedule@agent:0"
+	$(MAKE) install-fluxcd-controllers
+
+.PHONY : stop-test-k3d-tainted
+stop-test-k3d-tainted: ## Stop the k3d cluster with a tainted node for testing.
+	k3d cluster delete tainted
+
 ##@ Test
 
-.PHONY: e2e-test-without-cluster
-e2e-test-without-cluster: manifests generate fmt vet envtest ## Run test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+.PHONY: test-e2e-without-cluster
+test-e2e-without-cluster: manifests generate fmt vet envtest ## Run test.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile=coverage.txt
 
-.PHONY: e2e-test-with-cluster
-e2e-test-with-cluster: manifests generate fmt vet envtest ## Run test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile cover.out -v
+.PHONY: test-e2e-with-cluster
+test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile=coverage.txt -v
+
+.PHONY: test-e2e-with-cluster-local
+test-e2e-with-cluster-local: start-test-minikube test-e2e-with-cluster ## Run test.
+
+.PHONY: test-e2e-with-tainted-cluster
+test-e2e-with-tainted-cluster: manifests generate fmt vet envtest ## Run test.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true E2E_ARG_IS_TAINTED=true go test ./... -coverprofile=coverage.txt -v
+
+.PHONY: test-e2e-with-tainted-cluster-local
+test-e2e-with-tainted-cluster-local: start-test-minikube-tainted test-e2e-with-tainted-cluster ## Run test.
 
 ##@ Build
 

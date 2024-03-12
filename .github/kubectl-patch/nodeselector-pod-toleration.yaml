@@ -1,0 +1,8 @@
+spec:
+  tolerations:
+    - key: "testkey"
+      operator: "Equal"
+      value: "testvalue"
+      effect: "NoSchedule"
+  nodeSelector:
+    testkey: "testvalue"

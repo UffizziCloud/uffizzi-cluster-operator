@@ -51,6 +51,18 @@ func GetAllNotReadyConditions() []metav1.Condition {
 	}
 }
 
+func GetAllSleepConditions() []metav1.Condition {
+	return append([]metav1.Condition{
+		Sleeping(metav1.Now()),
+	}, GetAllNotReadyConditions()...)
+}
+
+func GetAllAwokenConditions() []metav1.Condition {
+	return append([]metav1.Condition{
+		Awoken(metav1.Now()),
+	}, GetAllReadyConditions()...)
+}
+
 func Initializing() metav1.Condition {
 	return metav1.Condition{
 		Type:               TypeReady,

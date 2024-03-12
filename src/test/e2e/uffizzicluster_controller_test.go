@@ -3,32 +3,81 @@ package e2e
 import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
+	v1 "k8s.io/api/core/v1"
 )
 
-type TestDefinition struct {
-	Name string
-	Spec v1alpha1.UffizziClusterSpec
-}
-
-func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
-	ns := resources.CreateTestNamespace(td.Name)
-	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
-	wrapUffizziClusterLifecycleTest(ctx, ns, uc)
-}
-
-const (
-	timeout        = "1m"
-	pollingTimeout = "100ms"
-)
-
-var _ = Describe("Basic UffizziCluster Lifecycle", func() {
+var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
+	BeforeEach(func() {
+		if e2e.IsTainted {
+			Skip("Skipping test because cluster is tainted")
+		}
+	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic",
+		Name: "basic-k3s-test",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
-	// run the testUffizziCluster
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})
+
+var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
+	BeforeEach(func() {
+		if e2e.IsTainted {
+			Skip("Skipping test because cluster is tainted")
+		}
+	})
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "basic-k8s-test",
+		Spec: v1alpha1.UffizziClusterSpec{
+			Distro: "k8s",
+		},
+	}
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})
+
+var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+	BeforeEach(func() {
+		if e2e.IsTainted {
+			Skip("Skipping test because cluster is tainted")
+		}
+	})
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "k3s-etcd-test",
+		Spec: v1alpha1.UffizziClusterSpec{
+			ExternalDatastore: constants.ETCD,
+		},
+	}
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})
+
+// Test against cluster with tainted nodes - good for testing node affinities
+
+var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
+	BeforeEach(func() {
+		if !e2e.IsTainted {
+			Skip("Skipping test because cluster is not tainted")
+		}
+	})
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "k3s-nodeselector-toleration-test",
+		Spec: v1alpha1.UffizziClusterSpec{
+			NodeSelector: map[string]string{
+				"testkey": "testvalue",
+			},
+			Toleration: []v1.Toleration{
+				{
+					Key:      "testkey",
+					Operator: "Equal",
+					Value:    "testvalue",
+					Effect:   "NoSchedule",
+				},
+			},
+		},
+	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
 })

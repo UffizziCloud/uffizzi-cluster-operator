@@ -10,10 +10,12 @@ import (
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 )
 
 func (r *UffizziClusterReconciler) createLoftHelmRepo(ctx context.Context, req ctrl.Request) error {
@@ -215,6 +217,12 @@ func (r *UffizziClusterReconciler) createHelmRepo(ctx context.Context, name, nam
 		},
 		Spec: fluxsourcev1.HelmRepositorySpec{
 			URL: url,
+			Interval: metav1.Duration{
+				Duration: time.Minute * 5,
+			},
+			Timeout: &metav1.Duration{
+				Duration: time.Second * 60,
+			},
 		},
 	}
 

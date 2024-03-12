@@ -4,13 +4,12 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	helmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
 	etcdhelmtypes "github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types/etcd"
-	v1 "k8s.io/api/core/v1"
 )
 
 func BuildETCDHelmValues() etcdhelmtypes.Etcd {
 	return etcdhelmtypes.Etcd{
 		Global: etcdhelmtypes.Global{
-			StorageClass: constants.PREMIUM_RWO_STORAGE_CLASS,
+			StorageClass: constants.STANDARD_STORAGE_CLASS,
 		},
 		ReplicaCount: 1,
 		ReadinessProbe: etcdhelmtypes.ReadinessProbe{
@@ -20,16 +19,16 @@ func BuildETCDHelmValues() etcdhelmtypes.Etcd {
 		Persistence: etcdhelmtypes.Persistence{
 			Size: "10Gi",
 		},
-		Tolerations: []etcdhelmtypes.Toleration{
-			{
-				Effect:   string(v1.TaintEffectNoSchedule),
-				Key:      constants.SANDBOX_GKE_IO_RUNTIME,
-				Operator: string(v1.NodeSelectorOpExists),
-			},
-		},
-		NodeSelector: etcdhelmtypes.NodeSelector{
-			SandboxGKEIORuntime: constants.GVISOR,
-		},
+		//Tolerations: []etcdhelmtypes.Toleration{
+		//	{
+		//		Effect:   string(v1.TaintEffectNoSchedule),
+		//		Key:      constants.SANDBOX_GKE_IO_RUNTIME,
+		//		Operator: string(v1.NodeSelectorOpExists),
+		//	},
+		//},
+		//NodeSelector: etcdhelmtypes.NodeSelector{
+		//	SandboxGKEIORuntime: constants.GVISOR,
+		//},
 		Auth: etcdhelmtypes.Auth{
 			Rbac: etcdhelmtypes.Rbac{
 				Create: false,

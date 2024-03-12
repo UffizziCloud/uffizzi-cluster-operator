@@ -11,22 +11,44 @@ permissions:
   id-token: write
 
 jobs:
-  minikube:
-    name: Run E2E tests with Minikube
+  minikube-default:
+    name: Run e2e tests against Minikube
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Minikube
-        run: minikube start --driver=docker
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
 
-      - name: Install FluxCD
+      - name: Setup k3d
+        uses: ./.github/actions/k3d
+
+      - name: Run e2e tests against current cluster
         run: |
-          curl -s https://fluxcd.io/install.sh | sudo bash
-          flux install --namespace=flux-system --components="source-controller,helm-controller"
-          
-      - name: Run e2e tests
+          make test-e2e-with-cluster-local
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+  minikube-tainted:
+    name: Run e2e tests against Minikube (TAINTED)
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
+
+      - name: Setup k3d
+        uses: ./.github/actions/k3d
+
+      - name: Run e2e tests against current tainted cluster
         run: |
-          make e2e-test-with-cluster
+          make test-e2e-with-tainted-cluster-local
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3

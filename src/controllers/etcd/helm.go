@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"time"
 )
 
 func (r *UffizziClusterEtcdReconciler) createHelmRepo(ctx context.Context, name, namespace, url string) error {
@@ -21,8 +22,10 @@ func (r *UffizziClusterEtcdReconciler) createHelmRepo(ctx context.Context, name,
 			Namespace: namespace,
 		},
 		Spec: fluxsourcev1.HelmRepositorySpec{
-			URL:  url,
-			Type: constants.OCI_TYPE,
+			Interval: metav1.Duration{Duration: time.Minute * 5},
+			Timeout:  &metav1.Duration{Duration: time.Second * 60},
+			URL:      url,
+			Type:     constants.OCI_TYPE,
 		},
 	}
 

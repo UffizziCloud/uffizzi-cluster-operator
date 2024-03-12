@@ -1,7 +1,6 @@
 package vcluster
 
 import (
-	"fmt"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
@@ -15,11 +14,9 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	vclusterK3sHelmValues := vcluster.K3S{
 		VCluster: k3SAPIServer(uCluster),
-		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Provider),
+		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.NodeSelector, uCluster.Spec.Toleration),
 	}
 
-	// keep cluster data intact in case the vcluster scales up or down
-	vclusterK3sHelmValues.Storage.Persistence = true
 	if uCluster.Spec.ExternalDatastore == constants.ETCD {
 		vclusterK3sHelmValues.VCluster.Env = []vcluster.ContainerEnv{
 			{
@@ -27,7 +24,6 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 				Value: "http://" + etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
 			},
 		}
-		vclusterK3sHelmValues.EnableHA = false
 	}
 
 	if uCluster.Spec.Ingress.Host != "" {
@@ -86,10 +82,42 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		vclusterK3sHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
-		"--tls-san="+vclusterIngressHostname,
-		"--out-kube-config-server="+outKubeConfigServerArgValue,
-	)
+	if vclusterIngressHostname != "" {
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
+			"--tls-san="+vclusterIngressHostname,
+		)
+	}
+
+	if outKubeConfigServerArgValue != "" {
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs,
+			"--out-kube-config-server="+outKubeConfigServerArgValue,
+		)
+	}
+
+	for _, t := range uCluster.Spec.Toleration {
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.Toleration(t).Notation())
+	}
+
+	if len(uCluster.Spec.NodeSelector) > 0 {
+		for k, v := range uCluster.Spec.NodeSelector {
+			vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
+		}
+		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-node-selector")
+	}
+
+	// keep cluster data intact in case the vcluster scales up or down
+	vclusterK3sHelmValues.Syncer.Storage = vcluster.Storage{
+		Persistence: true,
+		Size:        "5Gi",
+	}
+
+	if uCluster.Spec.Storage != nil {
+		storage := uCluster.Spec.Storage
+		vclusterK3sHelmValues.Syncer.Storage.Persistence = storage.Persistence
+		if len(uCluster.Spec.Storage.Size) > 0 {
+			vclusterK3sHelmValues.Syncer.Storage.Size = uCluster.Spec.Storage.Size
+		}
+	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterK3sHelmValues.Init.Helm = uCluster.Spec.Helm
@@ -107,7 +135,7 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 
 	vclusterHelmValues := vcluster.K8S{
 		APIServer: k8SAPIServer(),
-		Common:    common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.Provider),
+		Common:    common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.NodeSelector, uCluster.Spec.Toleration),
 	}
 
 	if uCluster.Spec.APIServer.Image != "" {
@@ -170,10 +198,17 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 		vclusterHelmValues.Isolation.LimitRange = lrHelmValues
 	}
 
-	vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
-		"--tls-san="+vclusterIngressHostname,
-		"--out-kube-config-server="+outKubeConfigServerArgValue,
-	)
+	if vclusterIngressHostname != "" {
+		vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
+			"--tls-san="+vclusterIngressHostname,
+		)
+	}
+
+	if outKubeConfigServerArgValue != "" {
+		vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs,
+			"--out-kube-config-server="+outKubeConfigServerArgValue,
+		)
+	}
 
 	if len(uCluster.Spec.Helm) > 0 {
 		vclusterHelmValues.Init.Helm = uCluster.Spec.Helm
@@ -213,7 +248,7 @@ func pluginsConfig() vcluster.Plugins {
 	}
 }
 
-func syncerConfig(helmReleaseName, provider string) vcluster.Syncer {
+func syncerConfig(helmReleaseName string) vcluster.Syncer {
 	syncer := vcluster.Syncer{
 		KubeConfigContextName: helmReleaseName,
 		Limits: types.ContainerMemoryCPU{
@@ -221,19 +256,7 @@ func syncerConfig(helmReleaseName, provider string) vcluster.Syncer {
 			Memory: "1024Mi",
 		},
 	}
-	if provider == constants.PROVIDER_GKE {
-		syncer.ExtraArgs = append(syncer.ExtraArgs, []string{
-			fmt.Sprintf(
-				"--enforce-toleration=%s:%s",
-				constants.SANDBOX_GKE_IO_RUNTIME,
-				string(v1.TaintEffectNoSchedule),
-			),
-			"--node-selector=sandbox.gke.io/runtime=gvisor",
-			"--enforce-node-selector",
-		}...)
-	} else {
-		syncer.ExtraArgs = []string{}
-	}
+
 	return syncer
 }
 
@@ -241,16 +264,6 @@ func syncConfig() vcluster.Sync {
 	return vcluster.Sync{
 		Ingresses: vcluster.EnabledBool{
 			Enabled: false,
-		},
-	}
-}
-
-func gkeTolerations() []vcluster.Toleration {
-	return []vcluster.Toleration{
-		{
-			Key:      constants.SANDBOX_GKE_IO_RUNTIME,
-			Effect:   string(v1.TaintEffectNoSchedule),
-			Operator: string(v1.NodeSelectorOpExists),
 		},
 	}
 }
@@ -272,11 +285,11 @@ func isolation() vcluster.Isolation {
 			Quota: vcluster.ResourceQuotaDefiniton{
 				RequestsCpu:                 "2.5",
 				RequestsMemory:              "10Gi",
-				RequestsEphemeralStorage:    "15Gi",
-				RequestsStorage:             "10Gi",
+				RequestsEphemeralStorage:    "50Gi",
+				RequestsStorage:             "20Gi",
 				LimitsCpu:                   "20",
 				LimitsMemory:                "30Gi",
-				LimitsEphemeralStorage:      "60Gi",
+				LimitsEphemeralStorage:      "80Gi",
 				ServicesLoadbalancers:       100,
 				ServicesNodePorts:           0,
 				CountEndpoints:              100,
@@ -316,12 +329,6 @@ func ingress(VClusterIngressHostname string) vcluster.Ingress {
 	}
 }
 
-func gkeNodeSelector() vcluster.NodeSelector {
-	return vcluster.NodeSelector{
-		SandboxGKEIORuntime: "gvisor",
-	}
-}
-
 func configStrings(uCluster *v1alpha1.UffizziCluster) (string, string, string) {
 	helmReleaseName := BuildVClusterHelmReleaseName(uCluster)
 	var (
@@ -347,25 +354,18 @@ func k8SAPIServer() vcluster.K8SAPIServer {
 	}
 }
 
-func common(helmReleaseName, vclusterIngressHostname, provider string) vcluster.Common {
+func common(helmReleaseName, vclusterIngressHostname string, nodeSelector map[string]string, tolerations []v1.Toleration) vcluster.Common {
 	c := vcluster.Common{
 		Init:            vcluster.Init{},
 		FsGroup:         12345,
 		Ingress:         ingress(vclusterIngressHostname),
 		Isolation:       isolation(),
+		NodeSelector:    nodeSelector,
+		Tolerations:     tolerations,
 		SecurityContext: securityContext(),
-		Tolerations:     gkeTolerations(),
 		Plugin:          pluginsConfig(),
-		Syncer:          syncerConfig(helmReleaseName, provider),
+		Syncer:          syncerConfig(helmReleaseName),
 		Sync:            syncConfig(),
-	}
-
-	if provider == constants.PROVIDER_GKE {
-		c.NodeSelector = gkeNodeSelector()
-		c.Tolerations = gkeTolerations()
-	} else {
-		c.NodeSelector = vcluster.NodeSelector{}
-		c.Tolerations = []vcluster.Toleration{}
 	}
 
 	return c

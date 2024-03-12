@@ -3,22 +3,21 @@ package vcluster
 import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Common struct {
-	Init            Init            `json:"init,omitempty"`
-	Syncer          Syncer          `json:"syncer,omitempty"`
-	Sync            Sync            `json:"sync,omitempty"`
-	Ingress         Ingress         `json:"ingress,omitempty"`
-	FsGroup         int64           `json:"fsgroup,omitempty"`
-	Isolation       Isolation       `json:"isolation,omitempty"`
-	NodeSelector    NodeSelector    `json:"nodeSelector,omitempty"`
-	SecurityContext SecurityContext `json:"securityContext,omitempty"`
-	Tolerations     []Toleration    `json:"tolerations,omitempty"`
-	MapServices     MapServices     `json:"mapServices,omitempty"`
-	Plugin          Plugins         `json:"plugin,omitempty"`
-	Storage         Storage         `json:"storage,omitempty"`
-	EnableHA        bool            `json:"enableHA,omitempty"`
+	Init            Init              `json:"init,omitempty"`
+	Syncer          Syncer            `json:"syncer,omitempty"`
+	Sync            Sync              `json:"sync,omitempty"`
+	Ingress         Ingress           `json:"ingress,omitempty"`
+	NodeSelector    map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations     []v1.Toleration   `json:"tolerations,omitempty"`
+	FsGroup         int64             `json:"fsgroup,omitempty"`
+	Isolation       Isolation         `json:"isolation,omitempty"`
+	SecurityContext SecurityContext   `json:"securityContext,omitempty"`
+	MapServices     MapServices       `json:"mapServices,omitempty"`
+	Plugin          Plugins           `json:"plugin,omitempty"`
 }
 
 type K3S struct {
@@ -35,8 +34,8 @@ type K8SAPIServer struct {
 	Image              string             `json:"image,omitempty"`
 	ExtraArgs          []string           `json:"extraArgs,omitempty"`
 	Replicas           int32              `json:"replicas,omitempty"`
-	NodeSelector       NodeSelector       `json:"nodeSelector,omitempty"`
-	Tolerations        []Toleration       `json:"tolerations,omitempty"`
+	NodeSelector       v1.NodeSelector    `json:"nodeSelector,omitempty"`
+	Tolerations        []v1.Toleration    `json:"tolerations,omitempty"`
 	Labels             map[string]string  `json:"labels,omitempty"`
 	Annotations        map[string]string  `json:"annotations,omitempty"`
 	PodAnnotations     map[string]string  `json:"podAnnotations,omitempty"`
@@ -79,6 +78,7 @@ type Syncer struct {
 	KubeConfigContextName string                   `json:"kubeConfigContextName,omitempty"`
 	ExtraArgs             []string                 `json:"extraArgs,omitempty"`
 	Limits                types.ContainerMemoryCPU `json:"limits,omitempty"`
+	Storage               Storage                  `json:"storage,omitempty"`
 }
 
 type Plugin struct {
@@ -188,11 +188,6 @@ type Isolation struct {
 	NetworkPolicy       NetworkPolicy `json:"networkPolicy,omitempty"`
 }
 
-// NodeSelector - parameters to define the node selector of the cluster
-type NodeSelector struct {
-	SandboxGKEIORuntime string `json:"sandbox.gke.io/runtime,omitempty"`
-}
-
 type SecurityContextCapabilities struct {
 	Drop []string `json:"drop"`
 }
@@ -205,12 +200,13 @@ type SecurityContext struct {
 	RunAsUser              int64                       `json:"runAsUser"`
 }
 
-type Toleration struct {
-	Effect   string `json:"effect"`
-	Key      string `json:"key"`
-	Operator string `json:"operator"`
+type Storage struct {
+	Persistence bool   `json:"persistence"`
+	Size        string `json:"size"`
 }
 
-type Storage struct {
-	Persistence bool `json:"persistence"`
+type Toleration v1.Toleration
+
+func (t Toleration) Notation() string {
+	return t.Key + "=" + t.Value + ":" + string(t.Effect)
 }
