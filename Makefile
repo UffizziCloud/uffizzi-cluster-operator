@@ -126,7 +126,7 @@ start-test-k3d: ## Start a k3d cluster for testing.
 
 .PHONY: start-test-minikube
 start-test-minikube: ## Start a minikube cluster for testing.
-	minikube start --driver=docker
+	minikube start --addons default-storageclass,storage-provisioner --driver=docker
 	kubectl taint nodes minikube testkey- || true
 	kubectl label nodes minikube testkey- || true
 	$(MAKE) install-fluxcd-controllers
@@ -137,11 +137,12 @@ stop-test-minikube: ## Stop the minikube cluster for testing.
 
 .PHONY: start-test-minikube-tainted
 start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
-	minikube start --driver=docker
+	minikube start --addons default-storageclass,storage-provisioner,hostpat --driver=docker
+	sh ./hack/minikube-patch-pod-tolerations.sh
 	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
 	kubectl label nodes minikube testkey=testvalue || true
 	$(MAKE) install-fluxcd-controllers-with-toleration
-	sh ./hack/minikube-patch-tolerations.sh
+	sh ./hack/minikube-patch-workload-tolerations.sh
 
 .PHONY : stop-test-k3d
 stop-test-k3d: ## Stop the k3d cluster for testing.
