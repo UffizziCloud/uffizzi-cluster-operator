@@ -1,0 +1,10 @@
+spec:
+  template:
+    spec:
+      nodeSelector:
+        testkey: "testvalue"
+      tolerations:
+        - key: "testkey"
+          operator: "Equal"
+          value: "testvalue"
+          effect: "NoSchedule"
