@@ -16,7 +16,6 @@ type Common struct {
 	SecurityContext SecurityContext `json:"securityContext,omitempty"`
 	MapServices     MapServices     `json:"mapServices,omitempty"`
 	Plugin          Plugins         `json:"plugin,omitempty"`
-	Storage         Storage         `json:"storage,omitempty"`
 	EnableHA        bool            `json:"enableHA,omitempty"`
 }
 
@@ -78,6 +77,7 @@ type Syncer struct {
 	KubeConfigContextName string                   `json:"kubeConfigContextName,omitempty"`
 	ExtraArgs             []string                 `json:"extraArgs,omitempty"`
 	Limits                types.ContainerMemoryCPU `json:"limits,omitempty"`
+	Storage               Storage                  `json:"storage,omitempty"`
 }
 
 type Plugin struct {

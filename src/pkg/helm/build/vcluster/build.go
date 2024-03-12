@@ -16,12 +16,6 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		Common:   common(helmReleaseName, vclusterIngressHostname),
 	}
 
-	// keep cluster data intact in case the vcluster scales up or down
-	vclusterK3sHelmValues.Storage = vcluster.Storage{
-		Persistence: uCluster.Spec.Storage.Persistence,
-		Size:        uCluster.Spec.Storage.Size,
-	}
-
 	if uCluster.Spec.ExternalDatastore == constants.ETCD {
 		vclusterK3sHelmValues.VCluster.Env = []vcluster.ContainerEnv{
 			{
@@ -109,6 +103,12 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 			vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
 		}
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-node-selector")
+	}
+
+	// keep cluster data intact in case the vcluster scales up or down
+	vclusterK3sHelmValues.Syncer.Storage = vcluster.Storage{
+		Persistence: uCluster.Spec.Storage.Persistence,
+		Size:        uCluster.Spec.Storage.Size,
 	}
 
 	if len(uCluster.Spec.Helm) > 0 {
