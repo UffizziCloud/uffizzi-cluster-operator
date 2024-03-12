@@ -137,7 +137,7 @@ stop-test-minikube: ## Stop the minikube cluster for testing.
 
 .PHONY: start-test-minikube-tainted
 start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
-	# minikube start --driver=docker
+	minikube start --driver=docker
 	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
 	kubectl label nodes minikube testkey=testvalue || true
 	kubectl get deployments --all-namespaces -o jsonpath="{range .items[*]}{.metadata.namespace}{' '}{.metadata.name}{'\n'}{end}" | while read -r namespace deployment; do kubectl patch deployment $(deployment) --patch-file="./.github/kubectl-patch/nodeselector-toleration.yaml" -n $(namespace); done
