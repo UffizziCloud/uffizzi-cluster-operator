@@ -166,14 +166,14 @@ test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile=coverage.txt -v
 
 .PHONY: test-e2e-with-cluster-local
-test-e2e-with-cluster-local: start-test-minikube test-e2e-with-cluster ## Run test.
+test-e2e-with-cluster-local: start-test-k3d test-e2e-with-cluster ## Run test.
 
 .PHONY: test-e2e-with-tainted-cluster
 test-e2e-with-tainted-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true E2E_ARG_IS_TAINTED=true go test ./... -coverprofile=coverage.txt -v
 
 .PHONY: test-e2e-with-tainted-cluster-local
-test-e2e-with-tainted-cluster-local: start-test-minikube-tainted test-e2e-with-tainted-cluster ## Run test.
+test-e2e-with-tainted-cluster-local: start-test-k3d-tainted test-e2e-with-tainted-cluster ## Run test.
 
 ##@ Build
 
