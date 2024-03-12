@@ -72,7 +72,7 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 			Toleration: []v1.Toleration{
 				{
 					Key:      "testkey",
-					Operator: "Exists",
+					Operator: "Equal",
 					Value:    "testvalue",
 					Effect:   "NoSchedule",
 				},

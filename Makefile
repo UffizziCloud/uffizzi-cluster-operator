@@ -140,8 +140,8 @@ start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for
 	minikube start --driver=docker
 	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
 	kubectl label nodes minikube testkey=testvalue || true
-	sh ./hack/minikube-patch-tolerations.sh
 	$(MAKE) install-fluxcd-controllers-with-toleration
+	sh ./hack/minikube-patch-tolerations.sh
 
 .PHONY : stop-test-k3d
 stop-test-k3d: ## Stop the k3d cluster for testing.
