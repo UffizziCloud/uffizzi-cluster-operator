@@ -40,6 +40,7 @@ var _ = Describe("k3s: without persistence", func() {
 				Persistence: false,
 			},
 		},
+		ExpectedStatus: newStatusThroughLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -60,6 +61,7 @@ var _ = Describe("k3s: with persistence", func() {
 				Size: "2Gi",
 			},
 		},
+		ExpectedStatus: newStatusThroughLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -76,6 +78,7 @@ var _ = Describe("k3s: with etcd", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			ExternalDatastore: constants.ETCD,
 		},
+		ExpectedStatus: newStatusThroughLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -104,6 +107,7 @@ var _ = Describe("k3s: nodeselector and tolerations", func() {
 				},
 			},
 		},
+		ExpectedStatus: newStatusThroughLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -120,14 +124,8 @@ var _ = Describe("k3s: nodeselector template", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelectorTemplate: constants.NODESELECTOR_TEMPLATE_GVISOR,
 		},
+		ExpectedStatus: newStatusThroughLifetime(),
 	}
-
-	statusThroughLifetime := ExpectedStatusThroughLifetime{
-		Initializing: v1alpha1.UffizziClusterStatus{
-			Conditions: uffizzicluster.GetAllInitializingConditions(),
-		},
-	}
-	testUffizziCluster.ExpectedStatus = statusThroughLifetime
 
 	testUffizziCluster.Run(ctx)
 })
@@ -144,6 +142,24 @@ var _ = Describe("k8s", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			Distro: "k8s",
 		},
+		ExpectedStatus: newStatusThroughLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
+
+func newStatusThroughLifetime() ExpectedStatusThroughLifetime {
+	return ExpectedStatusThroughLifetime{
+		Initializing: v1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllInitializingConditions(),
+		},
+		Ready: v1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllReadyConditions(),
+		},
+		Sleeping: v1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllSleepConditions(),
+		},
+		Awoken: v1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllAwokenConditions(),
+		},
+	}
+}

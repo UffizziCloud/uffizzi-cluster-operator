@@ -100,14 +100,13 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 
 		// Initializing
 		It("Should initialize correctly", func() {
-			expectedConditions := []metav1.Condition{}
+			expectedConditions := td.ExpectedStatus.Initializing.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster initializes correctly")
 			Eventually(func() bool {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				expectedConditions = td.ExpectedStatus.Initializing.Conditions
 				return conditions.ContainsAllConditions(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(BeTrue())
 
@@ -115,14 +114,13 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		})
 
 		It("Should be in a Ready State", func() {
-			expectedConditions := []metav1.Condition{}
+			expectedConditions := td.ExpectedStatus.Ready.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Ready conditions")
 			Eventually(func() bool {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				expectedConditions = uffizzicluster.GetAllReadyConditions()
 				return conditions.ContainsAllConditions(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(BeTrue())
 
