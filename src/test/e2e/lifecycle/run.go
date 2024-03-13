@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	"github.com/fluxcd/pkg/apis/meta"
@@ -20,7 +19,7 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 	)
 	uc.Spec = td.Spec
 	var (
-		k8sClient       = e2e.GetE2E().K8SClient
+		k8sClient       = td.K8SClient
 		timeout         = "10m"
 		pollingTimeout  = "100ms"
 		helmRelease     = resources.GetHelmReleaseFromUffizziCluster(uc)

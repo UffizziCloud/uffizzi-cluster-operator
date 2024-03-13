@@ -5,12 +5,14 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type LifecycleTestDefinition struct {
 	Name           string
 	Spec           v1alpha1.UffizziClusterSpec
 	ExpectedStatus ExpectedStatusThroughLifetime
+	K8SClient      client.Client
 }
 
 type ExpectedStatusThroughLifetime struct {
