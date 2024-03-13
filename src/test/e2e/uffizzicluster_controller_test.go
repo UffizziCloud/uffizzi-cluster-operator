@@ -41,7 +41,7 @@ var _ = Describe("k3s: without persistence", func() {
 				Persistence: false,
 			},
 		},
-		ExpectedStatus: newStatusThroughLifetime(),
+		ExpectedStatus: initStatusThroughLifetime(),
 	}
 	testUffizziCluster.K8SClient = e2e.K8SClient
 	testUffizziCluster.Run(ctx)
@@ -63,7 +63,7 @@ var _ = Describe("k3s: with persistence", func() {
 				Size: "2Gi",
 			},
 		},
-		ExpectedStatus: newStatusThroughLifetime(),
+		ExpectedStatus: initStatusThroughLifetime(),
 	}
 	testUffizziCluster.K8SClient = e2e.K8SClient
 	testUffizziCluster.Run(ctx)
@@ -81,13 +81,13 @@ var _ = Describe("k3s: with etcd", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			ExternalDatastore: constants.ETCD,
 		},
-		ExpectedStatus: newStatusThroughLifetime(),
+		ExpectedStatus: initStatusThroughLifetime(),
 	}
 	testUffizziCluster.K8SClient = e2e.K8SClient
 	testUffizziCluster.Run(ctx)
 })
 
-// Test against cluster with tainted nodes - good for testing node affinities
+// Tainted node with a label on them
 
 var _ = Describe("k3s: nodeselector and tolerations", func() {
 	BeforeEach(func() {
@@ -111,7 +111,7 @@ var _ = Describe("k3s: nodeselector and tolerations", func() {
 				},
 			},
 		},
-		ExpectedStatus: newStatusThroughLifetime(),
+		ExpectedStatus: initStatusThroughLifetime(),
 	}
 	testUffizziCluster.K8SClient = e2e.K8SClient
 	testUffizziCluster.Run(ctx)
@@ -129,11 +129,13 @@ var _ = Describe("k3s: nodeselector template", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelectorTemplate: constants.NODESELECTOR_TEMPLATE_GVISOR,
 		},
-		ExpectedStatus: newStatusThroughLifetime(),
+		ExpectedStatus: initStatusThroughLifetime(),
 	}
 	testUffizziCluster.K8SClient = e2e.K8SClient
 	testUffizziCluster.Run(ctx)
 })
+
+// K8S
 
 var _ = Describe("k8s", func() {
 	BeforeEach(func() {
@@ -147,13 +149,13 @@ var _ = Describe("k8s", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			Distro: "k8s",
 		},
-		ExpectedStatus: newStatusThroughLifetime(),
+		ExpectedStatus: initStatusThroughLifetime(),
 	}
 	testUffizziCluster.K8SClient = e2e.K8SClient
 	testUffizziCluster.Run(ctx)
 })
 
-func newStatusThroughLifetime() ExpectedStatusThroughLifetime {
+func initStatusThroughLifetime() ExpectedStatusThroughLifetime {
 	return ExpectedStatusThroughLifetime{
 		Initializing: v1alpha1.UffizziClusterStatus{
 			Conditions: uffizzicluster.GetAllInitializingConditions(),

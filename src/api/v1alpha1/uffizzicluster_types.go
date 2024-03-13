@@ -177,6 +177,8 @@ type UffizziClusterStatus struct {
 	LastAppliedConfiguration   *string            `json:"lastAppliedConfiguration,omitempty"`
 	LastAppliedHelmReleaseSpec *string            `json:"lastAppliedHelmReleaseSpec,omitempty"`
 	LastAwakeTime              metav1.Time        `json:"lastAwakeTime,omitempty"`
+	NodeSelector               map[string]string  `json:"nodeSelector,omitempty"`
+	Toleration                 []v1.Toleration    `json:"tolerations,omitempty"`
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster

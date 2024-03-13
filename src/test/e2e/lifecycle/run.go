@@ -35,7 +35,7 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		})
 		It("Should delete the Namespace", func() {
 			By("By deleting the Namespace")
-			Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
 		})
 	})
 
