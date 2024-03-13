@@ -20,17 +20,12 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 	)
 	uc.Spec = td.Spec
 	var (
-		k8sClient              = e2e.GetE2E().K8SClient
-		timeout                = "10m"
-		pollingTimeout         = "100ms"
-		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
-		etcdHelmRelease        = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
-		helmRepo               = resources.GetHelmRepositoryFromUffizziCluster(uc)
-		shouldSucceedQ         = Succeed
-		shouldBeTrueQ          = BeTrue
-		containsAllConditionsQ = func() func(requiredConditions, actualConditions []metav1.Condition) bool {
-			return conditions.ContainsAllConditions
-		}
+		k8sClient       = e2e.GetE2E().K8SClient
+		timeout         = "10m"
+		pollingTimeout  = "100ms"
+		helmRelease     = resources.GetHelmReleaseFromUffizziCluster(uc)
+		etcdHelmRelease = resources.GetETCDHelmReleaseFromUffizziCluster(uc)
+		helmRepo        = resources.GetHelmRepositoryFromUffizziCluster(uc)
 	)
 
 	// defer deletion of the uffizzi cluster and namespace
@@ -49,11 +44,11 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		It("Should create a UffizziCluster", func() {
 			//
 			By("By Creating Namespace for the UffizziCluster")
-			Expect(k8sClient.Create(ctx, ns)).Should(shouldSucceedQ())
+			Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
 
 			//
 			By("By creating a new UffizziCluster")
-			Expect(k8sClient.Create(ctx, uc)).Should(shouldSucceedQ())
+			Expect(k8sClient.Create(ctx, uc)).Should(Succeed())
 		})
 
 		It("Should create a HelmRelease and HelmRepository", func() {
@@ -113,8 +108,8 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 					return false
 				}
 				expectedConditions = td.ExpectedStatus.Initializing.Conditions
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+				return conditions.ContainsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
@@ -128,8 +123,8 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 					return false
 				}
 				expectedConditions = uffizzicluster.GetAllReadyConditions()
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+				return conditions.ContainsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
@@ -139,7 +134,7 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		It("Should put the cluster to sleep", func() {
 			By("By putting the UffizziCluster to sleep")
 			uc.Spec.Sleep = true
-			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
+			Expect(k8sClient.Update(ctx, uc)).Should(Succeed())
 		})
 
 		It("Should be in a Sleep State", func() {
@@ -150,8 +145,8 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+				return conditions.ContainsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
@@ -161,7 +156,7 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		It("Should wake the cluster up", func() {
 			By("By waking the UffizziCluster up")
 			uc.Spec.Sleep = false
-			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
+			Expect(k8sClient.Update(ctx, uc)).Should(Succeed())
 		})
 
 		It("Should be Awoken", func() {
@@ -172,8 +167,8 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+				return conditions.ContainsAllConditions(expectedConditions, uc.Status.Conditions)
+			}, timeout, pollingTimeout).Should(BeTrue())
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
