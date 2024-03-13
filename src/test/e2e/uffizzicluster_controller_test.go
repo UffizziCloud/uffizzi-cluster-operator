@@ -8,7 +8,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
+// Tests against k3s clusters
+
+var _ = Describe("k3s", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
 			Skip("Skipping test because cluster is tainted")
@@ -16,13 +18,13 @@ var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic-k3s-test",
+		Name: "k3s",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
 })
 
-var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
+var _ = Describe("k3s: without persistence", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
 			Skip("Skipping test because cluster is tainted")
@@ -30,15 +32,17 @@ var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic-k8s-test",
+		Name: "k3s-storage-non-persistent",
 		Spec: v1alpha1.UffizziClusterSpec{
-			Distro: "k8s",
+			Storage: &v1alpha1.UffizziClusterStorage{
+				Persistence: false,
+			},
 		},
 	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
 })
 
-var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+var _ = Describe("k3s: with persistence", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
 			Skip("Skipping test because cluster is tainted")
@@ -46,7 +50,27 @@ var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "k3s-etcd-test",
+		Name: "k3s-storage-persistent",
+		Spec: v1alpha1.UffizziClusterSpec{
+			Storage: &v1alpha1.UffizziClusterStorage{
+				Persistence: true,
+				// test size - 5Gi is the default
+				Size: "2Gi",
+			},
+		},
+	}
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})
+
+var _ = Describe("k3s: with etcd", func() {
+	BeforeEach(func() {
+		if e2e.IsTainted {
+			Skip("Skipping test because cluster is tainted")
+		}
+	})
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "k3s-etcd",
 		Spec: v1alpha1.UffizziClusterSpec{
 			ExternalDatastore: constants.ETCD,
 		},
@@ -56,7 +80,7 @@ var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
 
 // Test against cluster with tainted nodes - good for testing node affinities
 
-var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
+var _ = Describe("k3s: nodeselector and tolerations", func() {
 	BeforeEach(func() {
 		if !e2e.IsTainted {
 			Skip("Skipping test because cluster is not tainted")
@@ -64,7 +88,7 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "k3s-nodeselector-toleration-test",
+		Name: "k3s-nodeselector-tolerations",
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelector: map[string]string{
 				"testkey": "testvalue",
@@ -77,6 +101,22 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 					Effect:   "NoSchedule",
 				},
 			},
+		},
+	}
+	testUffizziCluster.ExecLifecycleTest(ctx)
+})
+
+var _ = Describe("k8s", func() {
+	BeforeEach(func() {
+		if e2e.IsTainted {
+			Skip("Skipping test because cluster is tainted")
+		}
+	})
+	ctx := context.Background()
+	testUffizziCluster := TestDefinition{
+		Name: "k8s",
+		Spec: v1alpha1.UffizziClusterSpec{
+			Distro: "k8s",
 		},
 	}
 	testUffizziCluster.ExecLifecycleTest(ctx)
