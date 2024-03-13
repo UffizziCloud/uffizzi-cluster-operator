@@ -2,7 +2,6 @@ package lifecycle
 
 import (
 	"context"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
@@ -135,7 +134,7 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		})
 
 		It("Should be in a Sleep State", func() {
-			expectedConditions := uffizzicluster.GetAllSleepConditions()
+			expectedConditions := td.ExpectedStatus.Sleeping.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
 			Eventually(func() bool {
@@ -157,7 +156,7 @@ func (td *LifecycleTestDefinition) Run(ctx context.Context) {
 		})
 
 		It("Should be Awoken", func() {
-			expectedConditions := uffizzicluster.GetAllAwokenConditions()
+			expectedConditions := td.ExpectedStatus.Awoken.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
 			Eventually(func() bool {
