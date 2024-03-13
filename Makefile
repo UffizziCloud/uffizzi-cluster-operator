@@ -141,6 +141,8 @@ start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for
 	sh ./hack/minikube-patch-pod-tolerations.sh
 	kubectl taint nodes minikube testkey=testvalue:NoSchedule || true
 	kubectl label nodes minikube testkey=testvalue || true
+	kubectl taint nodes minikube sandbox.gke.io/runtime=gvisor:NoSchedule || true
+	kubectl label nodes minikube sandbox.gke.io/runtime=gvisor || true
 	$(MAKE) install-fluxcd-controllers-with-toleration
 	sh ./hack/minikube-patch-workload-tolerations.sh
 
