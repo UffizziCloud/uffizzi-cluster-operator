@@ -176,6 +176,22 @@ type UffizziClusterStatus struct {
 	LastAppliedConfiguration   *string            `json:"lastAppliedConfiguration,omitempty"`
 	LastAppliedHelmReleaseSpec *string            `json:"lastAppliedHelmReleaseSpec,omitempty"`
 	LastAwakeTime              metav1.Time        `json:"lastAwakeTime,omitempty"`
+	Tolerations                []v1.Toleration    `json:"tolerations,omitempty"`
+	NodeSelector               map[string]string  `json:"nodeSelector,omitempty"`
+}
+
+func (us *UffizziClusterStatus) AddToleration(toleration v1.Toleration) {
+	if us.Tolerations == nil {
+		us.Tolerations = []v1.Toleration{}
+	}
+	us.Tolerations = append(us.Tolerations, toleration)
+}
+
+func (us *UffizziClusterStatus) AddNodeSelector(key, value string) {
+	if us.NodeSelector == nil {
+		us.NodeSelector = make(map[string]string)
+	}
+	us.NodeSelector[key] = value
 }
 
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
