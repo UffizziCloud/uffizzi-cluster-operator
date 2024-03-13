@@ -97,15 +97,19 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 	if uCluster.Spec.NodeSelectorTemplate == constants.NODESELECTOR_TEMPLATE_GVISOR {
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.GvisorToleration.Notation())
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+vcluster.GvisorNodeSelector["key"]+"="+vcluster.GvisorNodeSelector["value"])
+		uCluster.Status.AddToleration(v1.Toleration(vcluster.GvisorToleration))
+		uCluster.Status.AddNodeSelector(vcluster.GvisorNodeSelector["key"], vcluster.GvisorNodeSelector["value"])
 	}
 
 	for _, t := range uCluster.Spec.Toleration {
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.Toleration(t).Notation())
+		uCluster.Status.AddToleration(t)
 	}
 
 	if len(uCluster.Spec.NodeSelector) > 0 || len(uCluster.Spec.NodeSelectorTemplate) > 0 {
 		for k, v := range uCluster.Spec.NodeSelector {
 			vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
+			uCluster.Status.AddNodeSelector(k, v)
 		}
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-node-selector")
 	}

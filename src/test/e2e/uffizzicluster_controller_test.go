@@ -5,6 +5,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types/vcluster"
 	. "github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e/lifecycle"
 	. "github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
@@ -108,30 +109,35 @@ var _ = Describe("k3s: nodeselector and tolerations", func() {
 		}
 	})
 	ctx := context.Background()
+	ts := []v1.Toleration{
+		{
+			Key:      "testkey",
+			Operator: "Equal",
+			Value:    "testvalue",
+			Effect:   "NoSchedule",
+		},
+	}
+	nos := map[string]string{
+		"testkey": "testvalue",
+	}
 	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k3s-nodeselector-tolerations",
 		Spec: v1alpha1.UffizziClusterSpec{
-			NodeSelector: map[string]string{
-				"testkey": "testvalue",
-			},
-			Toleration: []v1.Toleration{
-				{
-					Key:      "testkey",
-					Operator: "Equal",
-					Value:    "testvalue",
-					Effect:   "NoSchedule",
-				},
-			},
+			NodeSelector: nos,
+			Toleration:   ts,
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-
 	injectK8SClient(&testUffizziCluster)
+
+	// set expected ready status to have the correct nodeselector and toleration exactly as given in the spec
+	testUffizziCluster.ExpectedStatus.Ready.NodeSelector = nos
+	testUffizziCluster.ExpectedStatus.Ready.Toleration = ts
 
 	testUffizziCluster.Run(ctx)
 })
 
-var _ = Describe("k3s: nodeselector template", func() {
+var _ = Describe("k3s: nodeselector template - gvisor", func() {
 	BeforeEach(func() {
 		if !e2e.IsTainted {
 			Skip("Skipping test because cluster is not tainted")
@@ -139,14 +145,19 @@ var _ = Describe("k3s: nodeselector template", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := LifecycleTestDefinition{
-		Name: "k3s-nodeselector-tolerations",
+		Name: "k3s-nodeselector-template-gvisor",
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelectorTemplate: constants.NODESELECTOR_TEMPLATE_GVISOR,
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-
 	injectK8SClient(&testUffizziCluster)
+
+	// set expected ready status to have the correct nodeselector and toleration based on the template
+	testUffizziCluster.ExpectedStatus.Ready.Toleration = []v1.Toleration{
+		v1.Toleration(vcluster.GvisorToleration),
+	}
+	testUffizziCluster.ExpectedStatus.Ready.NodeSelector = vcluster.GvisorNodeSelector
 
 	testUffizziCluster.Run(ctx)
 })
