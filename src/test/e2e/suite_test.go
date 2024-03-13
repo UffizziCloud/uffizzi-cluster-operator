@@ -22,6 +22,7 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/utils/exec"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e/lifecycle"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
@@ -36,7 +37,6 @@ import (
 	"testing"
 
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -47,21 +47,6 @@ import (
 // These test use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var (
-	cfg       *rest.Config
-	k8sClient client.Client
-	testEnv   *envtest.Environment
-	ctx       context.Context
-	cancel    context.CancelFunc
-	e2e       UffizziClusterE2E
-)
-
-type UffizziClusterE2E struct {
-	IsTainted          bool
-	UseExistingCluster bool
-	K8SManager         ctrl.Manager
-}
-
 type TestDefinition struct {
 	Name string
 	Spec uffizziv1alpha1.UffizziClusterSpec
@@ -71,7 +56,7 @@ func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
 	ns := resources.CreateTestNamespace(td.Name)
 	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
 	uc.Spec = td.Spec
-	wrapUffizziClusterLifecycleTest(ctx, ns, uc)
+	lifecycle.LifecycleTest(ctx, ns, uc)
 }
 
 func TestAPIs(t *testing.T) {
@@ -111,9 +96,9 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	e2e.K8SClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(e2e.K8SClient).NotTo(BeNil())
 
 	go e2e.StartReconcilerWithArgs(5)
 })
@@ -156,7 +141,7 @@ func (e2e *UffizziClusterE2E) StartReconcilerWithArgs(concurrent int) {
 }
 
 func NewTestK8SManager(concurrent int) ctrl.Manager {
-	ctx, cancel = context.WithCancel(context.TODO())
+	e2e.Ctx, e2e.Cancel = context.WithCancel(context.TODO())
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 		Controller: ctrlcfg.ControllerConfigurationSpec{

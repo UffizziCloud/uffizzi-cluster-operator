@@ -39,7 +39,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK3SHelmRelease(update bool, ctx
 			Name:      helmReleaseName,
 			Namespace: uCluster.Namespace,
 			Labels: map[string]string{
-				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.VCLUSTER,
+				constants.UFFIZZI_APP_COMPONENT_LABEL_KEY: constants.VCLUSTER,
 			},
 		},
 		Spec: fluxhelmv2beta1.HelmReleaseSpec{
@@ -107,7 +107,7 @@ func (r *UffizziClusterReconciler) upsertVClusterK8sHelmRelease(update bool, ctx
 			Name:      helmReleaseName,
 			Namespace: uCluster.Namespace,
 			Labels: map[string]string{
-				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.VCLUSTER,
+				constants.UFFIZZI_APP_COMPONENT_LABEL_KEY: constants.VCLUSTER,
 			},
 		},
 		Spec: fluxhelmv2beta1.HelmReleaseSpec{

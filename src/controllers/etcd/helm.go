@@ -49,7 +49,7 @@ func (r *UffizziClusterEtcdReconciler) upsertETCDHelmRelease(ctx context.Context
 			Name:      BuildEtcdHelmReleaseName(uCluster),
 			Namespace: uCluster.Namespace,
 			Labels: map[string]string{
-				constants.UFFIZZI_APP_COMPONENT_LABEL: constants.ETCD,
+				constants.UFFIZZI_APP_COMPONENT_LABEL_KEY: constants.ETCD,
 			},
 		},
 		Spec: fluxhelmv2beta1.HelmReleaseSpec{

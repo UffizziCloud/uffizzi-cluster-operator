@@ -1,10 +1,11 @@
-package e2e
+package lifecycle
 
 import (
 	context "context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	"github.com/fluxcd/pkg/apis/meta"
@@ -14,8 +15,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
+func LifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
 	var (
+		k8sClient              = e2e.GetE2E().K8SClient
 		timeout                = "10m"
 		pollingTimeout         = "100ms"
 		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
@@ -175,7 +177,8 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 }
 
 func deleteTestNamespace(name string) error {
-	return k8sClient.Delete(ctx, &v1.Namespace{
+	e2eObj := e2e.GetE2E()
+	return e2e.GetE2E().K8SClient.Delete(e2eObj.Ctx, &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},

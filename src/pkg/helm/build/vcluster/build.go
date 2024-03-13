@@ -20,7 +20,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 	if uCluster.Spec.ExternalDatastore == constants.ETCD {
 		vclusterK3sHelmValues.VCluster.Env = []vcluster.ContainerEnv{
 			{
-				Name:  constants.K3S_DATASTORE_ENDPOINT,
+				Name:  constants.K3S_DATASTORE_ENDPOINT_ENVKEY,
 				Value: "http://" + etcd.BuildEtcdHelmReleaseName(uCluster) + "." + uCluster.Namespace + ".svc.cluster.local:2379",
 			},
 		}
@@ -29,7 +29,7 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 	if uCluster.Spec.Ingress.Host != "" {
 		vclusterK3sHelmValues.Plugin.UffizziClusterSyncPlugin.Env = []vcluster.ContainerEnv{
 			{
-				Name:  constants.VCLUSTER_INGRESS_HOSTNAME,
+				Name:  constants.VCLUSTER_INGRESS_HOST_ENVKEY,
 				Value: vclusterIngressHostname,
 			},
 		}
@@ -373,7 +373,7 @@ func common(helmReleaseName, vclusterIngressHostname string, nodeSelector map[st
 
 func k3SAPIServer(uCluster *v1alpha1.UffizziCluster) vcluster.K3SAPIServer {
 	apiserver := vcluster.K3SAPIServer{
-		Image: constants.DEFAULT_K3S_VERSION,
+		Image: constants.DEFAULT_K3S_VERSION_TAG,
 	}
 	if uCluster.Spec.APIServer.Image != "" {
 		apiserver.Image = uCluster.Spec.APIServer.Image
