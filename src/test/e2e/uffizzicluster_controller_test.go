@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
+var _ = Describe("k3s", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
 			Skip("Skipping test because cluster is tainted")
@@ -16,8 +16,9 @@ var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic-k3s-test",
-		Spec: v1alpha1.UffizziClusterSpec{},
+		Name:           "basic-k3s-test",
+		Spec:           v1alpha1.UffizziClusterSpec{},
+		ExpectedStatus: initExpectedStatusOverLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -34,6 +35,7 @@ var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			Distro: "k8s",
 		},
+		ExpectedStatus: initExpectedStatusOverLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -50,6 +52,7 @@ var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
 		Spec: v1alpha1.UffizziClusterSpec{
 			ExternalDatastore: constants.ETCD,
 		},
+		ExpectedStatus: initExpectedStatusOverLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })
@@ -78,6 +81,7 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 				},
 			},
 		},
+		ExpectedStatus: initExpectedStatusOverLifetime(),
 	}
 	testUffizziCluster.Run(ctx)
 })

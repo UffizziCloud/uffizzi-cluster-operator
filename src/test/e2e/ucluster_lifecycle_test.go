@@ -44,6 +44,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		})
 	})
 
+	// Initializing and Ready
 	Context("When creating UffizziCluster", func() {
 		It("Should create a UffizziCluster", func() {
 			//
@@ -133,6 +134,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		})
 	})
 
+	// Sleep
 	Context("When putting a cluster to sleep", func() {
 		It("Should put the cluster to sleep", func() {
 			By("By putting the UffizziCluster to sleep")
@@ -155,6 +157,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		})
 	})
 
+	// Awoken
 	Context("When waking a cluster up", func() {
 		It("Should wake the cluster up", func() {
 			By("By waking the UffizziCluster up")
@@ -165,7 +168,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		It("Should be Awoken", func() {
 			expectedConditions := uffizzicluster.GetAllAwokenConditions()
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
-			By("Check if UffizziCluster has the correct Sleep conditions")
+			By("Check if UffizziCluster has the correct Awoken conditions")
 			Eventually(func() bool {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false

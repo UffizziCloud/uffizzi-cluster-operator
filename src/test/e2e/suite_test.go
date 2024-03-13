@@ -62,8 +62,33 @@ type UffizziClusterE2E struct {
 }
 
 type TestDefinition struct {
-	Name string
-	Spec uffizziv1alpha1.UffizziClusterSpec
+	Name           string
+	Spec           uffizziv1alpha1.UffizziClusterSpec
+	ExpectedStatus ExpectedStatusOverLifetime
+}
+
+type ExpectedStatusOverLifetime struct {
+	Initializing uffizziv1alpha1.UffizziClusterStatus
+	Ready        uffizziv1alpha1.UffizziClusterStatus
+	Sleeping     uffizziv1alpha1.UffizziClusterStatus
+	Awoken       uffizziv1alpha1.UffizziClusterStatus
+}
+
+func initExpectedStatusOverLifetime() ExpectedStatusOverLifetime {
+	return ExpectedStatusOverLifetime{
+		Initializing: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllInitializingConditions(),
+		},
+		Ready: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllReadyConditions(),
+		},
+		Sleeping: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllSleepConditions(),
+		},
+		Awoken: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllAwokenConditions(),
+		},
+	}
 }
 
 func TestAPIs(t *testing.T) {
