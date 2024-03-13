@@ -12,6 +12,10 @@ import (
 
 // Tests against k3s clusters
 
+var injectK8SClient = func(td *LifecycleTestDefinition) {
+	td.K8SClient = e2e.K8SClient
+}
+
 var _ = Describe("k3s", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
@@ -23,7 +27,9 @@ var _ = Describe("k3s", func() {
 		Name: "k3s",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
@@ -43,7 +49,9 @@ var _ = Describe("k3s: without persistence", func() {
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
@@ -65,7 +73,9 @@ var _ = Describe("k3s: with persistence", func() {
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
@@ -83,7 +93,9 @@ var _ = Describe("k3s: with etcd", func() {
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
@@ -113,7 +125,9 @@ var _ = Describe("k3s: nodeselector and tolerations", func() {
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
@@ -131,7 +145,9 @@ var _ = Describe("k3s: nodeselector template", func() {
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
@@ -151,7 +167,9 @@ var _ = Describe("k8s", func() {
 		},
 		ExpectedStatus: initStatusThroughLifetime(),
 	}
-	testUffizziCluster.K8SClient = e2e.K8SClient
+
+	injectK8SClient(&testUffizziCluster)
+
 	testUffizziCluster.Run(ctx)
 })
 
