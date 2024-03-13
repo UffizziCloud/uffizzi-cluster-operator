@@ -2,7 +2,6 @@ package e2e
 
 import (
 	context "context"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
@@ -14,7 +13,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
+func (td *TestDefinition) Run(ctx context.Context) {
+	// init
+	ns := resources.CreateTestNamespace(td.Name)
+	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
+	uc.Spec = td.Spec
+
 	var (
 		timeout                = "10m"
 		pollingTimeout         = "100ms"

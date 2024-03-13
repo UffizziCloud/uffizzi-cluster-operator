@@ -19,7 +19,7 @@ var _ = Describe("Basic Vanilla K3S UffizziCluster Lifecycle", func() {
 		Name: "basic-k3s-test",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
@@ -35,7 +35,7 @@ var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
 			Distro: "k8s",
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
@@ -51,7 +51,7 @@ var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
 			ExternalDatastore: constants.ETCD,
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 // Test against cluster with tainted nodes - good for testing node affinities
@@ -79,5 +79,5 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 			},
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
