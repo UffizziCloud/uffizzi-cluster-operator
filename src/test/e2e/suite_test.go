@@ -22,8 +22,6 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/utils/exec"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e/lifecycle"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -46,18 +44,6 @@ import (
 
 // These test use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
-type TestDefinition struct {
-	Name string
-	Spec uffizziv1alpha1.UffizziClusterSpec
-}
-
-func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
-	ns := resources.CreateTestNamespace(td.Name)
-	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
-	uc.Spec = td.Spec
-	lifecycle.LifecycleTest(ctx, ns, uc)
-}
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)

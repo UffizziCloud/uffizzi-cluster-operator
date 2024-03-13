@@ -3,7 +3,9 @@ package e2e
 import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	. "github.com/UffizziCloud/uffizzi-cluster-operator/src/test/e2e/lifecycle"
 	. "github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
 )
@@ -17,11 +19,11 @@ var _ = Describe("k3s", func() {
 		}
 	})
 	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
+	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k3s",
 		Spec: v1alpha1.UffizziClusterSpec{},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 var _ = Describe("k3s: without persistence", func() {
@@ -31,7 +33,7 @@ var _ = Describe("k3s: without persistence", func() {
 		}
 	})
 	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
+	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k3s-storage-non-persistent",
 		Spec: v1alpha1.UffizziClusterSpec{
 			Storage: &v1alpha1.UffizziClusterStorage{
@@ -39,7 +41,7 @@ var _ = Describe("k3s: without persistence", func() {
 			},
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 var _ = Describe("k3s: with persistence", func() {
@@ -49,7 +51,7 @@ var _ = Describe("k3s: with persistence", func() {
 		}
 	})
 	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
+	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k3s-storage-persistent",
 		Spec: v1alpha1.UffizziClusterSpec{
 			Storage: &v1alpha1.UffizziClusterStorage{
@@ -59,7 +61,7 @@ var _ = Describe("k3s: with persistence", func() {
 			},
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 var _ = Describe("k3s: with etcd", func() {
@@ -69,13 +71,13 @@ var _ = Describe("k3s: with etcd", func() {
 		}
 	})
 	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
+	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k3s-etcd",
 		Spec: v1alpha1.UffizziClusterSpec{
 			ExternalDatastore: constants.ETCD,
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
 
 // Test against cluster with tainted nodes - good for testing node affinities
@@ -87,7 +89,7 @@ var _ = Describe("k3s: nodeselector and tolerations", func() {
 		}
 	})
 	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
+	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k3s-nodeselector-tolerations",
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelector: map[string]string{
@@ -103,7 +105,31 @@ var _ = Describe("k3s: nodeselector and tolerations", func() {
 			},
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
+})
+
+var _ = Describe("k3s: nodeselector template", func() {
+	BeforeEach(func() {
+		if !e2e.IsTainted {
+			Skip("Skipping test because cluster is not tainted")
+		}
+	})
+	ctx := context.Background()
+	testUffizziCluster := LifecycleTestDefinition{
+		Name: "k3s-nodeselector-tolerations",
+		Spec: v1alpha1.UffizziClusterSpec{
+			NodeSelectorTemplate: constants.NODESELECTOR_TEMPLATE_GVISOR,
+		},
+	}
+
+	statusThroughLifetime := ExpectedStatusThroughLifetime{
+		Initializing: v1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllInitializingConditions(),
+		},
+	}
+	testUffizziCluster.ExpectedStatus = statusThroughLifetime
+
+	testUffizziCluster.Run(ctx)
 })
 
 var _ = Describe("k8s", func() {
@@ -113,11 +139,11 @@ var _ = Describe("k8s", func() {
 		}
 	})
 	ctx := context.Background()
-	testUffizziCluster := TestDefinition{
+	testUffizziCluster := LifecycleTestDefinition{
 		Name: "k8s",
 		Spec: v1alpha1.UffizziClusterSpec{
 			Distro: "k8s",
 		},
 	}
-	testUffizziCluster.ExecLifecycleTest(ctx)
+	testUffizziCluster.Run(ctx)
 })
