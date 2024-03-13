@@ -48,18 +48,18 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	cfg     *rest.Config
-	testEnv *envtest.Environment
-	e2e     UffizziClusterE2E
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+	e2e       UffizziClusterE2E
 )
 
 type UffizziClusterE2E struct {
 	IsTainted          bool
 	UseExistingCluster bool
 	K8SManager         ctrl.Manager
-	K8SClient          client.Client
-	Ctx                context.Context
-	Cancel             context.CancelFunc
 }
 
 type TestDefinition struct {
@@ -111,17 +111,15 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
-
-	e2e.K8SClient = k8sClient
 
 	go e2e.StartReconcilerWithArgs(5)
 })
 
 var _ = AfterSuite(func() {
-	e2e.Cancel()
+	cancel()
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
@@ -139,7 +137,7 @@ func (e2e *UffizziClusterE2E) Kubectl(args ...string) (string, string, error) {
 }
 
 func (e2e *UffizziClusterE2E) StartReconcilerWithArgs(concurrent int) {
-	e2e.K8SManager = e2e.NewTestK8SManager(concurrent)
+	e2e.K8SManager = NewTestK8SManager(concurrent)
 	err := (&uffizzicluster.UffizziClusterReconciler{
 		Client: e2e.K8SManager.GetClient(),
 		Scheme: e2e.K8SManager.GetScheme(),
@@ -153,12 +151,12 @@ func (e2e *UffizziClusterE2E) StartReconcilerWithArgs(concurrent int) {
 	Expect(err).ToNot(HaveOccurred())
 
 	defer GinkgoRecover()
-	err = e2e.K8SManager.Start(e2e.Ctx)
+	err = e2e.K8SManager.Start(ctx)
 	Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 }
 
-func (e2e *UffizziClusterE2E) NewTestK8SManager(concurrent int) ctrl.Manager {
-	e2e.Ctx, e2e.Cancel = context.WithCancel(context.TODO())
+func NewTestK8SManager(concurrent int) ctrl.Manager {
+	ctx, cancel = context.WithCancel(context.TODO())
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 		Controller: ctrlcfg.ControllerConfigurationSpec{

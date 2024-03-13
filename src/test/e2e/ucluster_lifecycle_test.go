@@ -16,7 +16,6 @@ import (
 
 func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
 	var (
-		k8sClient              = e2e.K8SClient
 		timeout                = "10m"
 		pollingTimeout         = "100ms"
 		helmRelease            = resources.GetHelmReleaseFromUffizziCluster(uc)
