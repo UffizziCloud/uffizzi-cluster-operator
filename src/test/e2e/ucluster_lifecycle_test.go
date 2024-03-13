@@ -2,7 +2,6 @@ package e2e
 
 import (
 	context "context"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
@@ -111,7 +110,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				expectedConditions = uffizzicluster.GetAllInitializingConditions()
+				expectedConditions = td.ExpectedStatus.Initializing.Conditions
 				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
@@ -126,7 +125,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				expectedConditions = uffizzicluster.GetAllReadyConditions()
+				expectedConditions = td.ExpectedStatus.Ready.Conditions
 				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
@@ -143,7 +142,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		})
 
 		It("Should be in a Sleep State", func() {
-			expectedConditions := uffizzicluster.GetAllSleepConditions()
+			expectedConditions := td.ExpectedStatus.Sleeping.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
 			Eventually(func() bool {
@@ -166,7 +165,7 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		})
 
 		It("Should be Awoken", func() {
-			expectedConditions := uffizzicluster.GetAllAwokenConditions()
+			expectedConditions := td.ExpectedStatus.Awoken.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Awoken conditions")
 			Eventually(func() bool {
