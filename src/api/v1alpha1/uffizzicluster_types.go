@@ -181,20 +181,6 @@ type UffizziClusterStatus struct {
 	NodeSelector               map[string]string  `json:"nodeSelector,omitempty"`
 }
 
-func (us *UffizziClusterStatus) AddToleration(toleration v1.Toleration) {
-	if us.Tolerations == nil {
-		us.Tolerations = []v1.Toleration{}
-	}
-	us.Tolerations = append(us.Tolerations, toleration)
-}
-
-func (us *UffizziClusterStatus) AddNodeSelector(key, value string) {
-	if us.NodeSelector == nil {
-		us.NodeSelector = make(map[string]string)
-	}
-	us.NodeSelector[key] = value
-}
-
 // VClusterKubeConfig is the KubeConfig SecretReference of the related VCluster
 type VClusterKubeConfig struct {
 	SecretRef *meta.SecretKeyReference `json:"secretRef,omitempty"`

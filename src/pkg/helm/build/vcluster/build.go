@@ -117,13 +117,19 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 
 	for _, t := range tolerations {
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.Toleration(t).Notation())
-		uCluster.Status.AddToleration(t)
+		if uCluster.Status.Tolerations == nil {
+			uCluster.Status.Tolerations = []v1.Toleration{}
+		}
+		uCluster.Status.Tolerations = append(uCluster.Status.Tolerations, t)
 	}
 
 	if len(nodeSelector) > 0 {
 		for k, v := range nodeSelector {
 			vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
-			uCluster.Status.AddNodeSelector(k, v)
+			if uCluster.Status.NodeSelector == nil {
+				uCluster.Status.NodeSelector = make(map[string]string)
+			}
+			uCluster.Status.NodeSelector[k] = v
 		}
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-node-selector")
 	}
@@ -255,13 +261,19 @@ func BuildK8SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K8S, string
 
 	for _, t := range tolerations {
 		vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.Toleration(t).Notation())
-		uCluster.Status.AddToleration(t)
+		if uCluster.Status.Tolerations == nil {
+			uCluster.Status.Tolerations = []v1.Toleration{}
+		}
+		uCluster.Status.Tolerations = append(uCluster.Status.Tolerations, t)
 	}
 
 	if len(nodeSelector) > 0 {
 		for k, v := range nodeSelector {
 			vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
-			uCluster.Status.AddNodeSelector(k, v)
+			if uCluster.Status.NodeSelector == nil {
+				uCluster.Status.NodeSelector = make(map[string]string)
+			}
+			uCluster.Status.NodeSelector[k] = v
 		}
 		vclusterHelmValues.Syncer.ExtraArgs = append(vclusterHelmValues.Syncer.ExtraArgs, "--enforce-node-selector")
 	}
