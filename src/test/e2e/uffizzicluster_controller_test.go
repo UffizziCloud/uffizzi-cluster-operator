@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
+	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/helm/types/vcluster"
 	. "github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
 )
@@ -66,22 +67,16 @@ var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
 		}
 	})
 	ctx := context.Background()
+	tolerations := append([]v1.Toleration{}, vcluster.GvisorToleration.ToV1())
 	testUffizziCluster := TestDefinition{
 		Name: "k3s-nodeselector-toleration-test",
 		Spec: v1alpha1.UffizziClusterSpec{
-			NodeSelector: map[string]string{
-				"testkey": "testvalue",
-			},
-			Toleration: []v1.Toleration{
-				{
-					Key:      "testkey",
-					Operator: "Equal",
-					Value:    "testvalue",
-					Effect:   "NoSchedule",
-				},
-			},
+			NodeSelector: vcluster.GvisorNodeSelector,
+			Toleration:   tolerations,
 		},
 		ExpectedStatus: initExpectedStatusOverLifetime(),
 	}
+	testUffizziCluster.ExpectedStatus.Ready.NodeSelector = vcluster.GvisorNodeSelector
+	testUffizziCluster.ExpectedStatus.Ready.Tolerations = tolerations
 	testUffizziCluster.Run(ctx)
 })

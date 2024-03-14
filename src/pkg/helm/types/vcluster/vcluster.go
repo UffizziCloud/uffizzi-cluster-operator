@@ -204,9 +204,3 @@ type Storage struct {
 	Persistence bool   `json:"persistence"`
 	Size        string `json:"size"`
 }
-
-type Toleration v1.Toleration
-
-func (t Toleration) Notation() string {
-	return t.Key + "=" + t.Value + ":" + string(t.Effect)
-}

@@ -129,6 +129,18 @@ func (td *TestDefinition) Run(ctx context.Context) {
 				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
+			By("Check if UffizziCluster has the correct tolerations in the Status")
+			for i, t := range td.ExpectedStatus.Ready.Tolerations {
+				for _, ucTol := range uc.Status.Tolerations {
+					if t.Key == ucTol.Key && t.Value == ucTol.Value {
+						break
+					}
+					if i == len(td.ExpectedStatus.Ready.Tolerations)-1 {
+						Fail("Tolerations do not match")
+					}
+				}
+			}
+
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
