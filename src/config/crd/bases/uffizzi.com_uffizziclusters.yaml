@@ -158,6 +158,8 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              nodeSelectorTemplate:
+                type: string
               resourceQuota:
                 description: UffizziClusterResourceQuota defines the resource quota
                   which defines the quota of resources a namespace has access to

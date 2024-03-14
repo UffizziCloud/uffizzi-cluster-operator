@@ -21,6 +21,18 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		tolerations = []v1.Toleration{vcluster.GvisorToleration.ToV1()}
 	}
 
+	if len(uCluster.Spec.NodeSelector) > 0 {
+		// merge nodeSelector and uCluster.Spec.NodeSelector
+		for k, v := range uCluster.Spec.NodeSelector {
+			nodeSelector[k] = v
+		}
+	}
+
+	if len(uCluster.Spec.Toleration) > 0 {
+		// merge tolerations and uCluster.Spec.Toleration
+		tolerations = append(tolerations, uCluster.Spec.Toleration...)
+	}
+
 	vclusterK3sHelmValues := vcluster.K3S{
 		VCluster: k3SAPIServer(uCluster),
 		Common:   common(helmReleaseName, vclusterIngressHostname, uCluster.Spec.NodeSelector, uCluster.Spec.Toleration),
