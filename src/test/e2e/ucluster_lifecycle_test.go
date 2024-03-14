@@ -31,17 +31,17 @@ func (td *TestDefinition) Run(ctx context.Context) {
 		}
 	)
 
-	//// defer deletion of the uffizzi cluster and namespace
-	//defer Context("When deleting UffizziCluster", func() {
-	//	It("Should delete the UffizziCluster", func() {
-	//		By("By deleting the UffizziCluster")
-	//		Expect(k8sClient.Delete(ctx, uc)).Should(Succeed())
-	//	})
-	//	It("Should delete the Namespace", func() {
-	//		By("By deleting the Namespace")
-	//		Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
-	//	})
-	//})
+	// defer deletion of the uffizzi cluster and namespace
+	defer Context("When deleting UffizziCluster", func() {
+		It("Should delete the UffizziCluster", func() {
+			By("By deleting the UffizziCluster")
+			Expect(k8sClient.Delete(ctx, uc)).Should(Succeed())
+		})
+		It("Should delete the Namespace", func() {
+			By("By deleting the Namespace")
+			Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
+		})
+	})
 
 	// Initializing and Ready
 	Context("When creating UffizziCluster", func() {
