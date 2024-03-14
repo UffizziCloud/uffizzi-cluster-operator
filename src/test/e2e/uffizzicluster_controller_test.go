@@ -32,7 +32,7 @@ var _ = Describe("k8s", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "basic-k8s-test",
+		Name: "k8s",
 		Spec: v1alpha1.UffizziClusterSpec{
 			Distro: "k8s",
 		},
@@ -49,7 +49,7 @@ var _ = Describe("k3s: w/ etcd", func() {
 	})
 	ctx := context.Background()
 	testUffizziCluster := TestDefinition{
-		Name: "k3s-etcd-test",
+		Name: "k3s-etcd",
 		Spec: v1alpha1.UffizziClusterSpec{
 			ExternalDatastore: constants.ETCD,
 		},
@@ -69,7 +69,7 @@ var _ = Describe("k3s: explicit nodeselector and toleration", func() {
 	ctx := context.Background()
 	tolerations := append([]v1.Toleration{}, vcluster.GvisorToleration.ToV1())
 	testUffizziCluster := TestDefinition{
-		Name: "k3s-nodeselector-toleration-test",
+		Name: "k3s-nds-tlrtn",
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelector: vcluster.GvisorNodeSelector,
 			Toleration:   tolerations,
@@ -90,7 +90,7 @@ var _ = Describe("k3s: nodeselector template - gvisor", func() {
 	ctx := context.Background()
 	tolerations := append([]v1.Toleration{}, vcluster.GvisorToleration.ToV1())
 	testUffizziCluster := TestDefinition{
-		Name: "k3s-nodeselector-toleration-test",
+		Name: "k3s-nds-template-gvisor",
 		Spec: v1alpha1.UffizziClusterSpec{
 			NodeSelectorTemplate: constants.GVISOR,
 		},
