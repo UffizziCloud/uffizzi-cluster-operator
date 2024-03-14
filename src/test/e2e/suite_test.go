@@ -22,7 +22,6 @@ import (
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/etcd"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/utils/exec"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
 	fluxhelmv2beta1 "github.com/fluxcd/helm-controller/api/v2beta1"
 	fluxsourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -63,15 +62,33 @@ type UffizziClusterE2E struct {
 }
 
 type TestDefinition struct {
-	Name string
-	Spec uffizziv1alpha1.UffizziClusterSpec
+	Name           string
+	Spec           uffizziv1alpha1.UffizziClusterSpec
+	ExpectedStatus ExpectedStatusOverLifetime
 }
 
-func (td *TestDefinition) ExecLifecycleTest(ctx context.Context) {
-	ns := resources.CreateTestNamespace(td.Name)
-	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
-	uc.Spec = td.Spec
-	wrapUffizziClusterLifecycleTest(ctx, ns, uc)
+type ExpectedStatusOverLifetime struct {
+	Initializing uffizziv1alpha1.UffizziClusterStatus
+	Ready        uffizziv1alpha1.UffizziClusterStatus
+	Sleeping     uffizziv1alpha1.UffizziClusterStatus
+	Awoken       uffizziv1alpha1.UffizziClusterStatus
+}
+
+func initExpectedStatusOverLifetime() ExpectedStatusOverLifetime {
+	return ExpectedStatusOverLifetime{
+		Initializing: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllInitializingConditions(),
+		},
+		Ready: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllReadyConditions(),
+		},
+		Sleeping: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllSleepConditions(),
+		},
+		Awoken: uffizziv1alpha1.UffizziClusterStatus{
+			Conditions: uffizzicluster.GetAllAwokenConditions(),
+		},
+	}
 }
 
 func TestAPIs(t *testing.T) {

@@ -2,8 +2,6 @@ package e2e
 
 import (
 	context "context"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/api/v1alpha1"
-	"github.com/UffizziCloud/uffizzi-cluster-operator/src/controllers/uffizzicluster"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/pkg/constants"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/conditions"
 	"github.com/UffizziCloud/uffizzi-cluster-operator/src/test/util/resources"
@@ -14,7 +12,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *v1alpha1.UffizziCluster) {
+func (td *TestDefinition) Run(ctx context.Context) {
+	// init
+	ns := resources.CreateTestNamespace(td.Name)
+	uc := resources.CreateTestUffizziCluster(td.Name, ns.Name)
+	uc.Spec = td.Spec
+
 	var (
 		timeout                = "10m"
 		pollingTimeout         = "100ms"
@@ -40,6 +43,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		})
 	})
 
+	// Initializing and Ready
 	Context("When creating UffizziCluster", func() {
 		It("Should create a UffizziCluster", func() {
 			//
@@ -106,7 +110,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				expectedConditions = uffizzicluster.GetAllInitializingConditions()
+				expectedConditions = td.ExpectedStatus.Initializing.Conditions
 				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
@@ -121,14 +125,27 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false
 				}
-				expectedConditions = uffizzicluster.GetAllReadyConditions()
+				expectedConditions = td.ExpectedStatus.Ready.Conditions
 				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
 			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+
+			By("Check if UffizziCluster has the correct tolerations in the Status")
+			for i, t := range td.ExpectedStatus.Ready.Tolerations {
+				for _, ucTol := range uc.Status.Tolerations {
+					if t.Key == ucTol.Key && t.Value == ucTol.Value {
+						break
+					}
+					if i == len(td.ExpectedStatus.Ready.Tolerations)-1 {
+						Fail("Tolerations do not match")
+					}
+				}
+			}
 
 			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 		})
 	})
 
+	// Sleep
 	Context("When putting a cluster to sleep", func() {
 		It("Should put the cluster to sleep", func() {
 			By("By putting the UffizziCluster to sleep")
@@ -137,7 +154,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		})
 
 		It("Should be in a Sleep State", func() {
-			expectedConditions := uffizzicluster.GetAllSleepConditions()
+			expectedConditions := td.ExpectedStatus.Sleeping.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
 			By("Check if UffizziCluster has the correct Sleep conditions")
 			Eventually(func() bool {
@@ -151,6 +168,7 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		})
 	})
 
+	// Awoken
 	Context("When waking a cluster up", func() {
 		It("Should wake the cluster up", func() {
 			By("By waking the UffizziCluster up")
@@ -159,9 +177,9 @@ func wrapUffizziClusterLifecycleTest(ctx context.Context, ns *v1.Namespace, uc *
 		})
 
 		It("Should be Awoken", func() {
-			expectedConditions := uffizzicluster.GetAllAwokenConditions()
+			expectedConditions := td.ExpectedStatus.Awoken.Conditions
 			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
-			By("Check if UffizziCluster has the correct Sleep conditions")
+			By("Check if UffizziCluster has the correct Awoken conditions")
 			Eventually(func() bool {
 				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
 					return false

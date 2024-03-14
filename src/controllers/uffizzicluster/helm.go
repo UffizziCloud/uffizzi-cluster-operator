@@ -27,6 +27,8 @@ func (r *UffizziClusterReconciler) deleteLoftHelmRepo(ctx context.Context, req c
 }
 
 func (r *UffizziClusterReconciler) upsertVClusterK3SHelmRelease(update bool, ctx context.Context, uCluster *uclusteruffizzicomv1alpha1.UffizziCluster) (*fluxhelmv2beta1.HelmRelease, error) {
+	patch := client.MergeFrom(uCluster.DeepCopy())
+
 	vclusterK3sHelmValues, helmReleaseName := vcluster.BuildK3SHelmValues(uCluster)
 	helmValuesJSONObj, err := build.HelmValuesToJSON(vclusterK3sHelmValues)
 	if err != nil {
@@ -77,7 +79,6 @@ func (r *UffizziClusterReconciler) upsertVClusterK3SHelmRelease(update bool, ctx
 			return nil, errors.Wrap(err, "failed to create HelmRelease")
 		}
 		uCluster.Status.LastAppliedHelmReleaseSpec = &newHelmReleaseSpec
-		patch := client.MergeFrom(uCluster.DeepCopy())
 		if err := r.Status().Patch(ctx, uCluster, patch); err != nil {
 			return nil, errors.Wrap(err, "Failed to update the default UffizziCluster lastAppliedHelmReleaseSpec")
 		}
