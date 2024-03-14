@@ -24,7 +24,7 @@ var _ = Describe("k3s", func() {
 	testUffizziCluster.Run(ctx)
 })
 
-var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
+var _ = Describe("k8s", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
 			Skip("Skipping test because cluster is tainted")
@@ -41,7 +41,7 @@ var _ = Describe("Basic Vanilla K8S UffizziCluster Lifecycle", func() {
 	testUffizziCluster.Run(ctx)
 })
 
-var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
+var _ = Describe("k3s: w/ etcd", func() {
 	BeforeEach(func() {
 		if e2e.IsTainted {
 			Skip("Skipping test because cluster is tainted")
