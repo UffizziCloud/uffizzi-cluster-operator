@@ -10,7 +10,16 @@ import (
 )
 
 func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string) {
-	helmReleaseName, vclusterIngressHostname, outKubeConfigServerArgValue := configStrings(uCluster)
+	var (
+		helmReleaseName, vclusterIngressHostname, outKubeConfigServerArgValue = configStrings(uCluster)
+		nodeSelector                                                          = vcluster.NodeSelector{}
+		tolerations                                                           = []v1.Toleration{}
+	)
+
+	if uCluster.Spec.NodeSelectorTemplate == constants.GVISOR {
+		nodeSelector = vcluster.GvisorNodeSelector
+		tolerations = []v1.Toleration{vcluster.GvisorToleration.ToV1()}
+	}
 
 	vclusterK3sHelmValues := vcluster.K3S{
 		VCluster: k3SAPIServer(uCluster),
@@ -94,13 +103,13 @@ func BuildK3SHelmValues(uCluster *v1alpha1.UffizziCluster) (vcluster.K3S, string
 		)
 	}
 
-	for _, t := range uCluster.Spec.Toleration {
+	for _, t := range tolerations {
 		vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--enforce-toleration="+vcluster.Toleration(t).Notation())
 		uCluster.Status.AddToleration(t)
 	}
 
-	if len(uCluster.Spec.NodeSelector) > 0 {
-		for k, v := range uCluster.Spec.NodeSelector {
+	if len(nodeSelector) > 0 {
+		for k, v := range nodeSelector {
 			vclusterK3sHelmValues.Syncer.ExtraArgs = append(vclusterK3sHelmValues.Syncer.ExtraArgs, "--node-selector="+k+"="+v)
 			uCluster.Status.AddNodeSelector(k, v)
 		}

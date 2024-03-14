@@ -60,7 +60,28 @@ var _ = Describe("Basic K3S UffizziCluster with ETCD Lifecycle", func() {
 
 // Test against cluster with tainted nodes - good for testing node affinities
 
-var _ = Describe("UffizziCluster NodeSelector and Tolerations", func() {
+var _ = Describe("k3s: explicit nodeselector and toleration", func() {
+	BeforeEach(func() {
+		if !e2e.IsTainted {
+			Skip("Skipping test because cluster is not tainted")
+		}
+	})
+	ctx := context.Background()
+	tolerations := append([]v1.Toleration{}, vcluster.GvisorToleration.ToV1())
+	testUffizziCluster := TestDefinition{
+		Name: "k3s-nodeselector-toleration-test",
+		Spec: v1alpha1.UffizziClusterSpec{
+			NodeSelector: vcluster.GvisorNodeSelector,
+			Toleration:   tolerations,
+		},
+		ExpectedStatus: initExpectedStatusOverLifetime(),
+	}
+	testUffizziCluster.ExpectedStatus.Ready.NodeSelector = vcluster.GvisorNodeSelector
+	testUffizziCluster.ExpectedStatus.Ready.Tolerations = tolerations
+	testUffizziCluster.Run(ctx)
+})
+
+var _ = Describe("k3s: explicit nodeselector and toleration", func() {
 	BeforeEach(func() {
 		if !e2e.IsTainted {
 			Skip("Skipping test because cluster is not tainted")

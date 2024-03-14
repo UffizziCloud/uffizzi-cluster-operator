@@ -151,17 +151,18 @@ type UffizziClusterStorage struct {
 type UffizziClusterSpec struct {
 	//+kubebuilder:default:="k3s"
 	//+kubebuilder:validation:Enum=k3s;k8s
-	Distro        string                       `json:"distro,omitempty"`
-	NodeSelector  map[string]string            `json:"nodeSelector,omitempty"`
-	Toleration    []v1.Toleration              `json:"tolerations,omitempty"`
-	APIServer     UffizziClusterAPIServer      `json:"apiServer,omitempty"`
-	Ingress       UffizziClusterIngress        `json:"ingress,omitempty"`
-	Helm          []HelmChart                  `json:"helm,omitempty"`
-	Manifests     *string                      `json:"manifests,omitempty"`
-	ResourceQuota *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
-	LimitRange    *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
-	Sleep         bool                         `json:"sleep,omitempty"`
-	Storage       *UffizziClusterStorage       `json:"storage,omitempty"`
+	Distro               string                       `json:"distro,omitempty"`
+	NodeSelectorTemplate string                       `json:"nodeSelectorTemplate,omitempty"`
+	NodeSelector         map[string]string            `json:"nodeSelector,omitempty"`
+	Toleration           []v1.Toleration              `json:"tolerations,omitempty"`
+	APIServer            UffizziClusterAPIServer      `json:"apiServer,omitempty"`
+	Ingress              UffizziClusterIngress        `json:"ingress,omitempty"`
+	Helm                 []HelmChart                  `json:"helm,omitempty"`
+	Manifests            *string                      `json:"manifests,omitempty"`
+	ResourceQuota        *UffizziClusterResourceQuota `json:"resourceQuota,omitempty"`
+	LimitRange           *UffizziClusterLimitRange    `json:"limitRange,omitempty"`
+	Sleep                bool                         `json:"sleep,omitempty"`
+	Storage              *UffizziClusterStorage       `json:"storage,omitempty"`
 	//+kubebuilder:default:="sqlite"
 	//+kubebuilder:validation:Enum=etcd;sqlite
 	ExternalDatastore string `json:"externalDatastore,omitempty"`
