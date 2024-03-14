@@ -1,8 +1,8 @@
 spec:
   tolerations:
-    - key: "testkey"
+    - key: "sandbox.gke.io/runtime"
       operator: "Equal"
-      value: "testvalue"
+      value: "gvisor"
       effect: "NoSchedule"
   nodeSelector:
-    testkey: "testvalue"
+    sandbox.gke.io/runtime: "gvisor"

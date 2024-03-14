@@ -1,10 +1,10 @@
 spec:
   template:
     spec:
-      nodeSelector:
-        testkey: "testvalue"
       tolerations:
-        - key: "testkey"
+        - key: "sandbox.gke.io/runtime"
           operator: "Equal"
-          value: "testvalue"
+          value: "gvisor"
           effect: "NoSchedule"
+      nodeSelector:
+        sandbox.gke.io/runtime: "gvisor"
