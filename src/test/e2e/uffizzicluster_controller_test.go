@@ -64,7 +64,7 @@ var _ = Describe("k3s: explicit nodeselector and toleration", func() {
 		ctx := context.Background()
 		tolerations := append([]v1.Toleration{}, vcluster.GvisorToleration.ToV1())
 		testUffizziCluster := TestDefinition{
-			Name: "k3s-nds-tlrtn",
+			Name: "k3s-nds-tlrtn", // tlrtn = ToLeRaTioN
 			Spec: v1alpha1.UffizziClusterSpec{
 				NodeSelector: vcluster.GvisorNodeSelector,
 				Toleration:   tolerations,
