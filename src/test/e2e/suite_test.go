@@ -61,17 +61,25 @@ type UffizziClusterE2E struct {
 	K8SManager         ctrl.Manager
 }
 
+type ExpectedStatusOverLifetime struct {
+	Initializing uffizziv1alpha1.UffizziClusterStatus
+	Ready        uffizziv1alpha1.UffizziClusterStatus
+	Sleeping     uffizziv1alpha1.UffizziClusterStatus
+	Awoken       uffizziv1alpha1.UffizziClusterStatus
+}
+
 type TestDefinition struct {
 	Name           string
 	Spec           uffizziv1alpha1.UffizziClusterSpec
 	ExpectedStatus ExpectedStatusOverLifetime
 }
 
-type ExpectedStatusOverLifetime struct {
-	Initializing uffizziv1alpha1.UffizziClusterStatus
-	Ready        uffizziv1alpha1.UffizziClusterStatus
-	Sleeping     uffizziv1alpha1.UffizziClusterStatus
-	Awoken       uffizziv1alpha1.UffizziClusterStatus
+func NewNamedTestDefinition(name string) TestDefinition {
+	return TestDefinition{
+		Name:           name,
+		Spec:           uffizziv1alpha1.UffizziClusterSpec{},
+		ExpectedStatus: initExpectedStatusOverLifetime(),
+	}
 }
 
 func initExpectedStatusOverLifetime() ExpectedStatusOverLifetime {
@@ -97,7 +105,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Controller Suite")
 }
 
-var _ = BeforeSuite(func() {
+var _ = SynchronizedBeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 	e2e = UffizziClusterE2E{
 		IsTainted:          getTaintedTestClusterEnvVar(),
@@ -117,7 +125,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = uffizziv1alpha1.AddToScheme(scheme.Scheme)
+}, func(data []byte) {
+	err := uffizziv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = fluxhelmv2beta1.AddToScheme(scheme.Scheme)
@@ -132,11 +141,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	go e2e.StartReconcilerWithArgs(5)
+	go e2e.StartReconcilerWithArgs(30)
 })
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
 	cancel()
+}, func() {
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())

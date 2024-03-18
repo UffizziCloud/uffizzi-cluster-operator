@@ -32,164 +32,138 @@ func (td *TestDefinition) Run(ctx context.Context) {
 	)
 
 	// defer deletion of the uffizzi cluster and namespace
-	defer Context("When deleting UffizziCluster", func() {
-		It("Should delete the UffizziCluster", func() {
-			By("By deleting the UffizziCluster")
-			Expect(k8sClient.Delete(ctx, uc)).Should(Succeed())
-		})
-		It("Should delete the Namespace", func() {
-			By("By deleting the Namespace")
-			Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
-		})
-	})
+	defer func() {
+		By("By deleting the UffizziCluster")
+		Expect(k8sClient.Delete(ctx, uc)).Should(Succeed())
+
+		By("By deleting the Namespace")
+		Expect(deleteTestNamespace(ns.Name)).Should(Succeed())
+	}()
 
 	// Initializing and Ready
-	Context("When creating UffizziCluster", func() {
-		It("Should create a UffizziCluster", func() {
-			//
-			By("By Creating Namespace for the UffizziCluster")
-			Expect(k8sClient.Create(ctx, ns)).Should(shouldSucceedQ())
+	//
+	By("By Creating Namespace for the UffizziCluster")
+	Expect(k8sClient.Create(ctx, ns)).Should(shouldSucceedQ())
 
-			//
-			By("By creating a new UffizziCluster")
-			Expect(k8sClient.Create(ctx, uc)).Should(shouldSucceedQ())
-		})
+	//
+	By("By creating a new UffizziCluster")
+	Expect(k8sClient.Create(ctx, uc)).Should(shouldSucceedQ())
 
-		It("Should create a HelmRelease and HelmRepository", func() {
-			//
-			By("Checking if the Loft HelmRepository was created and the repository is ready")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.LOFT_HELM_REPO, ns.Name), helmRepo); err != nil {
-					return false
-				}
-				for _, c := range helmRepo.Status.Conditions {
-					if c.Type == meta.ReadyCondition {
-						return c.Status == metav1.ConditionTrue
-					}
-				}
-				return true
-			})
-			//
-			By("Checking if the HelmRelease was created")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, resources.CreateNamespacedName(helmRelease.Name, ns.Name), helmRelease); err != nil {
-					return false
-				}
-				return true
-			})
-		})
-
-		if uc.Spec.ExternalDatastore == constants.ETCD {
-			It("Should create a Bitnami HelmRepository", func() {
-				//
-				By("Checking if the Bitnami HelmRepository was created")
-				Eventually(func() bool {
-					if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.BITNAMI_HELM_REPO, ns.Name), helmRepo); err != nil {
-						return false
-					}
-					return true
-				})
-			})
-			It("Should create a HelmRelease for ETCD", func() {
-				//
-				By("Checking if the HelmRelease for ETCD was created")
-				Eventually(func() bool {
-					if err := k8sClient.Get(ctx, resources.CreateNamespacedName(etcdHelmRelease.Name, ns.Name), etcdHelmRelease); err != nil {
-						return false
-					}
-					return true
-				})
-			})
+	//
+	By("Checking if the Loft HelmRepository was created and the repository is ready")
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.LOFT_HELM_REPO, ns.Name), helmRepo); err != nil {
+			return false
 		}
-
-		It("Should initialize correctly", func() {
-			expectedConditions := []metav1.Condition{}
-			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
-			By("Check if UffizziCluster initializes correctly")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
-					return false
-				}
-				expectedConditions = td.ExpectedStatus.Initializing.Conditions
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
-
-			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
-		})
-
-		It("Should be in a Ready State", func() {
-			expectedConditions := []metav1.Condition{}
-			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
-			By("Check if UffizziCluster has the correct Ready conditions")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
-					return false
-				}
-				expectedConditions = td.ExpectedStatus.Ready.Conditions
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
-
-			By("Check if UffizziCluster has the correct tolerations in the Status")
-			for i, t := range td.ExpectedStatus.Ready.Tolerations {
-				for _, ucTol := range uc.Status.Tolerations {
-					if t.Key == ucTol.Key && t.Value == ucTol.Value {
-						break
-					}
-					if i == len(td.ExpectedStatus.Ready.Tolerations)-1 {
-						Fail("Tolerations do not match")
-					}
-				}
+		for _, c := range helmRepo.Status.Conditions {
+			if c.Type == meta.ReadyCondition {
+				return c.Status == metav1.ConditionTrue
 			}
-
-			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
-		})
+		}
+		return true
 	})
+	//
+	By("Checking if the HelmRelease was created")
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, resources.CreateNamespacedName(helmRelease.Name, ns.Name), helmRelease); err != nil {
+			return false
+		}
+		return true
+	})
+
+	if uc.Spec.ExternalDatastore == constants.ETCD {
+		//
+		By("Checking if the Bitnami HelmRepository was created")
+		Eventually(func() bool {
+			if err := k8sClient.Get(ctx, resources.CreateNamespacedName(constants.BITNAMI_HELM_REPO, ns.Name), helmRepo); err != nil {
+				return false
+			}
+			return true
+		})
+
+		//
+		By("Checking if the HelmRelease for ETCD was created")
+		Eventually(func() bool {
+			if err := k8sClient.Get(ctx, resources.CreateNamespacedName(etcdHelmRelease.Name, ns.Name), etcdHelmRelease); err != nil {
+				return false
+			}
+			return true
+		})
+
+	}
+
+	expectedConditions := []metav1.Condition{}
+	uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
+	By("Check if UffizziCluster initializes correctly")
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+			return false
+		}
+		expectedConditions = td.ExpectedStatus.Initializing.Conditions
+		return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+	}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+
+	//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
+
+	expectedConditions = []metav1.Condition{}
+	uffizziClusterNSN = resources.CreateNamespacedName(uc.Name, ns.Name)
+	By("Check if UffizziCluster has the correct Ready conditions")
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+			return false
+		}
+		expectedConditions = td.ExpectedStatus.Ready.Conditions
+		return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+	}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+
+	By("Check if UffizziCluster has the correct tolerations in the Status")
+	for i, t := range td.ExpectedStatus.Ready.Tolerations {
+		for _, ucTol := range uc.Status.Tolerations {
+			if t.Key == ucTol.Key && t.Value == ucTol.Value {
+				break
+			}
+			if i == len(td.ExpectedStatus.Ready.Tolerations)-1 {
+				Fail("Tolerations do not match")
+			}
+		}
+	}
+
+	//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 
 	// Sleep
-	Context("When putting a cluster to sleep", func() {
-		It("Should put the cluster to sleep", func() {
-			By("By putting the UffizziCluster to sleep")
-			uc.Spec.Sleep = true
-			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
-		})
+	By("By putting the UffizziCluster to sleep")
+	uc.Spec.Sleep = true
+	Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
 
-		It("Should be in a Sleep State", func() {
-			expectedConditions := td.ExpectedStatus.Sleeping.Conditions
-			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
-			By("Check if UffizziCluster has the correct Sleep conditions")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
-					return false
-				}
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+	expectedConditions = td.ExpectedStatus.Sleeping.Conditions
+	uffizziClusterNSN = resources.CreateNamespacedName(uc.Name, ns.Name)
+	By("Check if UffizziCluster has the correct Sleep conditions")
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+			return false
+		}
+		return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+	}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
-			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
-		})
-	})
+	//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
 
 	// Awoken
-	Context("When waking a cluster up", func() {
-		It("Should wake the cluster up", func() {
-			By("By waking the UffizziCluster up")
-			uc.Spec.Sleep = false
-			Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
-		})
+	By("By waking the UffizziCluster up")
+	uc.Spec.Sleep = false
+	Expect(k8sClient.Update(ctx, uc)).Should(shouldSucceedQ())
 
-		It("Should be Awoken", func() {
-			expectedConditions := td.ExpectedStatus.Awoken.Conditions
-			uffizziClusterNSN := resources.CreateNamespacedName(uc.Name, ns.Name)
-			By("Check if UffizziCluster has the correct Awoken conditions")
-			Eventually(func() bool {
-				if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
-					return false
-				}
-				return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
-			}, timeout, pollingTimeout).Should(shouldBeTrueQ())
+	expectedConditions = td.ExpectedStatus.Awoken.Conditions
+	uffizziClusterNSN = resources.CreateNamespacedName(uc.Name, ns.Name)
+	By("Check if UffizziCluster has the correct Awoken conditions")
+	Eventually(func() bool {
+		if err := k8sClient.Get(ctx, uffizziClusterNSN, uc); err != nil {
+			return false
+		}
+		return containsAllConditionsQ()(expectedConditions, uc.Status.Conditions)
+	}, timeout, pollingTimeout).Should(shouldBeTrueQ())
 
-			//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
-		})
-	})
+	//GinkgoWriter.Printf(conditions.CreateConditionsCmpDiff(expectedConditions, uc.Status.Conditions))
+
 }
 
 func deleteTestNamespace(name string) error {
