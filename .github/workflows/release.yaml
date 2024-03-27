@@ -1,4 +1,4 @@
-name: Test - Unit Tests and Coverage
+name: Release
 
 on:
   push:

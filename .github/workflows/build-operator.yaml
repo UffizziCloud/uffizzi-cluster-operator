@@ -2,8 +2,13 @@ name: Build - Image and Helm Values
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [opened,reopened,synchronize,closed]
+    branches:
+        - main
+    types:
+        - opened
+        - reopened
+        - synchronize
+        - closed
 
 permissions:
   contents: read

@@ -2,8 +2,13 @@ name: Test - E2E - EnvTest with Cluster # e2e tests running against a k8s cluste
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [opened,reopened,synchronize,closed]
+    branches:
+        - main
+    types:
+        - opened
+        - reopened
+        - synchronize
+        - closed
 
 permissions:
   contents: read

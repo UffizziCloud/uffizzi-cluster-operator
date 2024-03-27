@@ -266,6 +266,11 @@ build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to t
 	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 	yq e -i '.image.tag = "v${VERSION}"' chart/values.yaml
 
+.PHONY: helm-lint
+helm-lint: ## Lint the helm chart.
+	(cd ./chart && helm dep update .)
+	helm lint ./chart --with-subcharts
+
 ##@ Build Dependencies
 
 ## Location to install dependencies to

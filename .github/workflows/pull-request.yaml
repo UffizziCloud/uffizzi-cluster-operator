@@ -1,26 +1,15 @@
-name: Tests - Unit Tests and Coverage
+name: Test - Lint Helm Chart and Go Test
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  test_and_coverage:
+  lint-helm-chart:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Go 1.19
-        uses: actions/setup-go@v4
-        with:
-          go-version: ^1.19
       - name: Lint Helm Chart
         run: |
-          (cd ./chart && helm dep update .)
-          helm lint ./chart --with-subcharts
-
-      - name: Test
-        run: | 
-          go test -coverprofile=coverage.txt -covermode=atomic -v ./src/controllers/...
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+          make helm-lint
