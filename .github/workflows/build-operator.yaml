@@ -1,4 +1,4 @@
-name: Build - Uffizzi Cluster Operator
+name: Build - Image and Helm Values
 
 on:
   pull_request:

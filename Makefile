@@ -184,9 +184,6 @@ test-e2e-with-tainted-cluster: manifests generate fmt vet envtest ## Run test.
 .PHONY: test-e2e-with-tainted-cluster-local
 test-e2e-with-tainted-cluster-local: start-test-minikube-tainted test-e2e-with-tainted-cluster ## Run test.
 
-.PHONY: test-e2e-perf-with-cluster-local
-test-e2e-perf-with-cluster-local: start-test-minikube test-e2e-perf-with-cluster ## Run test.
-
 ##@ Build
 
 .PHONY: build

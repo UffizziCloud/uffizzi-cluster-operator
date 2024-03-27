@@ -1,4 +1,4 @@
-name: E2E - Helm Chart Deployment Test
+name: Test - Deployment - Helm Chart
 
 on:
   pull_request:

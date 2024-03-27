@@ -1,4 +1,4 @@
-name: Tests - E2E - EnvTest with Cluster # e2e tests running against a k8s cluster
+name: Test - E2E - EnvTest with Cluster # e2e tests running against a k8s cluster
 
 on:
   pull_request:
@@ -47,7 +47,7 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
 
-  minikube-perf-test:
+  performance-tests-on-minikube:
     name: Run e2e tests against Minikube
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
@@ -55,16 +55,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Flux CLI
-        uses: fluxcd/flux2/action@main
+      - name: Download Helm Values Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: helm-values
 
       - name: Start Minikube
+        run: make start-test-minikube
+
+      - name: Install Uffizzi Cluster Operator
+        id: prev
         run: |
-          make start-test-minikube
+          helm dep update ./chart
+          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
+          ./chart -f helm-values.yaml
 
       - name: Run e2e tests against current cluster
         run: |
-          make test-e2e-perf-with-cluster-local
+          make test-e2e-perf-with-cluster
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
