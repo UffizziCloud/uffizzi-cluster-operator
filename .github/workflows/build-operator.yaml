@@ -1,19 +1,7 @@
 name: Build - Image and Helm Values
 
 on:
-  pull_request:
-    branches:
-    - main
-    types:
-    - opened
-    - reopened
-    - synchronize
-    - closed
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
+  workflow_call:
 
 jobs:
   build-operator:

@@ -1,11 +1,14 @@
 name: Test - E2E - Performance # e2e tests running against a k8s cluster
 
 on:
-  workflow_run:
-    workflows:
-    - "Build - Image and Helm Values"
+  pull_request:
+    branches:
+      - main
     types:
-    - completed
+      - opened
+      - reopened
+      - synchronize
+      - closed
 
 permissions:
   contents: read
@@ -13,6 +16,11 @@ permissions:
   id-token: write
 
 jobs:
+  build-operator:
+    uses: ./.github/workflows/build-operator.yaml
+    name: Build Operator Image
+    secrets: inherit
+
   minikube:
     name: Run Performance Tests on Minikube
     runs-on: ubuntu-latest

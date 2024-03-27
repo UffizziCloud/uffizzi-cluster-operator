@@ -1,11 +1,14 @@
 name: Test - Deployment - Helm Chart
 
 on:
-  workflow_run:
-    workflows:
-      - "Build - Image and Helm Values"
+  pull_request:
+    branches:
+      - main
     types:
-      - completed
+      - opened
+      - reopened
+      - synchronize
+      - closed
 
 permissions:
   contents: read
@@ -13,7 +16,14 @@ permissions:
   id-token: write
 
 jobs:
+  build-operator:
+    uses: ./.github/workflows/build-operator.yaml
+    name: Build Operator Image
+    secrets: inherit
+
   uffizzi-cluster:
+    needs:
+      - build-operator
     name: Deploy Helm chart to Uffizzi Virtual Cluster
     runs-on: ubuntu-latest
     steps:
