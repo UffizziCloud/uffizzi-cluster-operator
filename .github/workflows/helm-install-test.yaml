@@ -1,14 +1,13 @@
 name: Test - Deployment - Helm Chart
 
 on:
-  pull_request:
+  workflow_run:
+    workflows:
+      - "Build - Image and Helm Values"
     branches:
-    - main
+      - main
     types:
-    - opened
-    - reopened
-    - synchronize
-    - closed
+      - completed
 
 permissions:
   contents: read
@@ -18,8 +17,6 @@ permissions:
 jobs:
   uffizzi-cluster:
     name: Deploy Helm chart to Uffizzi Virtual Cluster
-    needs:
-      - build-operator
     if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
