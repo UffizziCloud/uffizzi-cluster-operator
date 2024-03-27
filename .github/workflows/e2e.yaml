@@ -1,4 +1,4 @@
-name: EnvTest with Cluster
+name: Tests - E2E - EnvTest with Cluster # e2e tests running against a k8s cluster
 
 on:
   pull_request:
@@ -19,11 +19,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Flux CLI
+      - name: Setup Flux CLI # used in the make command
         uses: fluxcd/flux2/action@main
-
-      - name: Setup k3d
-        uses: ./.github/actions/k3d
 
       - name: Run e2e tests against current cluster
         run: |
@@ -43,12 +40,31 @@ jobs:
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@main
 
-      - name: Setup k3d
-        uses: ./.github/actions/k3d
-
       - name: Run e2e tests against current tainted cluster
         run: |
           make test-e2e-with-tainted-cluster-local
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+  minikube-perf-test:
+    name: Run e2e tests against Minikube
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
+
+      - name: Start Minikube
+        run: |
+          make start-test-minikube
+
+      - name: Run e2e tests against current cluster
+        run: |
+          make test-e2e-perf-with-cluster-local
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

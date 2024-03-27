@@ -1,0 +1,4 @@
+kind: UffizziCluster
+apiVersion: uffizzi.com/v1alpha1
+metadata:
+  generateName: multicluster-
