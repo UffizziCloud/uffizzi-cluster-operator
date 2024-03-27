@@ -3,12 +3,12 @@ name: Test - Deployment - Helm Chart
 on:
   pull_request:
     branches:
-        - main
+    - main
     types:
-        - opened
-        - reopened
-        - synchronize
-        - closed
+    - opened
+    - reopened
+    - synchronize
+    - closed
 
 permissions:
   contents: read

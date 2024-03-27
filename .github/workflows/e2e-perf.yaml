@@ -1,0 +1,46 @@
+name: Test - E2E - Performance # e2e tests running against a k8s cluster
+
+on:
+  workflow_run:
+    workflows:
+    - "Build - Image and Helm Values"
+    branches:
+    - main
+    types:
+    - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  minikube:
+    name: Run Performance Tests on Minikube
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download Helm Values Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: helm-values
+
+      - name: Start Minikube
+        run: make start-test-minikube
+
+      - name: Install Uffizzi Cluster Operator
+        id: prev
+        run: |
+          helm dep update ./chart
+          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
+          ./chart -f helm-values.yaml
+
+      - name: Run e2e tests against current cluster
+        run: |
+          make test-e2e-perf-with-cluster
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
