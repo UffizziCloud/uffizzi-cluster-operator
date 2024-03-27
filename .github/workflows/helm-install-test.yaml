@@ -4,8 +4,6 @@ on:
   workflow_run:
     workflows:
       - "Build - Image and Helm Values"
-    branches:
-      - main
     types:
       - completed
 
