@@ -15,7 +15,6 @@ permissions:
 jobs:
   uffizzi-cluster:
     name: Deploy Helm chart to Uffizzi Virtual Cluster
-    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
