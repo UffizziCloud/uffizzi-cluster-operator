@@ -55,7 +55,7 @@ jobs:
           echo '[]' > "$JSON_FILE"
           fi
           
-          time=$(sh hack/e2e/perf/01-multicluster.sh)
+          time=$(bash hack/e2e/perf/01-multicluster.sh)
           jq --argjson newEntry "{\"workers\": 5, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
           
           cat data.json
@@ -69,7 +69,7 @@ jobs:
         run: |
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-          time=$(sh hack/e2e/perf/01-multicluster.sh)
+          time=$(bash hack/e2e/perf/01-multicluster.sh)
           jq --argjson newEntry "{\"workers\": 10, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
           
           cat data.json
@@ -83,7 +83,7 @@ jobs:
         run: |
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-          time=$(sh hack/e2e/perf/01-multicluster.sh)
+          time=$(bash hack/e2e/perf/01-multicluster.sh)
           jq --argjson newEntry "{\"workers\": 15, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
           
           cat data.json
@@ -97,7 +97,7 @@ jobs:
         run: |
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-          time=$(sh hack/e2e/perf/01-multicluster.sh)
+          time=$(bash hack/e2e/perf/01-multicluster.sh)
           jq --argjson newEntry "{\"workers\": 20, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
           
           cat data.json
