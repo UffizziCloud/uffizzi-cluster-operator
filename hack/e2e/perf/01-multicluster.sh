@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 LOOP_BOUND="${1:-3}"
 
 for i in $(seq 1 $LOOP_BOUND); do
