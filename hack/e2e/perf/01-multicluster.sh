@@ -4,9 +4,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# create multiple uffizzi clusters
+LOOP_BOUND="${1:-3}"
 
-for i in {1..3}; do
+for i in $(seq 1 $LOOP_BOUND); do
     # Generate a unique namespace name
     NAMESPACE="uffizzi-cluster-$i-$(date +%s)"
     # Create the namespace
@@ -14,7 +14,7 @@ for i in {1..3}; do
     # Label the namespace
     kubectl label namespace "$NAMESPACE" app=uffizzi > /dev/null
     # Deploy the UffizziCluster resource to the unique namespace
-    kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml --namespace="$NAMESPACE" > /dev/null
+    kubectl create -f hack/e2e/perf/manifests/gen.yaml --namespace="$NAMESPACE" > /dev/null
 done
 
 namespaces=($(kubectl get ns --selector='app=uffizzi' -o jsonpath='{.items[*].metadata.name}'))
@@ -46,3 +46,8 @@ end_time=$(date +%s)
 # Calculate the total time taken for all UffizziClusters to become ready
 total_time=$((end_time - start_time))
 echo "$total_time"
+
+# Cleanup
+for ns in "${namespaces[@]}"; do
+    kubectl delete namespace "$ns" > /dev/null
+done
