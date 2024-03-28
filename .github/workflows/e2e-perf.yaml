@@ -61,6 +61,8 @@ jobs:
           ./chart -f helm-values.yaml
 
           hack/e2e/perf/01-multicluster.sh >> results.txt
+          
+          cat results.txt
 
       - name: Set concurrent to 15
         uses: mikefarah/yq@master
@@ -74,6 +76,8 @@ jobs:
           ./chart -f helm-values.yaml
 
           hack/e2e/perf/01-multicluster.sh >> results.txt
+          
+          cat results.txt
 
       - name: Set concurrent to 20
         uses: mikefarah/yq@master
@@ -87,6 +91,8 @@ jobs:
           ./chart -f helm-values.yaml
 
           hack/e2e/perf/01-multicluster.sh >> results.txt
+          
+          cat results.txt
 #
 #           yq eval '.concurrent = "15"' -i helm-values.yaml
 #          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
