@@ -41,6 +41,7 @@ jobs:
           image:
             repository: registry.uffizzi.com/${{ env.UUID_OPERATOR }}
             tag: 48h
+          
           EOF
           cat helm-values.yaml  # For debugging, to check the contents of the file.
       - name: Upload Helm Values as Artifact
