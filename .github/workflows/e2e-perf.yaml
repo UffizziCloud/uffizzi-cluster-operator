@@ -47,7 +47,9 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 5 workers
         run: |
-          hack/e2e/perf/01-multicluster.sh >> results.txt
+          # delete any old results.txt
+          rm -f multicluster-creation-time-results.txt
+          hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
           cat results.txt
 
@@ -58,11 +60,9 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 10 workers
         run: |
-          hack/e2e/perf/01-multicluster.sh >> results.txt
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-
-          hack/e2e/perf/01-multicluster.sh >> results.txt
+          hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
           cat results.txt
 
@@ -73,11 +73,9 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 15 workers
         run: |
-          hack/e2e/perf/01-multicluster.sh >> results.txt
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-
-          hack/e2e/perf/01-multicluster.sh >> results.txt
+          hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
           cat results.txt
 
@@ -88,24 +86,8 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 20 workers
         run: |
-          hack/e2e/perf/01-multicluster.sh >> results.txt
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-
-          hack/e2e/perf/01-multicluster.sh >> results.txt
+          hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
           cat results.txt
-#
-#           yq eval '.concurrent = "15"' -i helm-values.yaml
-#          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-#          ./chart -f helm-values.yaml
-#
-#          hack/e2e/perf/01-multicluster.sh >> results.txt
-#
-#           yq eval '.concurrent = "20"' -i helm-values.yaml
-#          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-#          ./chart -f helm-values.yaml
-#
-#          hack/e2e/perf/01-multicluster.sh >> results.txt
-#
-#          cat results.txt
