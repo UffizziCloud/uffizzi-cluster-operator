@@ -6,7 +6,7 @@ set -o pipefail
 
 # create multiple uffizzi clusters
 
-for i in {1..5}; do
+for i in {1..3}; do
   kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml
 done
 
@@ -41,6 +41,7 @@ for cluster in "${uffizzi_clusters[@]}"; do
             echo "Waiting for UffizziCluster $cluster to become ready..."
             sleep 5
         fi
+        kubectl get uffizzicluster "$cluster"
     done
 done
 end_time=$(date +%s)
