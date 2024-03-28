@@ -33,10 +33,10 @@ for ns in "${namespaces[@]}"; do
     while true; do
         api_ready=$(check_api_ready "$ns")
         if [ "$api_ready" == "True" ]; then
-            echo "UffizziCluster in namespace $ns is ready."
+#            echo "UffizziCluster in namespace $ns is ready."
             break
         else
-            echo "Waiting for UffizziCluster in namespace $ns to become ready..."
+#            echo "Waiting for UffizziCluster in namespace $ns to become ready..."
             sleep 5
         fi
     done
@@ -45,4 +45,4 @@ end_time=$(date +%s)
 
 # Calculate the total time taken for all UffizziClusters to become ready
 total_time=$((end_time - start_time))
-echo "Total time for all UffizziClusters to become ready: $total_time seconds"
+echo "$total_time"
