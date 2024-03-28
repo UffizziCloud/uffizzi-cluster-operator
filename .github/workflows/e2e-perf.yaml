@@ -11,7 +11,7 @@ on:
       - closed
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   id-token: write
 
@@ -46,7 +46,7 @@ jobs:
           ./chart -f helm-values.yaml
 
       # Identify comment to be updated
-      - name: Find comment for Ephemeral Environment
+      - name: Find comment for Performance Overview
         uses: peter-evans/find-comment@v2
         id: find-comment
         with:
@@ -56,7 +56,7 @@ jobs:
           direction: last
 
       # Create/Update comment with action deployment status
-      - name: Create or Update Comment with performance test update
+      - name: Create or Update Comment with Performance Overview
         id: notification
         uses: peter-evans/create-or-update-comment@v2
         with:
@@ -142,13 +142,19 @@ jobs:
       - name: Create Graph
         run: python hack/e2e/perf/viz/generate_graph.py
 
-      - name: Create or Update Comment with Deployment URL
+      - name: Upload Graph as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: performance-graph
+          path: ./performance_graph.png
+
+      - name: Update Comment with Performance Overview
         uses: peter-evans/create-or-update-comment@v2
         with:
           comment-id: ${{ steps.notification.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Performance Overview
+            ##  Performance Overview
 
-            ![Graph](./graph.png)
+            ![Graph](./performance_graph.png)
           edit-mode: replace

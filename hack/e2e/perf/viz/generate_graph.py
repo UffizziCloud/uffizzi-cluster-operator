@@ -18,4 +18,4 @@ plt.ylabel('Time')
 plt.grid(True)
 
 # Save the plot as an image file
-plt.savefig('graph.png')
+plt.savefig('performance_graph.png')
