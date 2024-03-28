@@ -142,11 +142,12 @@ jobs:
       - name: Create Graph
         run: python hack/e2e/perf/viz/generate_graph.py
 
-      - name: Upload Graph as Artifact
-        uses: actions/upload-artifact@v2
+      - name: Upload to Imgur
+        id: upload
+        uses: actions/publish-on-imgur@latest
         with:
-          name: performance-graph
-          path: ./performance_graph.png
+          path: './performance_graph.png
+          client_id: ${{ secrets.IMGUR_CLIENT_ID }}
 
       - name: Update Comment with Performance Overview
         uses: peter-evans/create-or-update-comment@v2
@@ -155,6 +156,6 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ##  Performance Overview
-
-            ![Graph](./performance_graph.png)
+            
+            ![Graph](${{ steps.upload.outputs.url }})
           edit-mode: replace
