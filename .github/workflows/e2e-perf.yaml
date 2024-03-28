@@ -48,6 +48,8 @@ jobs:
       - name: Time taken to create UffizziClusters with 5 workers
         run: |
           hack/e2e/perf/01-multicluster.sh >> results.txt
+          
+          cat results.txt
 
       - name: Set concurrent to 10
         uses: mikefarah/yq@master
