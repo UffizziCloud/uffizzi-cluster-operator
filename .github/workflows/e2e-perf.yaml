@@ -47,9 +47,18 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 5 workers
         run: |
-          hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
+          # File where the JSON data will be stored
+          JSON_FILE="data.json"
           
-          cat multicluster-creation-time-results.txt
+          # Ensure the file exists and initialize it as an empty array if not
+          if [ ! -f "$JSON_FILE" ]; then
+          echo '[]' > "$JSON_FILE"
+          fi
+          
+          time=$(sh hack/e2e/perf/01-multicluster.sh) >> $JSON_FILE
+          jq --argjson newEntry "{\"workers\": 5, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
+          
+          cat data.json
 
       - name: Set concurrent to 10
         uses: mikefarah/yq@master
