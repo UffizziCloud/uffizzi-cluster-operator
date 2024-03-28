@@ -6,8 +6,8 @@ set -o pipefail
 
 # create multiple uffizzi clusters
 
-for i in {1..10}; do
-  kubectl create -f hack/e2e/manifests/001-multicluster.yaml
+for i in {1..5}; do
+  kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml
 done
 
 # Retrieve the names of the newly created UffizziCluster resources

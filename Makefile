@@ -165,8 +165,8 @@ test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile=coverage.txt -v
 
 .PHONY: test-e2e-perf-with-cluster
-test-e2e-perf-with-cluster: manifests generate fmt vet envtest ## Run test.
-	./hack/run-e2e-perf.sh
+test-e2e-perf-with-cluster: manifests generate fmt vet
+	./hack/e2e/perf/main.sh
 
 .PHONY: test-e2e-with-cluster-local
 test-e2e-with-cluster-local: start-test-minikube test-e2e-with-cluster ## Run test.
