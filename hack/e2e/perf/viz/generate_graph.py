@@ -1,19 +1,19 @@
-import matplotlib.pyplot as plt
 import json
+import matplotlib.pyplot as plt
 
-# Load data from JSON
+# Load the data from data.json
 with open('data.json', 'r') as file:
     data = json.load(file)
 
-# Extracting workers and time into separate lists
+# Extract workers and time data
 workers = [item['workers'] for item in data]
 time = [item['time'] for item in data]
 
-# Plotting
+# Create a graph
 plt.figure(figsize=(10, 6))
 plt.plot(workers, time, marker='o')
-plt.title('Test Performance')
+plt.title('Time taken to create UffizziClusters')
 plt.xlabel('Number of Workers')
-plt.ylabel('Time')
+plt.ylabel('Time (s)')
 plt.grid(True)
-plt.savefig('output.png')
+plt.savefig('graph.png')

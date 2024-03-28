@@ -45,6 +45,30 @@ jobs:
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
 
+      # Identify comment to be updated
+      - name: Find comment for Ephemeral Environment
+        uses: peter-evans/find-comment@v2
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Performance Overview
+          direction: last
+
+      # Create/Update comment with action deployment status
+      - name: Create or Update Comment with performance test update
+        id: notification
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Performance Overview
+
+            :gear: Running performance tests on Minikube
+
+          edit-mode: replace
+
       - name: Time taken to create UffizziClusters with 5 workers
         run: |
           # File where the JSON data will be stored
@@ -104,3 +128,27 @@ jobs:
           jq --argjson newEntry "{\"workers\": 20, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
           
           cat data.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install matplotlib
+
+      - name: Create Graph
+        run: python hack/e2e/perf/viz/generate_graph.py
+
+      - name: Create or Update Comment with Deployment URL
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.notification.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Performance Overview
+
+            ![Graph](./graph.png)
+          edit-mode: replace
