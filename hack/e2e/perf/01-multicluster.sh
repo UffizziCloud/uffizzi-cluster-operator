@@ -10,9 +10,9 @@ for i in {1..3}; do
     # Generate a unique namespace name
     NAMESPACE="uffizzi-cluster-$i-$(date +%s)"
     # Create the namespace
-    kubectl create namespace "$NAMESPACE"
+    kubectl create namespace "$NAMESPACE" > /dev/null
     # Label the namespace
-    kubectl label namespace "$NAMESPACE" app=uffizzi
+    kubectl label namespace "$NAMESPACE" app=uffizzi > /dev/null
     # Deploy the UffizziCluster resource to the unique namespace
     kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml --namespace="$NAMESPACE" > /dev/null
 done
