@@ -16,7 +16,7 @@ uffizzi_clusters=($(kubectl get uffizzicluster -o jsonpath='{.items[*].metadata.
 
 # Check if we have any clusters to monitor
 if [ ${#uffizzi_clusters[@]} -eq 0 ]; then
-    echo "No UffizziClusters found. Exiting..."
+    # echo "No UffizziClusters found. Exiting..."
     exit 1
 fi
 
@@ -35,10 +35,10 @@ for cluster in "${uffizzi_clusters[@]}"; do
     while true; do
         api_ready=$(check_api_ready "$cluster")
         if [ "$api_ready" == "True" ]; then
-            echo "UffizziCluster $cluster is ready."
+            # echo "UffizziCluster $cluster is ready."
             break
         else
-            echo "Waiting for UffizziCluster $cluster to become ready..."
+            # echo "Waiting for UffizziCluster $cluster to become ready..."
             sleep 5
         fi
         kubectl get uffizzicluster "$cluster"
@@ -48,4 +48,4 @@ end_time=$(date +%s)
 
 # Calculate the total time taken for all UffizziClusters to become ready
 total_time=$((end_time - start_time))
-echo "All UffizziClusters are ready. Total time taken: $total_time seconds."
+echo "$total_time"
