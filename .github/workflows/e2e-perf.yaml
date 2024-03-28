@@ -143,8 +143,8 @@ jobs:
         run: python hack/e2e/perf/viz/generate_graph.py
 
       - name: Upload to Imgur
-        id: upload
-        uses: actions/publish-on-imgur@latest
+        id: upload_image
+        uses: devicons/public-upload-to-imgur@v2.2.2
         with:
           path: ./performance_graph.png
           client_id: ${{ secrets.IMGUR_CLIENT_ID }}
@@ -157,5 +157,5 @@ jobs:
           body: |
             ##  Performance Overview
             
-            ![Graph](${{ steps.upload.outputs.url }})
+            ![Graph](${{ fromJSON(steps.upload_image.outputs.imgur_urls)[0] }})
           edit-mode: replace
