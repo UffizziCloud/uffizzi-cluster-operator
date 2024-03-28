@@ -36,7 +36,7 @@ jobs:
           name: helm-values
 
       - name: Start Minikube
-        run: make start-test-minikube
+        run: minikube start --addons default-storageclass,storage-provisioner --driver=docker
 
       - name: Install Uffizzi Cluster Operator
         id: prev
