@@ -146,7 +146,7 @@ jobs:
         id: upload
         uses: actions/publish-on-imgur@latest
         with:
-          path: './performance_graph.png
+          path: ./performance_graph.png
           client_id: ${{ secrets.IMGUR_CLIENT_ID }}
 
       - name: Update Comment with Performance Overview
