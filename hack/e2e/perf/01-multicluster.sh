@@ -29,7 +29,7 @@ check_api_ready() {
 # Monitor each UffizziCluster for readiness
 start_time=$(date +%s)
 for ns in "${namespaces[@]}"; do
-    echo "Monitoring UffizziCluster in namespace $ns"
+#    echo "Monitoring UffizziCluster in namespace $ns"
     while true; do
         api_ready=$(check_api_ready "$ns")
         if [ "$api_ready" == "True" ]; then
