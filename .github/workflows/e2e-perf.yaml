@@ -12,7 +12,7 @@ on:
 
 env:
   PERF_DATA_FILE: perf_data.json
-  E2E_UTILS: /hack/e2e/perf/scripts/utils.sh
+  E2E_UTILS: ./hack/e2e/perf/scripts/utils.sh
 
 permissions:
   contents: write
@@ -70,7 +70,7 @@ jobs:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Performance Overview
+            ## Operator Performance Overview
 
             :gear: Running performance tests on Minikube
 
@@ -138,7 +138,10 @@ jobs:
           comment-id: ${{ steps.notification.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ##  Performance Overview
+            ## Operator Performance Overview
             
+            ### Simultaneous cluster creation
+            
+            Creating 3 clusters simultaneously for every 
             ![Graph](${{ fromJSON(steps.upload_image.outputs.imgur_urls)[0] }})
           edit-mode: replace
