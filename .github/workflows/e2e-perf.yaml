@@ -49,7 +49,7 @@ jobs:
         run: |
           hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
-          cat results.txt
+          cat multicluster-creation-time-results.txt
 
       - name: Set concurrent to 10
         uses: mikefarah/yq@master
@@ -62,7 +62,7 @@ jobs:
           ./chart -f helm-values.yaml
           hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
-          cat results.txt
+          cat multicluster-creation-time-results.txt
 
       - name: Set concurrent to 15
         uses: mikefarah/yq@master
@@ -75,7 +75,7 @@ jobs:
           ./chart -f helm-values.yaml
           hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
-          cat results.txt
+          cat multicluster-creation-time-results.txt
 
       - name: Set concurrent to 20
         uses: mikefarah/yq@master
@@ -88,4 +88,4 @@ jobs:
           ./chart -f helm-values.yaml
           hack/e2e/perf/01-multicluster.sh >> multicluster-creation-time-results.txt
           
-          cat results.txt
+          cat multicluster-creation-time-results.txt
