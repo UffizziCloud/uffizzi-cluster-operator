@@ -67,6 +67,7 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 10 workers
         run: |
+          JSON_FILE="data.json"
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
           time=$(bash hack/e2e/perf/01-multicluster.sh)
@@ -81,6 +82,7 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 15 workers
         run: |
+          JSON_FILE="data.json"
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
           time=$(bash hack/e2e/perf/01-multicluster.sh)
@@ -95,6 +97,7 @@ jobs:
 
       - name: Time taken to create UffizziClusters with 20 workers
         run: |
+          JSON_FILE="data.json"
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
           time=$(bash hack/e2e/perf/01-multicluster.sh)
