@@ -7,45 +7,40 @@ set -o pipefail
 # create multiple uffizzi clusters
 
 for i in {1..3}; do
-  kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml > /dev/null
+    # Generate a unique namespace name
+    NAMESPACE="uffizzi-cluster-$i-$(date +%s)"
+    # Create the namespace
+    kubectl create namespace "$NAMESPACE"
+    # Deploy the UffizziCluster resource to the unique namespace
+    kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml --namespace="$NAMESPACE" > /dev/null
 done
 
-# Retrieve the names of the newly created UffizziCluster resources
-# Assuming 'uffizzicluster' is the kind for the UffizziCluster resources
-uffizzi_clusters=($(kubectl get uffizzicluster -o jsonpath='{.items[*].metadata.name}'))
+namespaces=($(kubectl get ns --selector='your-label-selector' -o jsonpath='{.items[*].metadata.name}'))
 
-# Check if we have any clusters to monitor
-if [ ${#uffizzi_clusters[@]} -eq 0 ]; then
-    # echo "No UffizziClusters found. Exiting..."
-    exit 1
-fi
-
-#echo "Monitoring the following UffizziClusters for readiness: ${uffizzi_clusters[@]}"
-
-# Function to check the APIReady condition of a UffizziCluster
+# Function to check the APIReady condition of a UffizziCluster within a namespace
 check_api_ready() {
-    local cluster_name=$1
-    api_ready=$(kubectl get uffizzicluster "$cluster_name" -o jsonpath='{.status.conditions[?(@.type=="APIReady")].status}')
+    local namespace=$1
+    local api_ready=$(kubectl get uffizzicluster --namespace="$namespace" -o jsonpath='{.items[0].status.conditions[?(@.type=="APIReady")].status}')
     echo "$api_ready"
 }
 
-# Monitor each UffizziCluster until the APIReady condition is True
+# Monitor each UffizziCluster for readiness
 start_time=$(date +%s)
-for cluster in "${uffizzi_clusters[@]}"; do
+for ns in "${namespaces[@]}"; do
+    echo "Monitoring UffizziCluster in namespace $ns"
     while true; do
-        api_ready=$(check_api_ready "$cluster")
+        api_ready=$(check_api_ready "$ns")
         if [ "$api_ready" == "True" ]; then
-            # echo "UffizziCluster $cluster is ready."
+            echo "UffizziCluster in namespace $ns is ready."
             break
         else
-            # echo "Waiting for UffizziCluster $cluster to become ready..."
+            echo "Waiting for UffizziCluster in namespace $ns to become ready..."
             sleep 5
         fi
-        # kubectl get uffizzicluster "$cluster"
     done
 done
 end_time=$(date +%s)
 
 # Calculate the total time taken for all UffizziClusters to become ready
 total_time=$((end_time - start_time))
-echo "$total_time"
+echo "Total time for all UffizziClusters to become ready: $total_time seconds"
