@@ -44,27 +44,27 @@ jobs:
           helm dep update ./chart
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
-
+      - uses: chrisdickinson/setup-yq@latest
       - name: Run e2e tests against current cluster
         run: |
           hack/e2e/perf/01-multicluster.sh >> results.txt
           
-          sed -i 's/5/10/' helm-values.yaml
+          yq eval '.concurrent = "10"' -i helm-values.yaml
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
           ./chart -f helm-values.yaml
 
           hack/e2e/perf/01-multicluster.sh >> results.txt
-
-          sed -i 's/10/15/' helm-values.yaml
-          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-          ./chart -f helm-values.yaml
-          
-          hack/e2e/perf/01-multicluster.sh >> results.txt
-
-          sed -i 's/15/20/' helm-values.yaml
-          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-          ./chart -f helm-values.yaml
-          
-          hack/e2e/perf/01-multicluster.sh >> results.txt
-          
-          cat results.txt
+#
+#           yq eval '.concurrent = "15"' -i helm-values.yaml
+#          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
+#          ./chart -f helm-values.yaml
+#
+#          hack/e2e/perf/01-multicluster.sh >> results.txt
+#
+#           yq eval '.concurrent = "20"' -i helm-values.yaml
+#          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
+#          ./chart -f helm-values.yaml
+#
+#          hack/e2e/perf/01-multicluster.sh >> results.txt
+#
+#          cat results.txt
