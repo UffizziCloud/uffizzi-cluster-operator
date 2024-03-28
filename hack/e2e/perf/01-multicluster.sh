@@ -11,11 +11,13 @@ for i in {1..3}; do
     NAMESPACE="uffizzi-cluster-$i-$(date +%s)"
     # Create the namespace
     kubectl create namespace "$NAMESPACE"
+    # Label the namespace
+    kubectl label namespace "$NAMESPACE" app=uffizzi
     # Deploy the UffizziCluster resource to the unique namespace
     kubectl create -f hack/e2e/perf/manifests/01-multicluster.yaml --namespace="$NAMESPACE" > /dev/null
 done
 
-namespaces=($(kubectl get ns --selector='your-label-selector' -o jsonpath='{.items[*].metadata.name}'))
+namespaces=($(kubectl get ns --selector='app=uffizzi' -o jsonpath='{.items[*].metadata.name}'))
 
 # Function to check the APIReady condition of a UffizziCluster within a namespace
 check_api_ready() {
