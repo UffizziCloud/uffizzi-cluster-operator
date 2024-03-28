@@ -22,6 +22,8 @@ jobs:
     secrets: inherit
 
   minikube:
+    needs:
+    - build-operator
     name: Run Performance Tests on Minikube
     runs-on: ubuntu-latest
     steps:
