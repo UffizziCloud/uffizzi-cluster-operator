@@ -10,6 +10,10 @@ on:
       - synchronize
       - closed
 
+env:
+  PERF_DATA_FILE: perf_data.json
+  E2E_UTILS: /hack/e2e/perf/scripts/utils.sh
+
 permissions:
   contents: write
   pull-requests: write
@@ -29,6 +33,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: install yq
+        run: sudo snap install yq
 
       - name: Download Helm Values Artifact
         uses: actions/download-artifact@v3
@@ -69,65 +76,41 @@ jobs:
 
           edit-mode: replace
 
-      - name: Time taken to create UffizziClusters with 5 workers
+      - name: Create PERF_DATA_FILE
         run: |
-          # File where the JSON data will be stored
-          JSON_FILE="data.json"
-          
           # Ensure the file exists and initialize it as an empty array if not
-          if [ ! -f "$JSON_FILE" ]; then
-          echo '[]' > "$JSON_FILE"
+          if [ ! -f "PERF_DATA_FILE" ]; then
+          echo '[]' > "PERF_DATA_FILE"
           fi
-          
-          time=$(bash hack/e2e/perf/01-multicluster.sh)
-          jq --argjson newEntry "{\"workers\": 5, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
-          
-          cat data.json
 
-      - name: Set concurrent to 10
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -i '.concurrent = "10"' helm-values.yaml
-
-      - name: Time taken to create UffizziClusters with 10 workers
+      - name: Time taken to create UffizziClusters with different numbers of workers
         run: |
-          JSON_FILE="data.json"
-          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-          ./chart -f helm-values.yaml
-          time=$(bash hack/e2e/perf/01-multicluster.sh)
-          jq --argjson newEntry "{\"workers\": 10, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
+          for n_workers in $(seq 0 5 30); do
           
-          cat data.json
-
-      - name: Set concurrent to 15
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -i '.concurrent = "15"' helm-values.yaml
-
-      - name: Time taken to create UffizziClusters with 15 workers
-        run: |
-          JSON_FILE="data.json"
-          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-          ./chart -f helm-values.yaml
-          time=$(bash hack/e2e/perf/01-multicluster.sh)
-          jq --argjson newEntry "{\"workers\": 15, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
+            yq -i '.concurrent = "$n_workers"' helm-values.yaml
+            n_simultaneous_clusters=3
           
-          cat data.json
-
-      - name: Set concurrent to 20
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -i '.concurrent = "20"' helm-values.yaml
-
-      - name: Time taken to create UffizziClusters with 20 workers
-        run: |
-          JSON_FILE="data.json"
-          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-          ./chart -f helm-values.yaml
-          time=$(bash hack/e2e/perf/01-multicluster.sh)
-          jq --argjson newEntry "{\"workers\": 20, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
+            # time taken to create n clusters simultaneously
+            time=$(bash hack/e2e/perf/01-multicluster.sh $n_simultaneous_clusters)
+            bash $E2E_UTILS update_json_with_workers_and_time $n_workers $time $PERF_DATA_FILE
           
-          cat data.json
+            cat data.json
+          done
+#
+#      - name: Set concurrent to 10
+#        uses: mikefarah/yq@master
+#        with:
+#          cmd: yq -i '.concurrent = "10"' helm-values.yaml
+#
+#      - name: Time taken to create UffizziClusters with 10 workers
+#        run: |
+#          JSON_FILE="data.json"
+#          helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
+#          ./chart -f helm-values.yaml
+#          time=$(bash hack/e2e/perf/01-multicluster.sh)
+#          jq --argjson newEntry "{\"workers\": 10, \"time\": $time}" '. += [$newEntry]' "$JSON_FILE" > "tmp.$$" && mv "tmp.$$" "$JSON_FILE"
+#
+#          cat data.json
 
       - name: Set up Python
         uses: actions/setup-python@v2
