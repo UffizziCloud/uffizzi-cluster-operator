@@ -79,8 +79,8 @@ jobs:
       - name: Create PERF_DATA_FILE
         run: |
           # Ensure the file exists and initialize it as an empty array if not
-          if [ ! -f "PERF_DATA_FILE" ]; then
-          echo '[]' > "PERF_DATA_FILE"
+          if [ ! -f "$PERF_DATA_FILE" ]; then
+            echo '[]' > "$PERF_DATA_FILE"
           fi
 
       - name: Time taken to create UffizziClusters with different numbers of workers
@@ -142,6 +142,9 @@ jobs:
             
             ### Simultaneous cluster creation
             
-            Creating 3 clusters simultaneously for every 
+            Creating simultaneously to check if operator is able to manage the load of creating multiple clusters
+            at once. Creating multiple clusters simultaneously, in operator deployments; of varying number of concurrent
+            workers help us understand how the operator manages high load in restricted environments as well.
+            
             ![Graph](${{ fromJSON(steps.upload_image.outputs.imgur_urls)[0] }})
           edit-mode: replace
