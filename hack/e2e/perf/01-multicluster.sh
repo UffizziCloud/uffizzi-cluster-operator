@@ -20,7 +20,7 @@ if [ ${#uffizzi_clusters[@]} -eq 0 ]; then
     exit 1
 fi
 
-echo "Monitoring the following UffizziClusters for readiness: ${uffizzi_clusters[@]}"
+#echo "Monitoring the following UffizziClusters for readiness: ${uffizzi_clusters[@]}"
 
 # Function to check the APIReady condition of a UffizziCluster
 check_api_ready() {
@@ -41,7 +41,7 @@ for cluster in "${uffizzi_clusters[@]}"; do
             # echo "Waiting for UffizziCluster $cluster to become ready..."
             sleep 5
         fi
-        kubectl get uffizzicluster "$cluster"
+        # kubectl get uffizzicluster "$cluster"
     done
 done
 end_time=$(date +%s)

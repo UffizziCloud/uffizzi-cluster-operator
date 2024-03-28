@@ -48,6 +48,3 @@ jobs:
       - name: Run e2e tests against current cluster
         run: |
           make test-e2e-perf-with-cluster
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
