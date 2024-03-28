@@ -66,3 +66,5 @@ jobs:
           ./chart -f helm-values.yaml
           
           hack/e2e/perf/01-multicluster.sh >> results.txt
+          
+          cat results.txt
