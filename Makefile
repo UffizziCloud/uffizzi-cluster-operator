@@ -132,11 +132,11 @@ stop-test-minikube: ## Stop the minikube cluster for testing.
 .PHONY: start-test-minikube-tainted
 start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
 	minikube start --addons default-storageclass,storage-provisioner --driver=docker
-	sh ./hack/minikube-patch-pod-tolerations.sh
+	sh ./hack/minikube/patch-pod-tolerations.sh
 	kubectl taint nodes minikube sandbox.gke.io/runtime=gvisor:NoSchedule || true
 	kubectl label nodes minikube sandbox.gke.io/runtime=gvisor || true
 	$(MAKE) install-fluxcd-controllers-with-toleration
-	sh ./hack/minikube-patch-workload-tolerations.sh
+	sh ./hack/minikube/patch-workload-tolerations.sh
 
 .PHONY : stop-test-k3d
 stop-test-k3d: ## Stop the k3d cluster for testing.
