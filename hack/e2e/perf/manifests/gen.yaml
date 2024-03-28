@@ -1,7 +1,7 @@
 kind: UffizziCluster
 apiVersion: uffizzi.com/v1alpha1
 metadata:
-  name: storage-manifest
+  generateName: multicluster-
 spec:
   storage:
-    syncFromManifests: false
+    size: 2.5Gi

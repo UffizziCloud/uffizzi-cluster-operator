@@ -2,13 +2,7 @@ VERSION ?= 1.6.4
 
 # check if we are using MacOS or LINUX and use that to determine the sed command
 UNAME_S := $(shell uname -s)
-SED := sed
-ifeq ($(UNAME_S),Darwin)
-	SED = gsed
-else
-	SED = sed
-endif
-
+SED=$(shell which gsed || which sed)
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -138,11 +132,11 @@ stop-test-minikube: ## Stop the minikube cluster for testing.
 .PHONY: start-test-minikube-tainted
 start-test-minikube-tainted: ## Start a minikube cluster with a tainted node for testing.
 	minikube start --addons default-storageclass,storage-provisioner --driver=docker
-	sh ./hack/minikube-patch-pod-tolerations.sh
+	sh ./hack/minikube/patch-pod-tolerations.sh
 	kubectl taint nodes minikube sandbox.gke.io/runtime=gvisor:NoSchedule || true
 	kubectl label nodes minikube sandbox.gke.io/runtime=gvisor || true
 	$(MAKE) install-fluxcd-controllers-with-toleration
-	sh ./hack/minikube-patch-workload-tolerations.sh
+	sh ./hack/minikube/patch-workload-tolerations.sh
 
 .PHONY : stop-test-k3d
 stop-test-k3d: ## Stop the k3d cluster for testing.
@@ -169,6 +163,10 @@ test-e2e-without-cluster: manifests generate fmt vet envtest ## Run test.
 .PHONY: test-e2e-with-cluster
 test-e2e-with-cluster: manifests generate fmt vet envtest ## Run test.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ENVTEST_REMOTE=true go test ./... -coverprofile=coverage.txt -v
+
+.PHONY: test-e2e-perf-with-cluster
+test-e2e-perf-with-cluster:
+	./hack/e2e/perf/main.sh
 
 .PHONY: test-e2e-with-cluster-local
 test-e2e-with-cluster-local: start-test-minikube test-e2e-with-cluster ## Run test.
@@ -254,13 +252,18 @@ build-helm-chart: manifests generate fmt vet kustomize ## Deploy controller to t
 	$(SED) -i'' -e 's/apiVersion: rbac.authorization.k8s.io\/v1/apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}/' chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e 's/labels:/labels: {{ include "common.labels.standard" . | nindent 4 }}/' chart/templates/manager-role_clusterrole.yaml
 	$(SED) -i'' -e '/metadata:/a\
-	  labels: {{ include "common.labels.standard" . | nindent 4 }}\
-	    app.kubernetes.io/component: rbac\
-	    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
+	\  labels: {{ include "common.labels.standard" . | nindent 4 }}\
+	\n    app.kubernetes.io/component: rbac\
+	\n    app.kubernetes.io/part-of: uffizzi' chart/templates/manager-role_clusterrole.yaml
 	# update chart versions
 	yq e -i '.version = "${VERSION}"' chart/Chart.yaml
 	yq e -i '.appVersion = "v${VERSION}"' chart/Chart.yaml
 	yq e -i '.image.tag = "v${VERSION}"' chart/values.yaml
+
+.PHONY: helm-lint
+helm-lint: ## Lint the helm chart.
+	(cd ./chart && helm dep update .)
+	helm lint ./chart --with-subcharts
 
 ##@ Build Dependencies
 

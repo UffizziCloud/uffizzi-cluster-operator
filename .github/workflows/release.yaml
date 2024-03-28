@@ -1,9 +1,9 @@
-name: CI
+name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+    - 'v*.*.*'
 env:
   RELEASE_VERSION: ${{ github.ref_name }}
 

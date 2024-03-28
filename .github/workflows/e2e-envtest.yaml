@@ -1,9 +1,14 @@
-name: EnvTest with Cluster
+name: Test - E2E - EnvTest with Cluster # e2e tests running against a k8s cluster
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [opened,reopened,synchronize,closed]
+    branches:
+    - main
+    types:
+    - opened
+    - reopened
+    - synchronize
+    - closed
 
 permissions:
   contents: read
@@ -19,11 +24,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Flux CLI
+      - name: Setup Flux CLI # used in the make command
         uses: fluxcd/flux2/action@main
-
-      - name: Setup k3d
-        uses: ./.github/actions/k3d
 
       - name: Run e2e tests against current cluster
         run: |
@@ -42,9 +44,6 @@ jobs:
 
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@main
-
-      - name: Setup k3d
-        uses: ./.github/actions/k3d
 
       - name: Run e2e tests against current tainted cluster
         run: |

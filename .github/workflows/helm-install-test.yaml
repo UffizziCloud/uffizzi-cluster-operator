@@ -1,9 +1,14 @@
-name: E2E - Helm Chart Deployment Test
+name: Test - Deployment - Helm Chart
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [opened,reopened,synchronize,closed]
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
 
 permissions:
   contents: read
@@ -12,46 +17,23 @@ permissions:
 
 jobs:
   build-operator:
-    name: Build and Push `operator` Image
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
-    outputs:
-      tags: ${{ steps.meta.outputs.tags }}
-      uuid: ${{ env.UUID_OPERATOR }}
-    steps:
-      - name: Checkout git repo
-        uses: actions/checkout@v3
-      - name: Generate UUID image name
-        id: uuid
-        run: echo "UUID_OPERATOR=$(uuidgen)" >> $GITHUB_ENV
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          # An anonymous, emphemeral registry built on ttl.sh
-          images: registry.uffizzi.com/${{ env.UUID_OPERATOR }}
-          tags: type=raw,value=48h
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and Push Image to Uffizzi Ephemeral Registry
-        uses: docker/build-push-action@v3
-        with:
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          context: ./
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    uses: ./.github/workflows/build-operator.yaml
+    name: Build Operator Image
+    secrets: inherit
 
   uffizzi-cluster:
-    name: Deploy Helm chart to Uffizzi Virtual Cluster
     needs:
       - build-operator
-    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    name: Deploy Helm chart to Uffizzi Virtual Cluster
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Download Helm Values Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: helm-values
 
       # Identify comment to be updated
       - name: Find comment for Ephemeral Environment
@@ -92,21 +74,6 @@ jobs:
       - name: Apply Helm Chart
         id: prev
         run: |
-          # install krew
-
-          # set -x; cd "$(mktemp -d)" &&
-          # OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
-          # ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
-          # KREW="krew-${OS}_${ARCH}" &&
-          # curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
-          # tar zxvf "${KREW}.tar.gz" &&
-          # ./"${KREW}" install krew
-
-          # cd -
-
-          # install kuttl
-          # ./"${KREW}" install kuttl
-
           if [[ ${RUNNER_DEBUG} == 1 ]]; then
             echo "`pwd`"
             echo "`ls`"
@@ -115,10 +82,7 @@ jobs:
           export KUBECONFIG="`pwd`/kubeconfig"
           helm dep update ./chart
           helm upgrade --install --wait pr-${{ github.event.pull_request.number }} \
-          ./chart --set image.repository=registry.uffizzi.com/${{ needs.build-operator.outputs.uuid }},image.tag=48h
-
-          # kubectl apply -f examples/k3s-manifest-basic.yml
-          # kubectl apply -f examples/k8s-manifest-basic.yml
+          ./chart -f helm-values.yaml
 
       - name: Create or Update Comment with Deployment URL
         uses: peter-evans/create-or-update-comment@v2

@@ -5,6 +5,10 @@
 image:
   repository: docker.io/uffizzi/uffizzi-cluster-operator
   tag: v1.6.4
+
+manager:
+  concurrent: 5
+
 # `flux` dependency values
 flux:
   helmController:
@@ -31,15 +35,3 @@ flux:
     enabled: false
   imageReflectorController:
     enabled: false
-#cert-manager: # dependency
-#  enabled: true
-#  installCRDs: true
-#
-#ingress-nginx:
-#  controller:
-#    extraArgs:
-#      enable-ssl-passthrough: true
-# To install nginx-ingress and cert-manager charts
-# along with the rest apply the following tags (enabled by default)
-#tags:
-#  - ingress-nginx
